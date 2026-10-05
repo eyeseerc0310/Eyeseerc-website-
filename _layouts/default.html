@@ -17,7 +17,7 @@
       Menu <span class="bars"><span></span><span></span><span></span></span>
     </button>
     <nav class="site-nav" id="site-nav">
-      {% assign nav = "/|Home,/color/|Color,/black-and-white/|Black & White,/art/|Art,/shop/|Shop" | split: "," %}
+      {% assign nav = "/|HOME,/color/|COLOR,/black-and-white/|B&W,/art/|ART,/shop/|SHOP" | split: "," %}
       {% for item in nav %}
         {% assign parts = item | split: "|" %}
         <a href="{{ parts[0] | relative_url }}"{% if page.url == parts[0] %} class="active"{% endif %}>{{ parts[1] }}</a>
