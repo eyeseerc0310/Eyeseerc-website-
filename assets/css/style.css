@@ -101,14 +101,17 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
 /* slow, gentle fade between light and dark (one and a half seconds) */
-::view-transition-old(root), ::view-transition-new(root) {
-  animation-duration: 1.5s;
-  animation-timing-function: ease-in-out;
-}
-/* ...but the moon/sun button itself switches instantly, not with the fade */
+@keyframes theme-fade-out { to { opacity: 0; } }
+@keyframes theme-fade-in { from { opacity: 0; } }
+/* the button and the photos on screen don't take part in the dissolve:
+   the button swaps instantly and the photos simply stay as they are */
 .theme-toggle { view-transition-name: theme-toggle; }
-::view-transition-old(theme-toggle) { display: none; }
-::view-transition-new(theme-toggle) { animation: none; }
+::view-transition-group(*) { animation: none; }
+::view-transition-old(*) { display: none; }
+::view-transition-new(*) { animation: none; }
+/* the page itself crossfades */
+::view-transition-old(root) { display: block; animation: theme-fade-out 1.5s ease-in-out both; }
+::view-transition-new(root) { animation: theme-fade-in 1.5s ease-in-out both; }
 /* fallback for browsers without view transitions: every colour eases over */
 html.theme-fading *, html.theme-fading *::before, html.theme-fading *::after {
   transition: background-color 1.5s ease, color 1.5s ease, border-color 1.5s ease, fill 1.5s ease, stroke 1.5s ease, text-shadow 1.5s ease !important;
@@ -299,7 +302,7 @@ html.theme-fading .theme-toggle * { transition: none !important; }
 @media (max-width: 560px) { .gallery-grid { grid-template-columns: 1fr; } }
 
 /* drop shadow on photos shown on the page (not when opened full screen) */
-.hero-photo img,
+.hero-photo,
 .gallery-item a,
 .shop-photo { box-shadow: var(--photo-shadow); }
 
