@@ -3,7 +3,7 @@
 #  One block per print. They show three to a row, in this order.
 #
 #  title:     name of the print (used for screen readers / search)
-#  image:     a photo you've uploaded, e.g. /photos/color/sunset.jpg
+#  image:     a photo you've uploaded, e.g. /photos/photography/sunset.jpg
 #  shape:     landscape, portrait or square
 #  price:     just the number (the currency symbol is set in _config.yml)
 #  link:      the product's page on your print site (Fine Art America,
@@ -16,19 +16,19 @@
 # =============================================================
 
 - title: "Sunset (sample)"
-  image: /photos/color/sample-01-sunset.png
+  image: /photos/photography/sample-01-sunset.png
   shape: landscape
   price: 45
   link: /404.html
 
 - title: "Ocean (sample)"
-  image: /photos/color/sample-02-ocean.png
+  image: /photos/photography/sample-02-ocean.png
   shape: portrait
   price: 60
   link: /404.html
 
 - title: "Forest (sample)"
-  image: /photos/color/sample-03-forest.png
+  image: /photos/photography/sample-03-forest.png
   shape: landscape
   price: 45
   link: /404.html
