@@ -3,6 +3,8 @@
   Just upload photos into that folder — no code changes needed.
   With titles=true each photo gets a numbered title underneath,
   e.g. COLOR ARCHIVE #1, #2 … and B&W ARCHIVE #1, #2 … (Photography page).
+  With digital_caption="???" every digital piece is named ??? in the photo
+  viewer only (Projects page).
 {% endcomment %}
 {% assign folder_path = "/photos/" | append: include.folder | append: "/" %}
 {% comment %} sorted by file name, so photos in sub-folders (e.g. color / black-and-white) mix together {% endcomment %}
@@ -25,6 +27,8 @@
         {% if kind == "bw" %}{% assign bw_n = bw_n | plus: 1 %}{% assign caption = "B&W ARCHIVE #" | append: bw_n %}
         {% else %}{% assign color_n = color_n | plus: 1 %}{% assign caption = "COLOR ARCHIVE #" | append: color_n %}{% endif %}
       {% endif %}
+      {% comment %} digital_caption: the name shown in the photo viewer for every digital piece (e.g. ???) {% endcomment %}
+      {% if include.digital_caption and kind == "digital" %}{% assign caption = include.digital_caption %}{% endif %}
       {% comment %} with show_kind, only that kind is shown when the page first loads {% endcomment %}
       <figure class="gallery-item{% if include.show_kind and kind != include.show_kind %} is-filtered-out{% endif %}"{% if kind != "" %} data-kind="{{ kind }}"{% endif %}>
         <a href="{{ photo.path | relative_url }}" data-lightbox data-caption="{{ caption | escape }}">
