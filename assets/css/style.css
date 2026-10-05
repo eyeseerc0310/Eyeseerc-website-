@@ -153,6 +153,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   font-family: var(--display);
   font-weight: 300;
   font-size: clamp(2.2rem, 5vw, 3.5rem);
+  line-height: 1.15;
   margin: 0 0 2rem;
   text-align: center;
   letter-spacing: .02em;
