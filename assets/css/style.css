@@ -89,19 +89,21 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   transition: opacity .25s ease, transform .25s ease, visibility .25s;
 }
 /* The menu's background: light grey with a soft blur behind it and a thin,
-   slightly darker line down the right side and along the bottom. It fades in
-   from fully see-through on the left and at the top. */
+   slightly darker line down the right side and along the bottom. It fades
+   diagonally, from fully see-through at the top left. */
 .site-nav::before {
   content: "";
   position: absolute; inset: 0; z-index: -1;
-  background: rgba(223, 223, 223, .94);
+  background: rgba(210, 210, 210, .95);
   border-right: 1px solid rgba(120, 120, 120, .9);
   border-bottom: 1px solid rgba(120, 120, 120, .9);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 55%), linear-gradient(to bottom, transparent, #000 45%);
+  /* one smooth diagonal fade: see-through at the top left, solid toward the bottom right */
+  /* (plus a short soft left edge so the bottom-left corner has no hard line) */
+  -webkit-mask-image: linear-gradient(to bottom right, transparent 0%, rgba(0, 0, 0, .55) 35%, #000 70%), linear-gradient(to right, transparent, #000 22%);
   -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, #000 55%), linear-gradient(to bottom, transparent, #000 45%);
+  mask-image: linear-gradient(to bottom right, transparent 0%, rgba(0, 0, 0, .55) 35%, #000 70%), linear-gradient(to right, transparent, #000 22%);
   mask-composite: intersect;
 }
 .site-nav.open { opacity: 1; visibility: visible; transform: translateY(0); }
