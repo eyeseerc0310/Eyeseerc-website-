@@ -1,4 +1,4 @@
-# EYESEERC Photography — Website
+# EYESEERC — Website
 
 A simple photography portfolio with a **Home** page (your bio + photo),
 three galleries — **Color**, **Black & White**, **Art** — and a **Shop**.
