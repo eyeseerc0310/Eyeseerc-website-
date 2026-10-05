@@ -366,6 +366,7 @@ html.theme-fading .theme-toggle * { transition: none !important; }
   text-align: center;
   font-size: .8rem;
   letter-spacing: .14em;
+  padding-left: .14em; /* balances the space letter-spacing leaves after the last letter, so it sits truly centred */
   color: var(--muted);
 }
 @media (max-width: 700px) { .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
