@@ -21,21 +21,23 @@
     if (e.key === 'Escape') setOpen(false);
   });
 
-  // On computers, open when the mouse moves over the menu icon and close
-  // shortly after it leaves both the icon and the menu.
-  if (window.matchMedia('(hover: hover)').matches) {
-    var closeTimer;
-    [toggle, nav].forEach(function (el) {
-      el.addEventListener('mouseenter', function () {
-        clearTimeout(closeTimer);
-        if (!nav.classList.contains('open')) hoverOpenedAt = Date.now();
-        setOpen(true);
-      });
-      el.addEventListener('mouseleave', function () {
-        closeTimer = setTimeout(function () { setOpen(false); }, 250);
-      });
+  // With a mouse or trackpad (computers, and iPads with a trackpad), open when
+  // the pointer moves over the menu icon and close shortly after it leaves
+  // both the icon and the menu. Finger taps are ignored here and use the
+  // click handler above instead.
+  var closeTimer;
+  [toggle, nav].forEach(function (el) {
+    el.addEventListener('pointerenter', function (e) {
+      if (e.pointerType !== 'mouse') return;
+      clearTimeout(closeTimer);
+      if (!nav.classList.contains('open')) hoverOpenedAt = Date.now();
+      setOpen(true);
     });
-  }
+    el.addEventListener('pointerleave', function (e) {
+      if (e.pointerType !== 'mouse') return;
+      closeTimer = setTimeout(function () { setOpen(false); }, 250);
+    });
+  });
 })();
 
 // Full-screen photo viewer (click a photo to open; arrows / swipe to browse)
