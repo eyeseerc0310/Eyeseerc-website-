@@ -84,23 +84,24 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   min-width: 270px;
   display: flex; flex-direction: column; align-items: flex-end;
   padding: 1.25rem 1.75rem;
-  /* light grey, fully see-through on the left, fading to more solid on the right */
-  background: linear-gradient(to right, rgba(214, 214, 214, 0) 0%, rgba(214, 214, 214, .7) 25%, rgba(214, 214, 214, .94) 55%);
-  /* thin, slightly darker line along the top, right and bottom, fading in from the left */
-  border-style: solid;
-  border-width: 1px 1px 1px 0;
-  border-image: linear-gradient(to right, rgba(120, 120, 120, 0), rgba(120, 120, 120, .9) 55%) 1;
   opacity: 0; visibility: hidden; transform: translateY(-8px);
   transition: opacity .25s ease, transform .25s ease, visibility .25s;
 }
-/* soft blur behind the menu that fades in the same direction, so text stays readable */
+/* The menu's background: light grey with a soft blur behind it and a thin,
+   slightly darker line down the right side and along the bottom. It fades in
+   from fully see-through on the left and at the top. */
 .site-nav::before {
   content: "";
   position: absolute; inset: 0; z-index: -1;
+  background: rgba(214, 214, 214, .94);
+  border-right: 1px solid rgba(120, 120, 120, .9);
+  border-bottom: 1px solid rgba(120, 120, 120, .9);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 35%);
-  mask-image: linear-gradient(to right, transparent, #000 35%);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 55%), linear-gradient(to bottom, transparent, #000 45%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 55%), linear-gradient(to bottom, transparent, #000 45%);
+  mask-composite: intersect;
 }
 .site-nav.open { opacity: 1; visibility: visible; transform: translateY(0); }
 .site-nav a {
