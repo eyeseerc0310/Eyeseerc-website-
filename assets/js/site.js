@@ -108,23 +108,32 @@
   }
   // Animate the big photo between its spot in the gallery and the centre
   // of the screen, so it looks like the clicked photo lifts up and grows.
+  // the tile's exact box on the page (the link around the photo; the photo
+  // inside can be slightly enlarged by its hover effect, so it isn't used)
   function thumbRect() {
-    var t = links[index].querySelector('img');
+    var t = links[index];
     var r = t && t.getBoundingClientRect();
-    var onScreen = r && r.bottom > 0 && r.top < window.innerHeight;
+    var onScreen = r && r.width && r.bottom > 0 && r.top < window.innerHeight;
     return onScreen ? r : null;
   }
+  // Animate the big photo between its tile and the centre of the screen. The
+  // photo is scaled to cover the tile and cropped to the tile's shape, so at
+  // the small end it matches the tile exactly, whatever the photo's shape.
   function flip(from, reverse) {
     var to = img.getBoundingClientRect();
-    if (!from || !to.width || !img.animate) return null;
-    var scale = from.width / to.width;
+    if (!from || !to.width || !to.height || !img.animate) return null;
+    var scale = Math.max(from.width / to.width, from.height / to.height);
+    var cropX = Math.max(0, (to.width - from.width / scale) / 2);
+    var cropY = Math.max(0, (to.height - from.height / scale) / 2);
     var dx = (from.left + from.width / 2) - (to.left + to.width / 2);
     var dy = (from.top + from.height / 2) - (to.top + to.height / 2);
-    var start = 'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ')';
-    var frames = [{ transform: start }, { transform: 'none' }];
+    var small = { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ')',
+                  clipPath: 'inset(' + cropY + 'px ' + cropX + 'px)' };
+    var big = { transform: 'translate(0px, 0px) scale(1)', clipPath: 'inset(0px 0px)' };
+    var frames = reverse ? [big, small] : [small, big];
     // closing holds the last frame, so the photo stays in its tile's spot
     // until the viewer is gone (instead of jumping back to full size)
-    return img.animate(reverse ? frames.reverse() : frames,
+    return img.animate(frames,
       { duration: 380, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: reverse ? 'forwards' : 'none' });
   }
 
