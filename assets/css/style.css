@@ -314,7 +314,7 @@ html.theme-fading .theme-toggle * { transition: none !important; }
   max-width: 40rem;
 }
 /* the blue mark above the bio */
-.hero-mark { display: block; width: clamp(150px, 16vw, 230px); height: auto; margin: 0 0 1.75rem; }
+.hero-mark { display: block; width: clamp(98px, 10.4vw, 150px); height: auto; margin: 0 auto 1.6rem; } /* centred over the text */
 .bio { font-size: 1.05rem; }
 .bio p { margin: 0 0 1.1rem; }
 .bio strong { font-weight: 500; }
