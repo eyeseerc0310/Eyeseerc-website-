@@ -373,7 +373,7 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 .gallery-grid .gallery-item { margin: 0; overflow: visible; } /* let the photo shadow show */
 .gallery-grid .gallery-item a { display: block; overflow: hidden; }
 .gallery-grid .gallery-item img { aspect-ratio: 3 / 2; height: auto; object-fit: cover; }
-.gallery-grid.gallery-square .gallery-item img { aspect-ratio: 1; } /* Projects page: square tiles */
+.gallery-grid.gallery-square .gallery-item img { aspect-ratio: 1; object-position: center top; } /* Projects page: square tiles, showing the top of tall pieces (the artwork, not the blank border under it) */
 /* Photography page: a small numbered title just under each photo */
 .gallery-title {
   margin-top: .45rem;
