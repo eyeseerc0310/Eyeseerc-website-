@@ -205,6 +205,21 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 .gallery-item img { width: 100%; height: auto; transition: transform .5s ease, opacity .3s; }
 .gallery-item a:hover img { transform: scale(1.03); opacity: .92; }
 
+/* Grid style: 3 photos per row with generous space between them, row after
+   row. Every tile is the 3:2 full-frame shape; the whole photo shows when
+   it's opened full screen. */
+.gallery-grid {
+  columns: auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1.5rem, 3.5vw, 3rem);
+}
+.gallery-grid .gallery-item { margin: 0; }
+.gallery-grid .gallery-item a { display: block; overflow: hidden; }
+.gallery-grid .gallery-item img { aspect-ratio: 3 / 2; height: auto; object-fit: cover; }
+@media (max-width: 700px) { .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .gallery-grid { grid-template-columns: 1fr; } }
+
 .empty-state {
   text-align: center;
   padding: 4rem 1rem;
