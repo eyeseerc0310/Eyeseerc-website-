@@ -17,7 +17,8 @@ description: "Photography portfolio of EYESEERC."
 
 # Contact details (leave blank "" to hide any of them).
 email: ""
-instagram: ""        # just the username, e.g. "eyeseerc"
+instagram: "eyeseerc"   # just the username
+youtube: "eyeseerc"     # the channel handle (the part after @)
 
 # Currency symbol used on the Shop page.
 currency: "$"
