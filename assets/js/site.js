@@ -49,10 +49,11 @@
   box.className = 'lightbox';
   box.innerHTML =
     '<button class="lb-close" aria-label="Close">&times;</button>' +
-    '<button class="lb-prev" aria-label="Previous">&#8249;</button>' +
-    '<img alt="">' +
-    '<div class="lightbox-caption"></div>' +
-    '<button class="lb-next" aria-label="Next">&#8250;</button>';
+    '<div class="lb-stage">' +
+      '<button class="lb-prev" aria-label="Previous">&#8249;</button>' +
+      '<figure class="lb-figure"><img alt=""><figcaption class="lightbox-caption"></figcaption></figure>' +
+      '<button class="lb-next" aria-label="Next">&#8250;</button>' +
+    '</div>';
   document.body.appendChild(box);
 
   var img = box.querySelector('img');
@@ -80,7 +81,7 @@
     var dx = (from.left + from.width / 2) - (to.left + to.width / 2);
     var dy = (from.top + from.height / 2) - (to.top + to.height / 2);
     var start = 'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ')';
-    var frames = [{ transform: start, opacity: .6 }, { transform: 'none', opacity: 1 }];
+    var frames = [{ transform: start }, { transform: 'none' }];
     return img.animate(reverse ? frames.reverse() : frames,
       { duration: 380, easing: 'cubic-bezier(.2, .7, .2, 1)' });
   }
@@ -92,7 +93,7 @@
     document.body.style.overflow = 'hidden';
     var go = function () {
       if (!flip(from) && img.animate) {
-        img.animate([{ transform: 'scale(.9)', opacity: 0 }, { transform: 'none', opacity: 1 }],
+        img.animate([{ transform: 'scale(.9)' }, { transform: 'none' }],
           { duration: 300, easing: 'ease-out' });
       }
     };
@@ -102,7 +103,11 @@
     var anim = flip(thumbRect(), true);
     box.classList.remove('open');
     document.body.style.overflow = '';
-    if (anim) anim.onfinish = function () { img.style.transform = ''; };
+    if (!anim) {
+      // nothing to shrink back into (tile is off-screen): close straight away
+      box.classList.add('instant');
+      setTimeout(function () { box.classList.remove('instant'); }, 50);
+    }
   }
 
   links.forEach(function (link, i) {
@@ -111,7 +116,8 @@
   box.querySelector('.lb-close').addEventListener('click', close);
   box.querySelector('.lb-prev').addEventListener('click', function () { show(index - 1); });
   box.querySelector('.lb-next').addEventListener('click', function () { show(index + 1); });
-  box.addEventListener('click', function (e) { if (e.target === box) close(); });
+  var stage = box.querySelector('.lb-stage');
+  box.addEventListener('click', function (e) { if (e.target === box || e.target === stage) close(); });
 
   document.addEventListener('keydown', function (e) {
     if (!box.classList.contains('open')) return;

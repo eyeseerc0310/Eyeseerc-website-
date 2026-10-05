@@ -232,31 +232,50 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 /* ---------- Lightbox ---------- */
 .lightbox {
   position: fixed; inset: 0; z-index: 100;
-  /* darken and blur the page behind the opened photo */
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+  visibility: hidden;
+  transition: visibility 0s linear .4s; /* stay visible while closing */
+}
+.lightbox.open { visibility: visible; transition-delay: 0s; }
+.lightbox.instant, .lightbox.instant::before { transition: none; }
+/* the darkened, blurred page behind the photo; only this layer fades,
+   the photo itself is always fully solid */
+.lightbox::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
   background: rgba(12, 12, 12, .62);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
-  display: flex; align-items: center; justify-content: center;
-  flex-direction: column;
-  opacity: 0; visibility: hidden;
-  transition: opacity .35s ease, visibility .35s;
+  opacity: 0;
+  transition: opacity .35s ease;
 }
-.lightbox.open { opacity: 1; visibility: visible; }
+.lightbox.open::before { opacity: 1; }
+.lightbox button, .lightbox-caption { opacity: 0; transition: opacity .3s ease; }
+.lightbox.open button { opacity: .75; }
+.lightbox.open .lightbox-caption { opacity: 1; }
+/* arrows sit beside the photo, never on top of it */
+.lb-stage { display: flex; align-items: center; justify-content: center; gap: 1rem; width: 100%; }
+.lb-figure { margin: 0; position: relative; min-width: 0; }
 .lightbox img {
-  max-width: 94vw; max-height: 86vh; object-fit: contain;
+  max-width: calc(100vw - 10rem); max-height: 84vh; object-fit: contain;
   box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
   will-change: transform;
 }
-.lightbox-caption { color: #e6e6e6; font-size: .85rem; margin-top: 1rem; text-transform: capitalize; }
+/* caption hangs below the photo so the arrows line up with the photo's middle */
+.lightbox-caption { position: absolute; top: 100%; left: 0; right: 0; text-align: center; color: #e6e6e6; font-size: .85rem; margin-top: 1rem; text-transform: capitalize; }
 .lightbox button {
-  position: absolute; z-index: 1; background: none; border: 0; color: #fff;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, .5);
-  font-size: 2.5rem; cursor: pointer; padding: 1rem; opacity: .7;
+  background: none; border: 0; color: #fff;
+  font-size: 2.5rem; line-height: 1; cursor: pointer; padding: 1rem;
 }
-.lightbox button:hover { opacity: 1; }
-.lightbox .lb-close { top: .5rem; right: 1rem; }
-.lightbox .lb-prev { left: .5rem; top: 50%; transform: translateY(-50%); }
-.lightbox .lb-next { right: .5rem; top: 50%; transform: translateY(-50%); }
+.lightbox.open button:hover { opacity: 1; }
+.lightbox .lb-close { position: absolute; z-index: 1; top: .5rem; right: 1rem; }
+.lightbox .lb-prev, .lightbox .lb-next { flex: none; width: 3.5rem; }
+@media (max-width: 560px) {
+  .lb-stage { gap: .25rem; }
+  .lightbox img { max-width: calc(100vw - 4.5rem); }
+  .lightbox .lb-prev, .lightbox .lb-next { width: 1.75rem; padding: .5rem 0; font-size: 2rem; }
+}
 
 /* ---------- Shop ---------- */
 .shop-grid {
