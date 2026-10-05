@@ -122,8 +122,10 @@
     var dy = (from.top + from.height / 2) - (to.top + to.height / 2);
     var start = 'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ')';
     var frames = [{ transform: start }, { transform: 'none' }];
+    // closing holds the last frame, so the photo stays in its tile's spot
+    // until the viewer is gone (instead of jumping back to full size)
     return img.animate(reverse ? frames.reverse() : frames,
-      { duration: 380, easing: 'cubic-bezier(.2, .7, .2, 1)' });
+      { duration: 380, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: reverse ? 'forwards' : 'none' });
   }
 
   function open(i) {
@@ -146,10 +148,19 @@
     var anim = flip(thumbRect(), true);
     box.classList.remove('open');
     document.body.style.overflow = '';
+    function hideNow() {
+      box.classList.add('instant');
+      setTimeout(function () {
+        box.classList.remove('instant');
+        if (anim) anim.cancel(); // reset the photo for next time, now that it's hidden
+      }, 50);
+    }
     if (!anim) {
       // nothing to shrink back into (tile is off-screen): close straight away
-      box.classList.add('instant');
-      setTimeout(function () { box.classList.remove('instant'); }, 50);
+      hideNow();
+    } else {
+      // the moment the photo has shrunk back into its tile, the viewer vanishes
+      anim.onfinish = function () { if (!box.classList.contains('open')) hideNow(); };
     }
   }
 
