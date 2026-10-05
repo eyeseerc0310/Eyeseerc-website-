@@ -25,7 +25,7 @@
     root.classList.add('theme-fading');
     void root.offsetWidth;
     apply();
-    fadeTimer = setTimeout(function () { root.classList.remove('theme-fading'); }, 1100);
+    fadeTimer = setTimeout(function () { root.classList.remove('theme-fading'); }, 1600);
   });
 })();
 
