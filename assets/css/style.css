@@ -84,6 +84,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   min-width: 270px;
   display: flex; flex-direction: column; align-items: flex-end;
   padding: 1.25rem .45rem .1rem 1.75rem; /* tighter on the right and bottom */
+  overflow: hidden; /* keep the hover glow inside the menu so the page can't scroll sideways */
   opacity: 0; visibility: hidden; transform: translateY(-8px);
   transition: opacity .25s ease, transform .25s ease, visibility .25s;
 }
@@ -280,20 +281,25 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 }
 
 /* ---------- Shop ---------- */
-.shop-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 2rem;
+/* Rows of three; every photo in a row is the same height (landscape wide,
+   portrait narrow), with the price underneath. */
+.shop { display: flex; flex-direction: column; gap: clamp(2rem, 4.5vw, 3.75rem); }
+.shop-row { display: flex; align-items: flex-start; gap: clamp(1.5rem, 3.5vw, 3rem); }
+.shop-item { margin: 0; flex-basis: 0; min-width: 0; }
+.shop-photo { display: block; overflow: hidden; background: var(--line); }
+.shop-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease, opacity .3s; }
+a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
+.shop-price {
+  margin-top: .9rem;
+  text-align: center;
+  font-size: .95rem;
+  letter-spacing: .12em;
+  color: var(--text);
 }
-.shop-item { background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; }
-.shop-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
-.shop-info { padding: 1.25rem; display: flex; flex-direction: column; flex: 1; }
-.shop-info h2 { font-family: var(--display); font-weight: 400; font-size: 1.5rem; margin: 0 0 .25rem; }
-.shop-info p { color: var(--muted); font-size: .9rem; margin: 0 0 1rem; }
-.shop-buy { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.shop-buy .button { margin: 0; }
-.price { font-size: 1.15rem; font-weight: 500; }
-.sold-out { color: var(--muted); text-transform: uppercase; font-size: .75rem; letter-spacing: .14em; }
+@media (max-width: 560px) {
+  .shop-row { flex-direction: column; }
+  .shop-item { width: 100%; }
+}
 
 /* ---------- Footer ---------- */
 .site-footer {

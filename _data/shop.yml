@@ -1,17 +1,33 @@
 # =============================================================
 #  SHOP ITEMS
-#  Copy the example below, remove the "# " at the start of each
-#  line, and fill in your own details. One block per item.
+#  One block per print. They show three to a row, in this order.
 #
-#  image:     path to a photo you've uploaded, e.g. /photos/color/sunset.jpg
+#  title:     name of the print (used for screen readers / search)
+#  image:     a photo you've uploaded, e.g. /photos/color/sunset.jpg
+#  shape:     landscape, portrait or square
 #  price:     just the number (the currency symbol is set in _config.yml)
-#  buy_link:  a checkout link from Stripe, PayPal, Square, Etsy, etc.
-#             Leave it out and the button will email you instead.
-#  sold_out:  true  (optional — shows "Sold out" instead of a button)
+#  link:      the product's page on your print site (Fine Art America,
+#             Darkroom, Etsy...). Clicking the photo opens it.
+#  sold_out:  true  (optional — shows "Sold out" instead of the price)
+#
+#  The three items below are TEMPORARY SAMPLES — replace them with
+#  your own prints.
 # =============================================================
 
-# - title: "Golden Hour Print"
-#   image: /photos/color/golden-hour.jpg
-#   description: "Archival 12x18 print on lustre paper."
-#   price: 45
-#   buy_link: "https://buy.stripe.com/your-link-here"
+- title: "Sunset (sample)"
+  image: /photos/color/sample-01-sunset.png
+  shape: landscape
+  price: 45
+  link: "https://fineartamerica.com"
+
+- title: "Ocean (sample)"
+  image: /photos/color/sample-02-ocean.png
+  shape: portrait
+  price: 60
+  link: "https://fineartamerica.com"
+
+- title: "Forest (sample)"
+  image: /photos/color/sample-03-forest.png
+  shape: landscape
+  price: 45
+  link: "https://fineartamerica.com"

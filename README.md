@@ -50,13 +50,14 @@ Open the folder for the gallery you want, then **Add file → Upload files**:
 
 ## 🛒 Shop
 
-Open **`_data/shop.yml`** and follow the example inside. For each item you
-give a title, price, picture and a **buy link**. Easy ways to get a buy link:
+The Shop page shows your prints three to a row with the price underneath.
+Clicking a photo opens that print's page on your print-on-demand site
+(for example Fine Art America or Darkroom), which handles payment, printing
+and shipping.
 
-- **Stripe Payment Links** (stripe.com) – card payments, no website code
-- **PayPal** "Pay with a link", **Square** online checkout, or an **Etsy** listing
-
-If you leave out the buy link, the button emails you instead (set your email in `_config.yml`).
+Open **`_data/shop.yml`** and add one block per print: the photo, its shape
+(landscape / portrait / square), the price, and the link to the product page.
+The three items in there now are temporary samples — replace them with yours.
 
 ---
 
