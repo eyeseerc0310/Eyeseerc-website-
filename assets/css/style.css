@@ -83,11 +83,11 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 .brand-text { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; }
 .brand-name { line-height: .9; }
 .brand-sub {
-  font-size: .5rem;
+  font-size: .2857em; /* sized relative to the name, so it scales with it */
   font-weight: 400;
   letter-spacing: .8em;
   margin-right: -.8em; /* keep it centred despite the spacing after the last letter */
-  margin-top: -.05rem;
+  margin-top: -.1em;
   white-space: nowrap;
 }
 /* logo to the right of the name (upload any image to images/logo to show it) */
@@ -245,6 +245,21 @@ html.theme-fading .theme-toggle * { transition: none !important; }
   .theme-toggle { grid-column: 1; grid-row: 1; justify-self: start; }
   .brand { grid-column: 2; grid-row: 1; justify-self: center; }
   .nav-toggle { grid-column: 3; grid-row: 1; justify-self: end; }
+}
+
+/* computers and iPads: EYESEERC centred like on phones, the light/dark and
+   menu buttons staying together on the right; all slightly bigger */
+@media (min-width: 761px) {
+  .site-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+  .brand { grid-column: 2; grid-row: 1; justify-self: center; font-size: 2rem; }
+  .header-actions { grid-column: 3; grid-row: 1; justify-self: end; gap: 1.3rem; }
+  .theme-toggle, .theme-toggle svg { width: 20px; height: 20px; }
+  .nav-toggle .bars { width: 26px; height: 17px; }
+  .nav-toggle .bars span { height: 1.7px; }
+  .nav-toggle .bars span:nth-child(2) { top: 7.5px; }
+  .nav-toggle .bars span:nth-child(3) { top: 15px; }
+  .nav-toggle[aria-expanded="true"] .bars span:nth-child(1),
+  .nav-toggle[aria-expanded="true"] .bars span:nth-child(3) { top: 7.5px; }
 }
 
 /* ---------- Main ---------- */
