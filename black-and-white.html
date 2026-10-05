@@ -1,8 +1,11 @@
 ---
-layout: default
-title: "B&W PHOTOS"
 permalink: /black-and-white/
-description: "Black and white photography by {{ site.title }}"
+sitemap: false
 ---
-<h1 class="page-title">B&amp;W PHOTOS</h1>
-{% include gallery.html folder="black-and-white" style="grid" %}
+{% comment %} This page moved: old links to /black-and-white/ now go to the Photography page. {% endcomment %}
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta http-equiv="refresh" content="0; url={{ '/photography/' | relative_url }}">
+<link rel="canonical" href="{{ '/photography/' | relative_url }}">
+<title>Photography · {{ site.title }}</title></head>
+<body><a href="{{ '/photography/' | relative_url }}">Photography</a></body></html>

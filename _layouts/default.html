@@ -38,7 +38,7 @@
       </button>
     </div>
     <nav class="site-nav" id="site-nav">
-      {% assign nav = "/|HOME,/color/|COLOR,/black-and-white/|B&W,/projects/|PROJECTS,/shop/|SHOP" | split: "," %}
+      {% assign nav = "/|HOME,/photography/|PHOTOGRAPHY,/projects/|PROJECTS,/shop/|SHOP" | split: "," %}
       {% for item in nav %}
         {% assign parts = item | split: "|" %}
         <a href="{{ parts[0] | relative_url }}"{% if page.url == parts[0] %} class="active"{% endif %}>{{ parts[1] }}</a>
