@@ -126,15 +126,11 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 /* the page itself crossfades */
 ::view-transition-old(root) { display: block; animation: theme-fade-out 1.5s ease-in-out both; }
 ::view-transition-new(root) { animation: theme-fade-in 1.5s ease-in-out both; }
-/* moving between pages: the new page softly fades in over the old one
-   instead of snapping (the header stays put since it's the same on both) */
-@view-transition { navigation: auto; }
-html.page-fading::view-transition-old(root),
-html.page-fading::view-transition-new(root) { animation-duration: .7s; }
-/* browsers without page fades: the content still fades in as it arrives */
-@supports not (view-transition-name: none) {
-  .site-main { animation: theme-fade-in .7s ease-out both; }
-}
+/* moving between pages: the page softly fades out, then the next one fades
+   in (the header stays put). Done by hand so it works in every browser. */
+@keyframes page-in { from { opacity: 0; } }
+.site-main, .site-footer { animation: page-in .6s ease-out backwards; }
+html.page-leaving .site-main, html.page-leaving .site-footer { opacity: 0; transition: opacity .3s ease-in; }
 /* fallback for browsers without view transitions: every colour eases over */
 html.theme-fading *, html.theme-fading *::before, html.theme-fading *::after {
   transition: background-color 1.5s ease, color 1.5s ease, border-color 1.5s ease, fill 1.5s ease, stroke 1.5s ease, text-shadow 1.5s ease !important;
