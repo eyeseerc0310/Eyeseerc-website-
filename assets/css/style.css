@@ -360,6 +360,14 @@ html.theme-fading .theme-toggle * { transition: none !important; }
 .gallery-grid .gallery-item a { display: block; overflow: hidden; }
 .gallery-grid .gallery-item img { aspect-ratio: 3 / 2; height: auto; object-fit: cover; }
 .gallery-grid.gallery-square .gallery-item img { aspect-ratio: 1; } /* Projects page: square tiles */
+/* Photography page: a small numbered title under each photo (like the shop prices) */
+.gallery-title {
+  margin-top: .9rem;
+  text-align: center;
+  font-size: .8rem;
+  letter-spacing: .14em;
+  color: var(--muted);
+}
 @media (max-width: 700px) { .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* phones: one photo per row, a bit narrower than the screen so opening one
    feels like a real step up in size */
