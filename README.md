@@ -17,10 +17,12 @@ Your name, tagline, email and Instagram are in **`_config.yml`** (same steps).
 
 ## 📷 Add your photo of yourself
 
-1. Open the **`images`** folder → **Add file → Upload files**.
-2. Upload your picture named exactly **`me.jpg`**. Commit.
-   It shows as a landscape photo in the 3:2 shape of a full-frame camera, so
-   straight-off-camera shots fit perfectly (other shapes are cropped to fit).
+1. Open the **`images`** folder, then the **`me`** folder → **Add file → Upload files**.
+2. Choose your photo (any file name is fine). Click **Commit changes**.
+
+It shows as a landscape photo in the 3:2 shape of a full-frame camera, so
+straight-off-camera shots fit perfectly (other shapes are cropped to fit).
+To change it later, delete the old photo from `images/me` and upload the new one.
 
 ## ✨ Add your logo
 
