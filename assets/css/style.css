@@ -46,6 +46,12 @@
   --photo-shadow: 6px 8px 18px rgba(0, 0, 0, .6);
 }
 
+/* distance of the header's buttons (and the drop-down menu) from the screen
+   edge, rounded to a whole pixel so the menu's right line and the menu icon
+   always land on exactly the same pixel (Safari rounds fractions differently) */
+:root { --edge: clamp(1rem, 4vw, 3rem); }
+@supports (width: round(1px, 1px)) { :root { --edge: round(clamp(1rem, 4vw, 3rem), 1px); } }
+
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
@@ -67,7 +73,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem clamp(1rem, 4vw, 3rem);
+  padding: 1.5rem var(--edge);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -163,7 +169,7 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 .site-nav {
   position: absolute;
   top: calc(100% + 1px);
-  right: clamp(1rem, 4vw, 3rem);
+  right: var(--edge); /* same distance from the edge as the menu icon, so its right line meets the icon exactly */
   min-width: 270px;
   display: flex; flex-direction: column; align-items: flex-end;
   padding: 1.25rem .45rem .1rem 1.75rem; /* tighter on the right and bottom */
