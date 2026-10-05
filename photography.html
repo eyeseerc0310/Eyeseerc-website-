@@ -5,4 +5,8 @@ permalink: /photography/
 description: "Photography by {{ site.title }}"
 ---
 <h1 class="page-title">PHOTOGRAPHY</h1>
+<div class="gallery-filter" role="group" aria-label="Show">
+  <button type="button" data-filter="color" aria-pressed="false">COLOR</button>
+  <button type="button" data-filter="bw" aria-pressed="false">B&amp;W</button>
+</div>
 {% include gallery.html folder="photography" style="grid" %}

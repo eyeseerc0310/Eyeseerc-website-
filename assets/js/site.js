@@ -151,8 +151,14 @@
     }
   }
 
-  links.forEach(function (link, i) {
-    link.addEventListener('click', function (e) { e.preventDefault(); open(i); });
+  // only browse the photos currently shown (e.g. just COLOR or just B&W)
+  var allLinks = links.slice();
+  allLinks.forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      links = allLinks.filter(function (l) { return !l.closest('.is-filtered-out'); });
+      open(Math.max(0, links.indexOf(link)));
+    });
   });
   box.querySelector('.lb-close').addEventListener('click', close);
   box.querySelector('.lb-prev').addEventListener('click', function () { show(index - 1); });
@@ -175,4 +181,29 @@
     if (Math.abs(dx) > 50) show(index + (dx < 0 ? 1 : -1));
     startX = null;
   });
+})();
+
+// COLOR / B&W buttons on the Photography page. Tap one to show only those
+// photos; tap it again to show everything mixed together.
+(function () {
+  var bar = document.querySelector('.gallery-filter');
+  if (!bar) return;
+  var buttons = Array.prototype.slice.call(bar.querySelectorAll('button'));
+  var items = Array.prototype.slice.call(document.querySelectorAll('.gallery-item'));
+  function apply(kind) {
+    buttons.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.filter === kind ? 'true' : 'false'); });
+    items.forEach(function (it) { it.classList.toggle('is-filtered-out', !!kind && it.dataset.kind !== kind); });
+    try { history.replaceState(null, '', kind ? '#' + kind : location.pathname + location.search); } catch (e) {}
+  }
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      apply(b.getAttribute('aria-pressed') === 'true' ? '' : b.dataset.filter);
+    });
+  });
+  function fromAddress() {
+    var k = location.hash.replace('#', '');
+    apply(k === 'color' || k === 'bw' ? k : '');
+  }
+  window.addEventListener('hashchange', fromAddress);
+  if (location.hash) fromAddress();
 })();

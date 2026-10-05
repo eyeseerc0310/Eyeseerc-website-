@@ -3,7 +3,8 @@
   Just upload photos into that folder — no code changes needed.
 {% endcomment %}
 {% assign folder_path = "/photos/" | append: include.folder | append: "/" %}
-{% assign photos = site.static_files | where_exp: "f", "f.path contains folder_path" | sort: "path" %}
+{% comment %} sorted by file name, so photos in sub-folders (e.g. color / black-and-white) mix together {% endcomment %}
+{% assign photos = site.static_files | where_exp: "f", "f.path contains folder_path" | sort: "name" %}
 {% if include.newest_first %}{% assign photos = photos | reverse %}{% endif %}
 
 {% assign count = 0 %}
@@ -13,7 +14,9 @@
     {% if ext == ".jpg" or ext == ".jpeg" or ext == ".png" or ext == ".webp" or ext == ".gif" or ext == ".avif" %}
       {% assign count = count | plus: 1 %}
       {% assign caption = photo.basename | replace: "-", " " | replace: "_", " " %}
-      <figure class="gallery-item">
+      {% assign kind = "" %}
+      {% if photo.path contains "/black-and-white/" %}{% assign kind = "bw" %}{% elsif photo.path contains "/color/" %}{% assign kind = "color" %}{% endif %}
+      <figure class="gallery-item"{% if kind != "" %} data-kind="{{ kind }}"{% endif %}>
         <a href="{{ photo.path | relative_url }}" data-lightbox data-caption="{{ caption | escape }}">
           <img src="{{ photo.path | relative_url }}" alt="{{ caption | escape }}" loading="lazy">
         </a>

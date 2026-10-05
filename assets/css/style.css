@@ -339,6 +339,19 @@ html.theme-fading .theme-toggle * { transition: none !important; }
    feels like a real step up in size */
 @media (max-width: 560px) { .gallery-grid { grid-template-columns: minmax(0, 78%); justify-content: center; } }
 
+/* COLOR / B&W buttons under the Photography title */
+.gallery-filter { display: flex; justify-content: center; gap: 2.2rem; margin: -1rem 0 2.25rem; }
+.gallery-filter button {
+  background: none; border: 0; padding: .3rem 0; cursor: pointer;
+  font: inherit; font-size: .85rem; font-weight: 400; letter-spacing: .18em; margin-right: -.18em;
+  color: var(--muted);
+  border-bottom: 1px solid transparent;
+  transition: color .2s ease, border-color .2s ease;
+}
+.gallery-filter button:hover, .gallery-filter button:focus-visible { color: var(--text); outline: none; }
+.gallery-filter button[aria-pressed="true"] { color: var(--text); border-bottom-color: var(--text); }
+.gallery-item.is-filtered-out { display: none; }
+
 /* drop shadow on photos shown on the page (not when opened full screen) */
 .gallery-item a,
 .shop-photo { box-shadow: var(--photo-shadow); }
