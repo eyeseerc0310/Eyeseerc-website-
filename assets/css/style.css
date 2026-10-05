@@ -217,6 +217,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 .gallery-grid .gallery-item { margin: 0; }
 .gallery-grid .gallery-item a { display: block; overflow: hidden; }
 .gallery-grid .gallery-item img { aspect-ratio: 3 / 2; height: auto; object-fit: cover; }
+.gallery-grid.gallery-square .gallery-item img { aspect-ratio: 1; } /* Art page: square tiles */
 @media (max-width: 700px) { .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .gallery-grid { grid-template-columns: 1fr; } }
 
