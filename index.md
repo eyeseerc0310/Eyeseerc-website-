@@ -11,9 +11,8 @@ title: Home
   📷  YOUR PHOTO: upload it into the "images/me" folder (any file name).
 -->
 
-Hi, I'm **Your Name** — a photographer based in Your City.
+Hey, I’m **Connor Stanhope**. I’m a professional actor and photographer based in Vancouver, BC.
 
-Write a few sentences here about who you are, what you love to shoot,
-and what drives your work. Tell visitors what makes your eye unique.
+I’ve been taking photos since I was a teenager, mostly just shooting people, places, and whatever catches my eye.
 
-Available for portraits, events, and print commissions — get in touch!
+I’ve grown to really love photography over the years, so I figured I’d put some of my work here.
