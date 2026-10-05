@@ -232,15 +232,25 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 /* ---------- Lightbox ---------- */
 .lightbox {
   position: fixed; inset: 0; z-index: 100;
-  background: rgba(10, 10, 10, .95);
-  display: none; align-items: center; justify-content: center;
+  /* darken and blur the page behind the opened photo */
+  background: rgba(12, 12, 12, .62);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  display: flex; align-items: center; justify-content: center;
   flex-direction: column;
+  opacity: 0; visibility: hidden;
+  transition: opacity .35s ease, visibility .35s;
 }
-.lightbox.open { display: flex; }
-.lightbox img { max-width: 92vw; max-height: 84vh; object-fit: contain; }
-.lightbox-caption { color: #bbb; font-size: .85rem; margin-top: 1rem; text-transform: capitalize; }
+.lightbox.open { opacity: 1; visibility: visible; }
+.lightbox img {
+  max-width: 94vw; max-height: 86vh; object-fit: contain;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+  will-change: transform;
+}
+.lightbox-caption { color: #e6e6e6; font-size: .85rem; margin-top: 1rem; text-transform: capitalize; }
 .lightbox button {
-  position: absolute; background: none; border: 0; color: #fff;
+  position: absolute; z-index: 1; background: none; border: 0; color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, .5);
   font-size: 2.5rem; cursor: pointer; padding: 1rem; opacity: .7;
 }
 .lightbox button:hover { opacity: 1; }
