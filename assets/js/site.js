@@ -1,8 +1,9 @@
-// Light / dark mode switch (moon / sun button at the bottom of the menu)
+// Light / dark mode switch (moon / sun button beside the menu icon)
 (function () {
   var btn = document.querySelector('.theme-toggle');
   if (!btn) return;
   var root = document.documentElement;
+  var fadeTimer;
   function label() {
     btn.setAttribute('aria-label', root.getAttribute('data-theme') === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
   }
@@ -10,9 +11,21 @@
   btn.addEventListener('click', function (e) {
     e.stopPropagation();
     var dark = root.getAttribute('data-theme') !== 'dark';
-    if (dark) root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
+    function apply() {
+      if (dark) root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
+      label();
+    }
     try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (err) {}
-    label();
+
+    // Slow, gentle fade. Where the browser supports it, the whole page
+    // dissolves from the old look to the new one as one picture.
+    if (document.startViewTransition) { document.startViewTransition(apply); return; }
+    // Otherwise every colour eases to its new value together.
+    clearTimeout(fadeTimer);
+    root.classList.add('theme-fading');
+    void root.offsetWidth;
+    apply();
+    fadeTimer = setTimeout(function () { root.classList.remove('theme-fading'); }, 1100);
   });
 })();
 
