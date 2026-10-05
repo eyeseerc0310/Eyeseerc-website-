@@ -12,7 +12,7 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="{{ '/' | relative_url }}">{% include logo.html class="logo-small" %}<span>{{ site.title }}</span></a>
+    <a class="brand" href="{{ '/' | relative_url }}"><span>{{ site.title }}</span>{% include logo.html class="logo-small" %}</a>
     <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">
       Menu <span class="bars"><span></span><span></span><span></span></span>
     </button>

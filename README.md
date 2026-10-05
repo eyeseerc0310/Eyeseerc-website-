@@ -25,8 +25,8 @@ Your name, tagline, email and Instagram are in **`_config.yml`** (same steps).
 ## ✨ Add your logo
 
 Upload your logo into the **`images`** folder named **`logo.png`**
-(or `logo.svg` / `logo.jpg` / `logo.webp`). It appears automatically beside
-EYESEERC in the top-left corner and on the home page.
+(or `logo.svg` / `logo.jpg` / `logo.webp`). It appears automatically just to
+the right of EYESEERC in the top-left corner of every page.
 A PNG with a transparent background looks best. To remove it, delete the file.
 
 ## 🖼️ Upload portfolio photos
