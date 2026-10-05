@@ -26,10 +26,12 @@ To change it later, delete the old photo from `images/me` and upload the new one
 
 ## ✨ Add your logo
 
-Upload your logo into the **`images`** folder named **`logo.png`**
-(or `logo.svg` / `logo.jpg` / `logo.webp`). It appears automatically just to
-the right of EYESEERC in the top-left corner of every page.
-A PNG with a transparent background looks best. To remove it, delete the file.
+1. Open the **`images`** folder, then the **`logo`** folder → **Add file → Upload files**.
+2. Choose your logo (any file name is fine). Click **Commit changes**.
+
+It appears automatically just to the right of EYESEERC in the top-left corner
+of every page. A PNG with a transparent background looks best.
+To change it, delete the old file from `images/logo` and upload the new one.
 
 ## 🖼️ Upload portfolio photos
 

@@ -1,9 +1,13 @@
 {% comment %}
-  Shows your logo if you've uploaded one to the images folder named
-  logo.png, logo.svg, logo.jpg or logo.webp. Shows nothing otherwise.
+  Shows your logo beside the site name if one has been uploaded: any image
+  in the images/logo folder (any file name), or images/logo.png / .svg /
+  .jpg / .webp. Shows nothing otherwise.
 {% endcomment %}
 {% assign logo_file = nil %}
 {% for f in site.static_files %}
-  {% if f.path contains "/images/" and f.basename == "logo" %}{% assign logo_file = f %}{% break %}{% endif %}
+  {% assign ext = f.extname | downcase %}
+  {% if ext == ".png" or ext == ".svg" or ext == ".jpg" or ext == ".jpeg" or ext == ".webp" %}
+    {% if f.path contains "/images/logo/" or f.path contains "/images/logo." %}{% assign logo_file = f %}{% break %}{% endif %}
+  {% endif %}
 {% endfor %}
 {% if logo_file %}<img class="logo {{ include.class }}" src="{{ logo_file.path | relative_url }}" alt="">{% endif %}
