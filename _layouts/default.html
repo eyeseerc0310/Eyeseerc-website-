@@ -38,10 +38,11 @@
       </button>
     </div>
     <nav class="site-nav" id="site-nav">
-      {% assign nav = "/|HOME,/photography/|PHOTOGRAPHY,/projects/|PROJECTS,/shop/|SHOP" | split: "," %}
+      {% assign nav = "/|HOME|home,/photography/|PHOTOGRAPHY|photography,/projects/|PROJECTS|projects,/shop/|SHOP|shop" | split: "," %}
       {% for item in nav %}
         {% assign parts = item | split: "|" %}
-        <a href="{{ parts[0] | relative_url }}"{% if page.url == parts[0] %} class="active"{% endif %}>{{ parts[1] }}</a>
+        {% assign icon = parts[2] %}
+        <a href="{{ parts[0] | relative_url }}"{% if page.url == parts[0] %} class="active"{% endif %}><span class="nav-label">{{ parts[1] }}</span><span class="nav-mini">{% include nav-icon.html name=icon %}</span></a>
       {% endfor %}
     </nav>
   </header>

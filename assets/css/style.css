@@ -229,11 +229,16 @@ html.theme-fading .theme-toggle * { transition: none !important; }
 }
 /* the page you're on: a thin line under it that fades out at both ends */
 .site-nav a.active { color: var(--text); }
-.site-nav a.active::before {
+/* (only the word is underlined, not its little icon) */
+.site-nav a.active .nav-label::after {
   content: "";
-  position: absolute; left: 0; right: .12em; bottom: .3rem; height: 1px;
+  position: absolute; left: 0; right: .12em; bottom: -.05rem; height: 1px;
   background: linear-gradient(to right, transparent, currentColor 30%, currentColor 70%, transparent);
 }
+/* each menu word has a small round outline icon to its right */
+.site-nav a { display: flex; align-items: center; gap: .55rem; }
+.site-nav .nav-label { position: relative; }
+.site-nav .nav-mini svg { width: 24px; height: 24px; display: block; }
 
 
 @media (max-width: 760px) {
