@@ -13,10 +13,10 @@
 <body>
   <header class="site-header">
     <a class="brand" href="{{ '/' | relative_url }}">{{ site.title }}</a>
-    <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">
-      <span></span><span></span><span></span>
+    <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">
+      Menu <span class="bars"><span></span><span></span><span></span></span>
     </button>
-    <nav class="site-nav">
+    <nav class="site-nav" id="site-nav">
       {% assign nav = "/|Home,/color/|Color,/black-and-white/|Black & White,/art/|Art,/shop/|Shop" | split: "," %}
       {% for item in nav %}
         {% assign parts = item | split: "|" %}

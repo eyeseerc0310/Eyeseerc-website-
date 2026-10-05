@@ -19,6 +19,8 @@ Your name, tagline, email and Instagram are in **`_config.yml`** (same steps).
 
 1. Open the **`images`** folder → **Add file → Upload files**.
 2. Upload your picture named exactly **`me.jpg`**. Commit.
+   It shows as a landscape photo in the 3:2 shape of a full-frame camera, so
+   straight-off-camera shots fit perfectly (other shapes are cropped to fit).
 
 ## 🖼️ Upload portfolio photos
 

@@ -1,11 +1,21 @@
-// Mobile menu
+// Drop-down menu (top right)
 (function () {
   var toggle = document.querySelector('.nav-toggle');
   var nav = document.querySelector('.site-nav');
   if (!toggle || !nav) return;
-  toggle.addEventListener('click', function () {
-    var open = nav.classList.toggle('open');
+  function setOpen(open) {
+    nav.classList.toggle('open', open);
     toggle.setAttribute('aria-expanded', open);
+  }
+  toggle.addEventListener('click', function (e) {
+    e.stopPropagation();
+    setOpen(!nav.classList.contains('open'));
+  });
+  document.addEventListener('click', function (e) {
+    if (!nav.contains(e.target)) setOpen(false);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') setOpen(false);
   });
 })();
 
