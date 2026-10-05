@@ -34,7 +34,7 @@
       {% if site.email != "" %}<a href="mailto:{{ site.email }}">{{ site.email }}</a>{% endif %}
       {% if site.instagram != "" %}<a href="https://instagram.com/{{ site.instagram }}" target="_blank" rel="noopener">Instagram @{{ site.instagram }}</a>{% endif %}
     </div>
-    <p>&copy; {{ site.time | date: "%Y" }} {{ site.title }}. All photographs are the property of the artist.</p>
+    <p>&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.</p>
   </footer>
 
   <script src="{{ '/assets/js/site.js' | relative_url }}"></script>
