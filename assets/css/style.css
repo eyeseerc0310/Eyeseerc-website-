@@ -156,7 +156,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   line-height: 1.15;
   margin: 0 0 2rem;
   text-align: center;
-  letter-spacing: .02em;
+  letter-spacing: .08em;
 }
 .page-intro { text-align: center; color: var(--muted); margin: -1rem 0 2.5rem; }
 
