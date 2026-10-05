@@ -37,6 +37,8 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
+  /* header, page, footer stacked so the page fills the space between them */
+  display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
@@ -222,6 +224,8 @@ html.theme-fading .theme-toggle * { transition: none !important; }
 
 /* ---------- Main ---------- */
 .site-main {
+  flex: 1;
+  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem);
@@ -240,27 +244,40 @@ html.theme-fading .theme-toggle * { transition: none !important; }
 .page-intro { text-align: center; color: var(--muted); margin: -1rem 0 2.5rem; }
 
 /* ---------- Home ---------- */
-.hero {
-  display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  gap: clamp(2rem, 6vw, 5rem);
-  align-items: center;
-  max-width: 1200px;
-  margin: 0 auto 2rem;
+/* Home: your photo fills the left half of the page, from the line under the
+   header down to the line above the footer, kept centred on you; the bio
+   sits in the middle of the right half. */
+.site-main.is-home {
+  max-width: none; width: 100%;
+  padding: 0; margin: 0;
+  flex: 1; display: flex;
 }
+.hero {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+}
+.hero-photo { position: relative; min-height: 22rem; background: var(--line); }
 .hero-photo img {
-  width: 100%;
-  aspect-ratio: 3 / 2; /* full-frame camera ratio */
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
   object-fit: cover;
-  background: var(--line);
+  object-position: 49% 45%; /* where you are in the frame */
+}
+.hero-text {
+  align-self: center;
+  padding: clamp(2rem, 5vw, 5rem);
+  max-width: 40rem;
 }
 .bio { font-size: 1.05rem; }
 .bio p { margin: 0 0 1.1rem; }
 .bio strong { font-weight: 500; }
 
+/* phones and narrow tablets: photo across the top half, bio underneath */
 @media (max-width: 760px) {
   .hero { grid-template-columns: 1fr; }
-  .hero-photo { width: 100%; }
+  .hero-photo { min-height: 0; height: 55vh; height: 55svh; }
 }
 
 .button {
@@ -302,7 +319,6 @@ html.theme-fading .theme-toggle * { transition: none !important; }
 @media (max-width: 560px) { .gallery-grid { grid-template-columns: 1fr; } }
 
 /* drop shadow on photos shown on the page (not when opened full screen) */
-.hero-photo,
 .gallery-item a,
 .shop-photo { box-shadow: var(--photo-shadow); }
 
