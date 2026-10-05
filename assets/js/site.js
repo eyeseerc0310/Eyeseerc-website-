@@ -244,9 +244,20 @@
     return Promise.race([Promise.all(loads), new Promise(function (r) { setTimeout(r, 600); })]);
   }
 
+  // If the menu is open, let it roll up first (its usual 0.4s close) so the
+  // page dissolve only ever changes the page itself, nothing moving inside it.
+  function closeMenu() {
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    if (!nav || !nav.classList.contains('open')) return Promise.resolve();
+    nav.classList.remove('open');
+    var t = document.querySelector('.nav-toggle'); if (t) t.setAttribute('aria-expanded', 'false');
+    return new Promise(function (r) { setTimeout(r, 450); });
+  }
+
   function go(url, push, scrollY) {
     if (busy) return;
     busy = true;
+    var menuClosed = closeMenu();
     fetch(url.href, { credentials: 'same-origin' }).then(function (r) {
       if (!r.ok) throw new Error('status ' + r.status);
       return r.text();
@@ -255,7 +266,7 @@
       var main = doc.querySelector('main');
       if (!main || doc.querySelector('meta[http-equiv="refresh"]')) throw new Error('not swappable');
       main = document.adoptNode(main);
-      return ready(main).then(function () {
+      return Promise.all([ready(main), menuClosed]).then(function () {
         function update() {
           document.querySelector('main').replaceWith(main);
           document.title = doc.title;
@@ -264,8 +275,6 @@
             history.pushState({ y: 0 }, '', url.href);
           }
           if (nav) {
-            nav.classList.remove('open');
-            var t = document.querySelector('.nav-toggle'); if (t) t.setAttribute('aria-expanded', 'false');
             Array.prototype.forEach.call(nav.querySelectorAll('a'), function (a) {
               a.classList.toggle('active', new URL(a.href, location.href).pathname === location.pathname);
             });
