@@ -87,7 +87,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   font-weight: 400;
   letter-spacing: .8em;
   margin-right: -.8em; /* keep it centred despite the spacing after the last letter */
-  margin-top: -.1em;
+  margin-top: .3em; /* a little gap under the name */
   white-space: nowrap;
 }
 /* logo to the right of the name (upload any image to images/logo to show it) */
