@@ -14,7 +14,7 @@
   --menu-link: #3d3b37;
   --glow: 255, 255, 255; /* hover glow colour (r, g, b) */
   /* soft shadow under photos on the page, falling to the bottom right */
-  --photo-shadow: 6px 8px 16px rgba(0, 0, 0, .2);
+  --photo-shadow: 3px 4px 7px rgba(0, 0, 0, .32), 1px 2px 2px rgba(0, 0, 0, .14);
 }
 /* Dark mode: the site's colours inverted (photos are left untouched).
    Switched on with the moon button in the menu. */
