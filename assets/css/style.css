@@ -227,7 +227,13 @@ html.theme-fading .theme-toggle * { transition: none !important; }
   /* soft white glow around the letters (plus the oval glow underneath) */
   text-shadow: 0 0 6px rgba(var(--glow), .8), 0 0 12px rgba(var(--glow), .6);
 }
-.site-nav a.active { color: var(--text); font-weight: 500; }
+/* the page you're on: a thin line under it that fades out at both ends */
+.site-nav a.active { color: var(--text); }
+.site-nav a.active::before {
+  content: "";
+  position: absolute; left: 0; right: .12em; bottom: .3rem; height: 1px;
+  background: linear-gradient(to right, transparent, currentColor 30%, currentColor 70%, transparent);
+}
 
 
 @media (max-width: 760px) {
@@ -345,11 +351,19 @@ html.theme-fading .theme-toggle * { transition: none !important; }
   background: none; border: 0; padding: .3rem 0; cursor: pointer;
   font: inherit; font-size: .85rem; font-weight: 400; letter-spacing: .18em; margin-right: -.18em;
   color: var(--muted);
-  border-bottom: 1px solid transparent;
-  transition: color .2s ease, border-color .2s ease;
+  position: relative;
+  transition: color .2s ease;
 }
 .gallery-filter button:hover, .gallery-filter button:focus-visible { color: var(--text); outline: none; }
-.gallery-filter button[aria-pressed="true"] { color: var(--text); border-bottom-color: var(--text); }
+.gallery-filter button[aria-pressed="true"] { color: var(--text); }
+/* selected button: a thin line underneath that fades out at both ends */
+.gallery-filter button::after {
+  content: "";
+  position: absolute; left: 0; right: .18em; bottom: 0; height: 1px;
+  background: linear-gradient(to right, transparent, currentColor 30%, currentColor 70%, transparent);
+  opacity: 0; transition: opacity .2s ease;
+}
+.gallery-filter button[aria-pressed="true"]::after { opacity: 1; }
 .gallery-item.is-filtered-out { display: none; }
 
 /* drop shadow on photos shown on the page (not when opened full screen) */
