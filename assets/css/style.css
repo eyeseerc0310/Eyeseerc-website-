@@ -13,6 +13,8 @@
   --menu-line: rgba(120, 120, 120, .9);
   --menu-link: #3d3b37;
   --glow: 255, 255, 255; /* hover glow colour (r, g, b) */
+  /* soft shadow under photos on the page, falling to the bottom right */
+  --photo-shadow: 6px 8px 16px rgba(0, 0, 0, .2);
 }
 /* Dark mode: the site's colours inverted (photos are left untouched).
    Switched on with the moon button in the menu. */
@@ -28,6 +30,7 @@
   --menu-line: rgba(140, 140, 140, .9);
   --menu-link: #d4d1cc;
   --glow: 0, 0, 0;
+  --photo-shadow: 6px 8px 18px rgba(0, 0, 0, .6);
 }
 
 * { box-sizing: border-box; }
@@ -281,12 +284,17 @@ html.theme-fading body { transition: background-color 1.5s ease, color 1.5s ease
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(1.5rem, 3.5vw, 3rem);
 }
-.gallery-grid .gallery-item { margin: 0; }
+.gallery-grid .gallery-item { margin: 0; overflow: visible; } /* let the photo shadow show */
 .gallery-grid .gallery-item a { display: block; overflow: hidden; }
 .gallery-grid .gallery-item img { aspect-ratio: 3 / 2; height: auto; object-fit: cover; }
 .gallery-grid.gallery-square .gallery-item img { aspect-ratio: 1; } /* Projects page: square tiles */
 @media (max-width: 700px) { .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .gallery-grid { grid-template-columns: 1fr; } }
+
+/* drop shadow on photos shown on the page (not when opened full screen) */
+.hero-photo img,
+.gallery-item a,
+.shop-photo { box-shadow: var(--photo-shadow); }
 
 .empty-state {
   text-align: center;
