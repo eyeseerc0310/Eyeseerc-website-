@@ -71,7 +71,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   font-size: 1.4rem;
   font-weight: 400;
   text-decoration: none;
-  letter-spacing: .18em;
+  letter-spacing: .07em;
   display: flex;
   align-items: center;
   gap: .75rem;
