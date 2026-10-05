@@ -91,7 +91,8 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   display: flex; align-items: center; justify-content: center;
   border: 0; background: none; color: var(--text);
   cursor: pointer; padding: 0;
-  transition: transform .25s ease, opacity .25s ease;
+  /* the icon swaps instantly; its colour eases along with the page fade */
+  transition: transform .25s ease, opacity .25s ease, color 1.5s ease;
 }
 .theme-toggle:hover, .theme-toggle:focus-visible { transform: scale(1.1); outline: none; }
 .theme-toggle svg { width: 17px; height: 17px; display: block; }
@@ -104,11 +105,17 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   animation-duration: 1.5s;
   animation-timing-function: ease-in-out;
 }
+/* ...but the moon/sun button itself switches instantly, not with the fade */
+.theme-toggle { view-transition-name: theme-toggle; }
+::view-transition-old(theme-toggle) { display: none; }
+::view-transition-new(theme-toggle) { animation: none; }
 /* fallback for browsers without view transitions: every colour eases over */
 html.theme-fading *, html.theme-fading *::before, html.theme-fading *::after {
   transition: background-color 1.5s ease, color 1.5s ease, border-color 1.5s ease, fill 1.5s ease, stroke 1.5s ease, text-shadow 1.5s ease !important;
 }
 html.theme-fading body { transition: background-color 1.5s ease, color 1.5s ease !important; }
+html.theme-fading .theme-toggle { transition: transform .25s ease, color 1.5s ease !important; }
+html.theme-fading .theme-toggle * { transition: none !important; }
 
 /* Menu button (top right) */
 .nav-toggle {
