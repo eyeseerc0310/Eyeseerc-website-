@@ -391,6 +391,17 @@ html.theme-fading .theme-toggle * { transition: none !important; }
   opacity: 0; transition: opacity .2s ease;
 }
 .gallery-filter button[aria-pressed="true"]::after { opacity: 1; }
+/* with the script running, one line glides between the buttons instead */
+.gallery-filter { position: relative; }
+.gallery-filter.has-line button::after { display: none; }
+.filter-line {
+  position: absolute; bottom: 0; height: 1px; left: 0; width: 0;
+  background: linear-gradient(to right, transparent, var(--text) 30%, var(--text) 70%, transparent);
+  transition: left .45s cubic-bezier(.3, .7, .2, 1), width .45s cubic-bezier(.3, .7, .2, 1);
+  pointer-events: none;
+}
+/* photos sliding off the side of the screen never make the page scroll sideways */
+.site-main { overflow-x: clip; }
 .is-filtered-out { display: none !important; }
 
 /* drop shadow on photos shown on the page (not when opened full screen) */
