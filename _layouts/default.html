@@ -16,7 +16,13 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="{{ '/' | relative_url }}"><span>{{ site.title }}</span>{% include logo.html class="logo-small" %}</a>
+    <a class="brand" href="{{ '/' | relative_url }}">
+      <span class="brand-text">
+        <span class="brand-name">{{ site.title }}</span>
+        {% if site.subtitle and site.subtitle != "" %}<span class="brand-sub">{{ site.subtitle }}</span>{% endif %}
+      </span>
+      {% include logo.html class="logo-small" %}
+    </a>
     <div class="header-actions">
       <button class="theme-toggle" type="button" aria-label="Switch to dark mode">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

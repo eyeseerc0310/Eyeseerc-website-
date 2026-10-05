@@ -6,6 +6,9 @@
 # Your name or brand — shows in the top-left corner and browser tab.
 title: "EYESEERC"
 
+# Small spaced-out line shown under the name in the header ("" to hide it).
+subtitle: "PRODUCTIONS INC"
+
 # Company name shown in the copyright line at the bottom of every page.
 copyright_name: "EYESEERC PRODUCTIONS INC"
 

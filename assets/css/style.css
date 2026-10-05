@@ -78,6 +78,18 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   align-items: center;
   gap: .75rem;
 }
+/* name with a small, widely spaced "PRODUCTIONS INC" centred underneath,
+   spread a little wider than the name itself */
+.brand-text { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; }
+.brand-name { line-height: 1.1; }
+.brand-sub {
+  font-size: .5rem;
+  font-weight: 400;
+  letter-spacing: .8em;
+  margin-right: -.8em; /* keep it centred despite the spacing after the last letter */
+  margin-top: .35rem;
+  white-space: nowrap;
+}
 /* logo to the right of the name (upload any image to images/logo to show it) */
 .logo { display: block; width: auto; object-fit: contain; flex-shrink: 0; }
 .logo-small { height: 2.25rem; }
