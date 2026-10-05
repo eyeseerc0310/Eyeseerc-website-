@@ -17,27 +17,9 @@
     }
     try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (err) {}
 
-    // Slow, gentle fade. Where the browser supports it, the whole page
-    // dissolves from the old look to the new one as one picture. Photos on
-    // screen are lifted out of that dissolve so they never lose contrast.
-    if (document.startViewTransition) {
-      var photos = Array.prototype.filter.call(
-        document.querySelectorAll('.hero-photo img, .gallery-item img, .shop-photo img'),
-        function (img) { var r = img.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight && r.width > 0; });
-      photos.forEach(function (img, i) { img.style.viewTransitionName = 'photo-' + i; });
-      // the header is lifted too (only for the fade), so photos scrolled
-      // underneath it stay underneath instead of showing through on top
-      var header = document.querySelector('.site-header');
-      if (header) header.style.viewTransitionName = 'site-header';
-      var vt = document.startViewTransition(apply);
-      var cleanUp = function () {
-        photos.forEach(function (img) { img.style.viewTransitionName = ''; });
-        if (header) header.style.viewTransitionName = '';
-      };
-      vt.finished.then(cleanUp, cleanUp);
-      return;
-    }
-    // Otherwise every colour eases to its new value together.
+    // Slow, gentle fade: every colour on the page eases to its new value
+    // together, in place. Photos never change, and nothing is lifted out of
+    // the page, so nothing can show through the header or pop at the end.
     clearTimeout(fadeTimer);
     root.classList.add('theme-fading');
     void root.offsetWidth;

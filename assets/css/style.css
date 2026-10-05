@@ -1,3 +1,16 @@
+/* The theme colours are registered as real colours so the light/dark switch
+   can fade them all at once, at the top of the page; everything that uses
+   them follows along in perfect step. */
+@property --bg { syntax: '<color>'; inherits: true; initial-value: #faf8f5; }
+@property --surface { syntax: '<color>'; inherits: true; initial-value: #ffffff; }
+@property --text { syntax: '<color>'; inherits: true; initial-value: #1c1b19; }
+@property --muted { syntax: '<color>'; inherits: true; initial-value: #6f6a62; }
+@property --line { syntax: '<color>'; inherits: true; initial-value: #e4dfd7; }
+@property --accent { syntax: '<color>'; inherits: true; initial-value: #1c1b19; }
+@property --menu-bg { syntax: '<color>'; inherits: true; initial-value: rgba(226, 226, 226, .95); }
+@property --menu-line { syntax: '<color>'; inherits: true; initial-value: rgba(120, 120, 120, .9); }
+@property --menu-link { syntax: '<color>'; inherits: true; initial-value: #3d3b37; }
+
 :root {
   --bg: #faf8f5;
   --surface: #ffffff;
@@ -114,30 +127,18 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
 :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
-/* slow, gentle fade between light and dark (one and a half seconds) */
-@keyframes theme-fade-out { to { opacity: 0; } }
-@keyframes theme-fade-in { from { opacity: 0; } }
-/* the button and the photos on screen don't take part in the dissolve:
-   the button swaps instantly and the photos simply stay as they are */
-.theme-toggle { view-transition-name: theme-toggle; }
-::view-transition-group(*) { animation: none; }
-::view-transition-old(*) { display: none; }
-::view-transition-new(*) { animation: none; }
-/* the page itself crossfades */
-::view-transition-old(root) { display: block; animation: theme-fade-out 1.5s ease-in-out both; }
-::view-transition-new(root) { animation: theme-fade-in 1.5s ease-in-out both; }
-/* the header fades between the two looks too, staying above the photos: the
-   new look fades in over the old one, which stays solid underneath so the
-   header never turns see-through halfway */
-::view-transition-old(site-header) { display: block; animation: none; opacity: 1; mix-blend-mode: normal; }
-::view-transition-new(site-header) { animation: theme-fade-in 1.5s ease-in-out both; mix-blend-mode: normal; }
-/* fallback for browsers without view transitions: every colour eases over */
-html.theme-fading *, html.theme-fading *::before, html.theme-fading *::after {
-  transition: background-color 1.5s ease, color 1.5s ease, border-color 1.5s ease, fill 1.5s ease, stroke 1.5s ease, text-shadow 1.5s ease !important;
+/* slow, gentle fade between light and dark (one and a half seconds): the theme
+   colours themselves fade, at the top of the page, so every part of the site
+   changes together. Nothing else transitions meanwhile (otherwise pieces
+   would trail behind and jump at the end); photo shadows fade along. The
+   button's icon swaps instantly. */
+html.theme-fading {
+  transition: --bg 1.5s ease, --surface 1.5s ease, --text 1.5s ease, --muted 1.5s ease, --line 1.5s ease,
+    --accent 1.5s ease, --menu-bg 1.5s ease, --menu-line 1.5s ease, --menu-link 1.5s ease !important;
 }
-html.theme-fading body { transition: background-color 1.5s ease, color 1.5s ease !important; }
-html.theme-fading .theme-toggle { transition: transform .25s ease, color 1.5s ease !important; }
-html.theme-fading .theme-toggle * { transition: none !important; }
+html.theme-fading body *, html.theme-fading body *::before, html.theme-fading body *::after {
+  transition: box-shadow 1.5s ease !important;
+}
 
 /* Menu button (top right) */
 .nav-toggle {
