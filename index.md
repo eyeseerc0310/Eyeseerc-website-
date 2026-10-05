@@ -8,7 +8,7 @@ title: Home
   Just replace this text. Leave a blank line between paragraphs.
   **bold**  and  *italic*  work too.
 
-  📷  YOUR PHOTO: upload a picture named  me.jpg  into the "images" folder.
+  📷  YOUR PHOTO: upload it into the "images/me" folder (any file name).
 -->
 
 Hi, I'm **Your Name** — a photographer based in Your City.
