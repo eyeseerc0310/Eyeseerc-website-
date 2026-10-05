@@ -142,6 +142,7 @@
   function close() {
     if (sliding) return;
     place(0); peekDir = 0; peek.classList.remove('show');
+    caption.classList.remove('is-changing');
     var anim = flip(thumbRect(), true);
     box.classList.remove('open');
     document.body.style.overflow = '';
@@ -210,6 +211,7 @@
     }
   }
   function preparePeek(dir) {
+    caption.classList.add('is-changing'); // the old name fades away while the photos move
     if (dir === peekDir) return;
     peekDir = dir;
     if (!dir || links.length < 2) { peekDir = 0; peek.classList.remove('show'); return; }
@@ -244,6 +246,8 @@
       place(0);
       peekDir = 0;
       peek.classList.remove('show');
+      // once the new photo is in place, its name fades in underneath
+      requestAnimationFrame(function () { caption.classList.remove('is-changing'); });
     };
     if (img.decode) img.decode().then(settle, settle); else settle();
   }
@@ -258,6 +262,7 @@
   function springBack(fromDx) {
     animateTo(fromDx, 0, 260, function () {
       place(0); peekDir = 0; peek.classList.remove('show');
+      caption.classList.remove('is-changing');
     });
   }
 

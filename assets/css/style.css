@@ -431,6 +431,9 @@ html.theme-fading .theme-toggle * { transition: none !important; }
 .lightbox button, .lightbox-caption { opacity: 0; transition: opacity .3s ease; }
 .lightbox.open button { opacity: .75; }
 .lightbox.open .lightbox-caption { opacity: 1; }
+/* moving between photos: the name fades out quickly, then the new one fades in gently */
+.lightbox .lightbox-caption { transition: opacity .45s ease; }
+.lightbox.open .lightbox-caption.is-changing { opacity: 0; transition: opacity .12s ease; }
 /* arrows sit beside the photo, never on top of it */
 .lb-stage { display: flex; align-items: center; justify-content: center; gap: 1rem; width: 100%; }
 .lb-figure { margin: 0; position: relative; min-width: 0; }
