@@ -81,13 +81,13 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 /* name with a small, widely spaced "PRODUCTIONS INC" centred underneath,
    spread a little wider than the name itself */
 .brand-text { display: inline-flex; flex-direction: column; align-items: center; line-height: 1; }
-.brand-name { line-height: 1.1; }
+.brand-name { line-height: .9; }
 .brand-sub {
   font-size: .5rem;
   font-weight: 400;
   letter-spacing: .8em;
   margin-right: -.8em; /* keep it centred despite the spacing after the last letter */
-  margin-top: .35rem;
+  margin-top: -.05rem;
   white-space: nowrap;
 }
 /* logo to the right of the name (upload any image to images/logo to show it) */
