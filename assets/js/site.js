@@ -307,32 +307,97 @@
 // Two-way switches: COLOR / B&W on the Photography page and PRINTS / SHIRTS
 // on the Shop page. One kind shows at a time; the first button is the
 // default and the other one is remembered in the address (e.g. #bw).
+// Switching slides: the line under the buttons glides across to the one
+// tapped, and the photos slide off the screen while the others slide in.
 (function () {
-  function apply(kind) {
-    var bar = document.querySelector('main:not([aria-hidden]) .gallery-filter');
+  var busy = false;
+  function currentBar() { return document.querySelector('main:not([aria-hidden]) .gallery-filter'); }
+  function pressedKind(bar) {
+    var b = bar.querySelector('button[aria-pressed="true"]');
+    return b ? b.dataset.filter : null;
+  }
+  // the single line that glides between the buttons
+  function moveLine(bar, instant) {
+    var line = bar.querySelector('.filter-line');
+    if (!line) {
+      line = document.createElement('span');
+      line.className = 'filter-line';
+      line.setAttribute('aria-hidden', 'true');
+      bar.appendChild(line);
+      bar.classList.add('has-line');
+      instant = true;
+    }
+    var b = bar.querySelector('button[aria-pressed="true"]');
+    if (!b) return;
+    var spacing = parseFloat(getComputedStyle(b).letterSpacing) || 0;
+    if (instant) line.style.transition = 'none';
+    line.style.left = b.offsetLeft + 'px';
+    line.style.width = Math.max(0, b.offsetWidth - spacing) + 'px';
+    if (instant) { void line.offsetWidth; line.style.transition = ''; }
+  }
+  // what moves: the photo grid / shop grid (or a lone "coming soon" note)
+  function movers() {
+    var set = [];
+    Array.prototype.forEach.call(document.querySelectorAll('main:not([aria-hidden]) [data-kind]'), function (it) {
+      var el = it.parentElement && it.parentElement.tagName !== 'MAIN' ? it.parentElement : it;
+      if (set.indexOf(el) < 0) set.push(el);
+    });
+    return set;
+  }
+  function apply(kind, animate) {
+    var bar = currentBar();
     if (!bar) return;
-    var buttons = bar.querySelectorAll('button');
+    var buttons = Array.prototype.slice.call(bar.querySelectorAll('button'));
     if (!kind) kind = buttons[0].dataset.filter;
-    Array.prototype.forEach.call(buttons, function (b) {
+    var before = pressedKind(bar);
+    var from = buttons.findIndex(function (b) { return b.dataset.filter === before; });
+    var to = buttons.findIndex(function (b) { return b.dataset.filter === kind; });
+    buttons.forEach(function (b) {
       b.setAttribute('aria-pressed', b.dataset.filter === kind ? 'true' : 'false');
     });
-    Array.prototype.forEach.call(document.querySelectorAll('main:not([aria-hidden]) [data-kind]'), function (it) {
-      it.classList.toggle('is-filtered-out', it.dataset.kind !== kind);
-    });
+    moveLine(bar, !animate);
     var hash = kind === buttons[0].dataset.filter ? '' : '#' + kind;
     try { history.replaceState(history.state, '', hash || location.pathname + location.search); } catch (e) {}
+    function swap() {
+      Array.prototype.forEach.call(document.querySelectorAll('main:not([aria-hidden]) [data-kind]'), function (it) {
+        it.classList.toggle('is-filtered-out', it.dataset.kind !== kind);
+      });
+    }
+    var els = movers();
+    if (!animate || before === kind || !els.length || !els[0].animate) { swap(); return; }
+    // later button: everything slides left; earlier button: slides right
+    var dir = to > from ? 1 : -1;
+    var off = window.innerWidth;
+    busy = true;
+    var outs = els.map(function (el) {
+      return el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(' + (-dir * off) + 'px)' }],
+        { duration: 340, easing: 'cubic-bezier(.5, 0, .9, .5)', fill: 'forwards' });
+    });
+    outs[0].onfinish = function () {
+      swap();
+      var ins = movers().map(function (el) {
+        return el.animate([{ transform: 'translateX(' + (dir * off) + 'px)' }, { transform: 'translateX(0)' }],
+          { duration: 520, easing: 'cubic-bezier(.15, .75, .25, 1)' });
+      });
+      outs.forEach(function (a) { a.cancel(); });
+      var done = function () { busy = false; };
+      if (ins.length) { ins[0].onfinish = done; ins[0].oncancel = done; } else done();
+    };
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('.gallery-filter button');
-    if (b) apply(b.dataset.filter);
+    if (!b || busy) return;
+    apply(b.dataset.filter, true);
   });
   function fromAddress() {
-    var bar = document.querySelector('main:not([aria-hidden]) .gallery-filter');
+    var bar = currentBar();
     if (!bar) return;
     var want = location.hash.slice(1);
-    apply(want && bar.querySelector('button[data-filter="' + want + '"]') ? want : null);
+    apply(want && bar.querySelector('button[data-filter="' + want + '"]') ? want : null, false);
   }
   window.addEventListener('hashchange', fromAddress);
+  window.addEventListener('resize', function () { var bar = currentBar(); if (bar) moveLine(bar, true); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { var bar = currentBar(); if (bar) moveLine(bar, true); });
   document.addEventListener('pageswap:done', fromAddress);
   fromAddress();
 })();
