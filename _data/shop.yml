@@ -19,21 +19,21 @@
 
 - category: prints
   title: "Sunset (sample)"
-  image: /photos/photography/color/sample-01-sunset.png
+  image: /photos/shop/sample-print-1.png
   shape: landscape
   price: 45
   link: /404.html
 
 - category: prints
   title: "Ocean (sample)"
-  image: /photos/photography/color/sample-02-ocean.png
+  image: /photos/shop/sample-print-2.png
   shape: portrait
   price: 60
   link: /404.html
 
 - category: prints
   title: "Forest (sample)"
-  image: /photos/photography/color/sample-03-forest.png
+  image: /photos/shop/sample-print-3.png
   shape: landscape
   price: 45
   link: /404.html
