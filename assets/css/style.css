@@ -8,6 +8,26 @@
   /* clean, thin line font (no serifs) used everywhere */
   --display: "Jost", "Helvetica Neue", Arial, sans-serif;
   --sans: "Jost", "Helvetica Neue", Arial, sans-serif;
+  /* drop-down menu */
+  --menu-bg: rgba(210, 210, 210, .95);
+  --menu-line: rgba(120, 120, 120, .9);
+  --menu-link: #3d3b37;
+  --glow: 255, 255, 255; /* hover glow colour (r, g, b) */
+}
+/* Dark mode: the site's colours inverted (photos are left untouched).
+   Switched on with the moon button in the menu. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121212;
+  --surface: #1b1b1b;
+  --text: #ecebe8;
+  --muted: #9b968e;
+  --line: #2f2d2a;
+  --accent: #ecebe8;
+  --menu-bg: rgba(48, 48, 48, .95);
+  --menu-line: rgba(140, 140, 140, .9);
+  --menu-link: #d4d1cc;
+  --glow: 0, 0, 0;
 }
 
 * { box-sizing: border-box; }
@@ -16,6 +36,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
+  transition: background-color .3s ease, color .3s ease;
   font-family: var(--sans);
   font-weight: 300;
   line-height: 1.7;
@@ -94,9 +115,9 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 .site-nav::before {
   content: "";
   position: absolute; inset: 0; z-index: -1;
-  background: rgba(210, 210, 210, .95);
-  border-right: 1px solid rgba(120, 120, 120, .9);
-  border-bottom: 1px solid rgba(120, 120, 120, .9);
+  background: var(--menu-bg);
+  border-right: 1px solid var(--menu-line);
+  border-bottom: 1px solid var(--menu-line);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   /* one smooth diagonal fade: see-through at the top left, solid toward the bottom right */
@@ -113,7 +134,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   font-weight: 300;
   letter-spacing: .12em;
   text-decoration: none;
-  color: #3d3b37;
+  color: var(--menu-link);
   padding: .35rem 0;
   transform-origin: right center;
   transition: transform .25s ease, color .25s ease, text-shadow .25s ease;
@@ -126,7 +147,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   left: -18%; right: -18%; top: 0; bottom: -12%;
   z-index: -1;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, #fff 0%, rgba(255, 255, 255, .85) 30%, rgba(255, 255, 255, .35) 55%, rgba(255, 255, 255, 0) 72%);
+  background: radial-gradient(ellipse at center, rgb(var(--glow)) 0%, rgba(var(--glow), .85) 30%, rgba(var(--glow), .35) 55%, rgba(var(--glow), 0) 72%);
   opacity: 0;
   transition: opacity .25s ease;
   pointer-events: none;
@@ -137,9 +158,25 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   transform: scale(1.25);
   outline: none;
   /* soft white glow around the letters (plus the oval glow underneath) */
-  text-shadow: 0 0 6px #fff, 0 0 14px rgba(255, 255, 255, .9);
+  text-shadow: 0 0 6px rgb(var(--glow)), 0 0 14px rgba(var(--glow), .9);
 }
 .site-nav a.active { color: var(--text); font-weight: 500; }
+
+/* light / dark switch: a small circle at the bottom right of the menu */
+.theme-toggle {
+  width: 2.1rem; height: 2.1rem;
+  margin: .6rem 0 .35rem;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--menu-link); border-radius: 50%;
+  background: none; color: var(--menu-link);
+  cursor: pointer; padding: 0;
+  transition: transform .25s ease, background-color .25s ease, color .25s ease;
+}
+.theme-toggle:hover, .theme-toggle:focus-visible { transform: scale(1.12); background: var(--text); color: var(--bg); outline: none; }
+.theme-toggle svg { width: 1rem; height: 1rem; }
+.theme-toggle .icon-sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+:root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
 @media (max-width: 760px) {
   .site-nav { left: 0; right: 0; min-width: 0; padding: 1rem clamp(1rem, 4vw, 3rem) .1rem; }
