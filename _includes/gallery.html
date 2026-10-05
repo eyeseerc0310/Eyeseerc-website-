@@ -16,7 +16,8 @@
       {% assign caption = photo.basename | replace: "-", " " | replace: "_", " " %}
       {% assign kind = "" %}
       {% if photo.path contains "/black-and-white/" %}{% assign kind = "bw" %}{% elsif photo.path contains "/color/" %}{% assign kind = "color" %}{% endif %}
-      <figure class="gallery-item"{% if kind != "" %} data-kind="{{ kind }}"{% endif %}>
+      {% comment %} with show_kind, only that kind is shown when the page first loads {% endcomment %}
+      <figure class="gallery-item{% if include.show_kind and kind != include.show_kind %} is-filtered-out{% endif %}"{% if kind != "" %} data-kind="{{ kind }}"{% endif %}>
         <a href="{{ photo.path | relative_url }}" data-lightbox data-caption="{{ caption | escape }}">
           <img src="{{ photo.path | relative_url }}" alt="{{ caption | escape }}" loading="lazy">
         </a>

@@ -183,8 +183,8 @@
   });
 })();
 
-// COLOR / B&W buttons on the Photography page. Tap one to show only those
-// photos; tap it again to show everything mixed together.
+// COLOR / B&W buttons on the Photography page. The page shows one kind at a
+// time: colour by default, black & white when B&W is tapped.
 (function () {
   var bar = document.querySelector('.gallery-filter');
   if (!bar) return;
@@ -192,18 +192,13 @@
   var items = Array.prototype.slice.call(document.querySelectorAll('.gallery-item'));
   function apply(kind) {
     buttons.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.filter === kind ? 'true' : 'false'); });
-    items.forEach(function (it) { it.classList.toggle('is-filtered-out', !!kind && it.dataset.kind !== kind); });
-    try { history.replaceState(null, '', kind ? '#' + kind : location.pathname + location.search); } catch (e) {}
+    items.forEach(function (it) { it.classList.toggle('is-filtered-out', it.dataset.kind !== kind); });
+    try { history.replaceState(null, '', kind === 'bw' ? '#bw' : location.pathname + location.search); } catch (e) {}
   }
   buttons.forEach(function (b) {
-    b.addEventListener('click', function () {
-      apply(b.getAttribute('aria-pressed') === 'true' ? '' : b.dataset.filter);
-    });
+    b.addEventListener('click', function () { apply(b.dataset.filter); });
   });
-  function fromAddress() {
-    var k = location.hash.replace('#', '');
-    apply(k === 'color' || k === 'bw' ? k : '');
-  }
+  function fromAddress() { apply(location.hash === '#bw' ? 'bw' : 'color'); }
   window.addEventListener('hashchange', fromAddress);
-  if (location.hash) fromAddress();
+  fromAddress();
 })();

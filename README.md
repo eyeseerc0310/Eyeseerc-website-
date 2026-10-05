@@ -44,8 +44,8 @@ Open the folder for the gallery you want, then **Add file → Upload files**:
 
 - Photos appear automatically — no code needed. (JPG, PNG, WEBP, GIF.)
 - On the Photography page, put colour photos in `photos/photography/color` and
-  black & white ones in `photos/photography/black-and-white`. They're shown mixed
-  together, and the COLOR / B&W buttons show just one kind.
+  black & white ones in `photos/photography/black-and-white`. The page shows the
+  colour photos first; the B&W button switches to the black & white ones.
 - They're shown in alphabetical order by file name. To control the order,
   start names with numbers: `01-sunset.jpg`, `02-city.jpg` …
 - The file name becomes the caption (`golden-hour.jpg` → "golden hour").
