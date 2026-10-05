@@ -155,7 +155,7 @@
     var link = e.target.closest && e.target.closest('[data-lightbox]');
     if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
-    links = Array.prototype.filter.call(document.querySelectorAll('[data-lightbox]'),
+    links = Array.prototype.filter.call(document.querySelectorAll('main:not([aria-hidden]) [data-lightbox]'),
       function (l) { return !l.closest('.is-filtered-out'); });
     open(Math.max(0, links.indexOf(link)));
   });
@@ -187,14 +187,14 @@
 // default and the other one is remembered in the address (e.g. #bw).
 (function () {
   function apply(kind) {
-    var bar = document.querySelector('.gallery-filter');
+    var bar = document.querySelector('main:not([aria-hidden]) .gallery-filter');
     if (!bar) return;
     var buttons = bar.querySelectorAll('button');
     if (!kind) kind = buttons[0].dataset.filter;
     Array.prototype.forEach.call(buttons, function (b) {
       b.setAttribute('aria-pressed', b.dataset.filter === kind ? 'true' : 'false');
     });
-    Array.prototype.forEach.call(document.querySelectorAll('main [data-kind]'), function (it) {
+    Array.prototype.forEach.call(document.querySelectorAll('main:not([aria-hidden]) [data-kind]'), function (it) {
       it.classList.toggle('is-filtered-out', it.dataset.kind !== kind);
     });
     var hash = kind === buttons[0].dataset.filter ? '' : '#' + kind;
@@ -205,7 +205,7 @@
     if (b) apply(b.dataset.filter);
   });
   function fromAddress() {
-    var bar = document.querySelector('.gallery-filter');
+    var bar = document.querySelector('main:not([aria-hidden]) .gallery-filter');
     if (!bar) return;
     var want = location.hash.slice(1);
     apply(want && bar.querySelector('button[data-filter="' + want + '"]') ? want : null);
@@ -230,8 +230,7 @@
 
 // Moving between pages: instead of loading a whole new page (a hard snap),
 // fetch the next page and swap its content in, letting the old page
-// dissolve into the new one exactly like the light/dark fade does. The
-// header and footer simply stay put. If anything goes wrong it falls back
+// dissolve into the new one. The header and footer simply stay put. If anything goes wrong it falls back
 // to a normal page load.
 (function () {
   if (!window.fetch || !window.DOMParser || !history.pushState) return;
@@ -277,7 +276,6 @@
       main = document.importNode(main, true);
       return Promise.all([ready(main), menuClosed]).then(function () {
         function update() {
-          document.querySelector('main').replaceWith(main);
           document.title = doc.title;
           if (push) {
             history.replaceState({ y: window.scrollY }, '');
@@ -288,18 +286,34 @@
               a.classList.toggle('active', new URL(a.href, location.href).pathname === location.pathname);
             });
           }
-          window.scrollTo(0, scrollY || 0);
           document.dispatchEvent(new Event('pageswap:done'));
         }
-        if (document.startViewTransition) {
-          root.classList.add('page-fading');
-          var vt = document.startViewTransition(update);
-          var done = function () { root.classList.remove('page-fading'); busy = false; };
-          vt.finished.then(done, done);
+        // The dissolve, done by hand (Safari's built-in page transitions
+        // could make the home photo vanish once the fade finished): the old
+        // page is pinned exactly where it is on screen, the new page goes in
+        // underneath, and the old one fades away to reveal it.
+        var old = document.querySelector('main');
+        var r = old.getBoundingClientRect();
+        old.style.position = 'fixed';
+        old.style.top = r.top + 'px';
+        old.style.left = r.left + 'px';
+        old.style.width = r.width + 'px';
+        old.style.height = r.height + 'px';
+        old.style.margin = '0';
+        old.style.zIndex = '5';
+        old.style.background = 'var(--bg)';
+        old.style.pointerEvents = 'none';
+        old.setAttribute('aria-hidden', 'true');
+        old.insertAdjacentElement('afterend', main);
+        window.scrollTo(0, scrollY || 0);
+        update();
+        var finish = function () { old.remove(); busy = false; };
+        if (old.animate) {
+          var fade = old.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 800, easing: 'ease-in-out', fill: 'forwards' });
+          fade.onfinish = finish;
+          fade.oncancel = finish;
         } else {
-          update();
-          if (main.animate) main.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, easing: 'ease-out' });
-          busy = false;
+          finish();
         }
       });
     }).catch(function () { location.href = url.href; });
