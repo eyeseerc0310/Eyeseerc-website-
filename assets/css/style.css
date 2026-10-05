@@ -83,8 +83,8 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 
 /* light / dark switch: a circle outline with a moon (light) or sun (dark) */
 .theme-toggle {
-  /* same size as the menu icon (22px wide), with a line as thick as its bars */
-  width: 22px; height: 22px;
+  /* about the height of the menu icon, with a line as thick as its bars */
+  width: 17px; height: 17px;
   display: flex; align-items: center; justify-content: center;
   border: 1.5px solid var(--text); border-radius: 50%;
   background: none; color: var(--text);
@@ -92,7 +92,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   transition: transform .25s ease, opacity .25s ease;
 }
 .theme-toggle:hover, .theme-toggle:focus-visible { transform: scale(1.1); outline: none; }
-.theme-toggle svg { width: 12px; height: 12px; }
+.theme-toggle svg { width: 9px; height: 9px; }
 .theme-toggle .icon-sun { display: none; }
 :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
 :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
