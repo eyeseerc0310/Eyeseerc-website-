@@ -51,13 +51,15 @@
   </main>
 
   <footer class="site-footer">
-    <div class="footer-links">
-      {% if site.email and site.email != "" %}<a href="mailto:{{ site.email }}">{{ site.email }}</a>{% endif %}
-    </div>
     <div class="social">
       {% if site.instagram and site.instagram != "" %}
       <a class="social-btn" href="https://www.instagram.com/{{ site.instagram }}/" target="_blank" rel="noopener" aria-label="EYESEERC on Instagram">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r=".6" fill="currentColor" stroke="none"/></svg>
+      </a>
+      {% endif %}
+      {% if site.email and site.email != "" %}
+      <a class="social-btn" href="mailto:{{ site.email }}" aria-label="Email {{ site.email }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M3.5 7l8.5 6.2L20.5 7"/></svg>
       </a>
       {% endif %}
       {% if site.youtube and site.youtube != "" %}
