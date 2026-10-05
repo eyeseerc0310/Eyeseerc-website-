@@ -397,7 +397,7 @@ html.theme-fading .theme-toggle * { transition: none !important; }
 .filter-line {
   position: absolute; bottom: 0; height: 1px; left: 0; width: 0;
   background: linear-gradient(to right, transparent, var(--text) 30%, var(--text) 70%, transparent);
-  transition: left .45s cubic-bezier(.3, .7, .2, 1), width .45s cubic-bezier(.3, .7, .2, 1);
+  transition: left .8s cubic-bezier(.65, 0, .35, 1), width .8s cubic-bezier(.65, 0, .35, 1); /* slow, fast, slow — in step with the photos */
   pointer-events: none;
 }
 /* photos sliding off the side of the screen never make the page scroll sideways */
