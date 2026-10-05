@@ -439,6 +439,16 @@ html.theme-fading .theme-toggle * { transition: none !important; }
   box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
   will-change: transform;
 }
+/* the neighbouring photo that slides in beside the current one */
+.lightbox .lb-peek {
+  position: fixed; z-index: 0; left: 0; top: 0; /* sized and moved into place by the script */
+  max-width: none; max-height: none;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+  pointer-events: none;
+  display: none;
+}
+.lightbox .lb-peek.show { display: block; }
+.lightbox { touch-action: none; overflow: hidden; } /* the swipe is handled by the page, not the browser */
 /* caption hangs below the photo so the arrows line up with the photo's middle */
 .lightbox-caption { position: absolute; top: 100%; left: 0; right: 0; text-align: center; color: #e6e6e6; font-size: .85rem; margin-top: 1rem; text-transform: capitalize; }
 .lightbox button {
@@ -447,7 +457,7 @@ html.theme-fading .theme-toggle * { transition: none !important; }
 }
 .lightbox.open button:hover { opacity: 1; }
 .lightbox .lb-close { position: absolute; z-index: 1; top: .5rem; right: 1rem; }
-.lightbox .lb-prev, .lightbox .lb-next { flex: none; width: 3.5rem; }
+.lightbox .lb-prev, .lightbox .lb-next { flex: none; width: 3.5rem; position: relative; z-index: 1; }
 /* phones: the photo uses (almost) the full width, and the arrows move down
    to sit either side of the photo's name underneath it */
 @media (max-width: 760px) {

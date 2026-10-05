@@ -140,6 +140,8 @@
     if (img.decode) img.decode().then(go, go); else go();
   }
   function close() {
+    if (sliding) return;
+    place(0); peekDir = 0; peek.classList.remove('show');
     var anim = flip(thumbRect(), true);
     box.classList.remove('open');
     document.body.style.overflow = '';
@@ -160,26 +162,141 @@
     open(Math.max(0, links.indexOf(link)));
   });
   box.querySelector('.lb-close').addEventListener('click', close);
-  box.querySelector('.lb-prev').addEventListener('click', function () { show(index - 1); });
-  box.querySelector('.lb-next').addEventListener('click', function () { show(index + 1); });
+  box.querySelector('.lb-prev').addEventListener('click', function () { slide(-1); });
+  box.querySelector('.lb-next').addEventListener('click', function () { slide(1); });
   var stage = box.querySelector('.lb-stage');
   box.addEventListener('click', function (e) { if (e.target === box || e.target === stage) close(); });
 
   document.addEventListener('keydown', function (e) {
     if (!box.classList.contains('open')) return;
     if (e.key === 'Escape') close();
-    if (e.key === 'ArrowLeft') show(index - 1);
-    if (e.key === 'ArrowRight') show(index + 1);
+    if (e.key === 'ArrowLeft') slide(-1);
+    if (e.key === 'ArrowRight') slide(1);
   });
 
-  var startX = null;
-  box.addEventListener('touchstart', function (e) { startX = e.touches[0].clientX; }, { passive: true });
-  box.addEventListener('touchend', function (e) {
-    if (startX === null) return;
-    var dx = e.changedTouches[0].clientX - startX;
-    if (Math.abs(dx) > 50) show(index + (dx < 0 ? 1 : -1));
-    startX = null;
-  });
+  // ---- Sliding between photos ----
+  // The photo on screen and the next (or previous) one sit side by side, a
+  // screen-width apart. Dragging moves both with your finger; let go past
+  // about a quarter of the screen (or with a quick flick) and it snaps on to
+  // the next photo, otherwise it springs back. The arrows and arrow keys
+  // play the same slide.
+  var peek = document.createElement('img');
+  peek.className = 'lb-peek';
+  peek.alt = '';
+  box.appendChild(peek);
+  var sliding = false;    // an animation is playing
+  var drag = null;        // the finger currently dragging
+  var peekDir = 0;        // which neighbour the peek photo shows (1 next, -1 previous)
+  var centre = null;      // where the photo's middle is on screen
+
+  var lastDx = 0;
+  function distance() { return window.innerWidth; }
+  // give the incoming photo the same size limits as the main one, at its own shape
+  function sizePeek() {
+    var cs = getComputedStyle(img);
+    var maxW = parseFloat(cs.maxWidth) || window.innerWidth, maxH = parseFloat(cs.maxHeight) || window.innerHeight;
+    var nw = peek.naturalWidth || 3, nh = peek.naturalHeight || 2;
+    var k = Math.min(maxW / nw, maxH / nh, 1e9);
+    peek.style.width = Math.round(nw * k) + 'px';
+    peek.style.height = Math.round(nh * k) + 'px';
+    peek.style.visibility = '';
+  }
+  function place(dx) {
+    lastDx = dx;
+    img.style.transform = dx ? 'translateX(' + dx + 'px)' : '';
+    if (peekDir) {
+      var w = peek.offsetWidth, h = peek.offsetHeight;
+      peek.style.transform = 'translate(' + (dx + peekDir * distance() + centre.x - w / 2) + 'px, ' + (centre.y - h / 2) + 'px)';
+    }
+  }
+  function preparePeek(dir) {
+    if (dir === peekDir) return;
+    peekDir = dir;
+    if (!dir || links.length < 2) { peekDir = 0; peek.classList.remove('show'); return; }
+    var t = img.style.transform; img.style.transform = '';
+    var r = img.getBoundingClientRect(); img.style.transform = t;
+    centre = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    var next = links[(index + dir + links.length) % links.length];
+    peek.style.visibility = 'hidden';
+    peek.classList.add('show');
+    peek.onload = function () { sizePeek(); place(lastDx); };
+    peek.src = next.href;
+    if (peek.complete && peek.naturalWidth) sizePeek();
+  }
+  // animate from the current offset to a target offset
+  function animateTo(from, to, ms, done) {
+    sliding = true;
+    var start = null;
+    function ease(t) { return 1 - Math.pow(1 - t, 3); }
+    function step(now) {
+      if (start === null) start = now;
+      var t = Math.min(1, (now - start) / ms);
+      place(from + (to - from) * ease(t));
+      if (t < 1) requestAnimationFrame(step);
+      else { sliding = false; done(); }
+    }
+    requestAnimationFrame(step);
+  }
+  // finish the move: the photo that slid in becomes the main photo
+  function commit(dir) {
+    show(index + dir);
+    var settle = function () {
+      place(0);
+      peekDir = 0;
+      peek.classList.remove('show');
+    };
+    if (img.decode) img.decode().then(settle, settle); else settle();
+  }
+  function slide(dir, fromDx, fast) {
+    if (sliding || links.length < 2) return;
+    preparePeek(dir);
+    var start = fromDx || 0;
+    var to = -dir * distance();
+    var ms = Math.max(180, (fast ? 260 : 420) * Math.abs(to - start) / distance());
+    animateTo(start, to, ms, function () { commit(dir); });
+  }
+  function springBack(fromDx) {
+    animateTo(fromDx, 0, 260, function () {
+      place(0); peekDir = 0; peek.classList.remove('show');
+    });
+  }
+
+  box.addEventListener('touchstart', function (e) {
+    if (sliding || e.touches.length !== 1 || e.target.closest('button')) return;
+    var t = e.touches[0];
+    drag = { x: t.clientX, y: t.clientY, dx: 0, axis: null, lastX: t.clientX, lastT: Date.now(), v: 0 };
+  }, { passive: true });
+  box.addEventListener('touchmove', function (e) {
+    if (!drag) return;
+    var t = e.touches[0];
+    var dx = t.clientX - drag.x, dy = t.clientY - drag.y;
+    if (!drag.axis) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    }
+    if (drag.axis !== 'x') return;
+    e.preventDefault();
+    var now = Date.now();
+    drag.v = (t.clientX - drag.lastX) / Math.max(1, now - drag.lastT);
+    drag.lastX = t.clientX; drag.lastT = now;
+    if (links.length < 2) dx = dx * .25; // only one photo: just a little give
+    else preparePeek(dx < 0 ? 1 : -1);
+    drag.dx = dx;
+    place(dx);
+  }, { passive: false });
+  function endDrag() {
+    if (!drag) return;
+    var d = drag; drag = null;
+    if (d.axis !== 'x' || !d.dx) return;
+    var flick = Math.abs(d.v) > .45 && (d.v < 0) === (d.dx < 0);
+    if (links.length > 1 && (Math.abs(d.dx) > distance() * .25 || flick)) {
+      slide(d.dx < 0 ? 1 : -1, d.dx, flick);
+    } else {
+      springBack(d.dx);
+    }
+  }
+  box.addEventListener('touchend', endDrag);
+  box.addEventListener('touchcancel', endDrag);
 })();
 
 // Two-way switches: COLOR / B&W on the Photography page and PRINTS / SHIRTS
