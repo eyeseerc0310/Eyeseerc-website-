@@ -96,16 +96,16 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
 :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
-/* slow, gentle fade between light and dark (about one second) */
+/* slow, gentle fade between light and dark (one and a half seconds) */
 ::view-transition-old(root), ::view-transition-new(root) {
-  animation-duration: 1s;
+  animation-duration: 1.5s;
   animation-timing-function: ease-in-out;
 }
 /* fallback for browsers without view transitions: every colour eases over */
 html.theme-fading *, html.theme-fading *::before, html.theme-fading *::after {
-  transition: background-color 1s ease, color 1s ease, border-color 1s ease, fill 1s ease, stroke 1s ease, text-shadow 1s ease !important;
+  transition: background-color 1.5s ease, color 1.5s ease, border-color 1.5s ease, fill 1.5s ease, stroke 1.5s ease, text-shadow 1.5s ease !important;
 }
-html.theme-fading body { transition: background-color 1s ease, color 1s ease !important; }
+html.theme-fading body { transition: background-color 1.5s ease, color 1.5s ease !important; }
 
 /* Menu button (top right) */
 .nav-toggle {
@@ -135,8 +135,12 @@ html.theme-fading body { transition: background-color 1s ease, color 1s ease !im
   display: flex; flex-direction: column; align-items: flex-end;
   padding: 1.25rem .45rem .1rem 1.75rem; /* tighter on the right and bottom */
   overflow: hidden; /* keep the hover glow inside the menu so the page can't scroll sideways */
-  opacity: 0; visibility: hidden; transform: translateY(-8px);
-  transition: opacity .25s ease, transform .25s ease, visibility .25s;
+  /* Opening, the menu grows out of the menu icon; closing, it gets sucked
+     back into it. The scaling is anchored on the icon itself. */
+  transform-origin: calc(100% - 11px) -2.6rem;
+  opacity: 0; visibility: hidden; transform: scale(.03);
+  /* closing: speeds up as it shrinks back in */
+  transition: transform .38s cubic-bezier(.6, 0, .85, .4), opacity .2s ease .18s, visibility 0s linear .38s;
 }
 /* The menu's background: light grey with a soft blur behind it and a thin,
    slightly darker line down the right side and along the bottom. It fades
@@ -156,7 +160,11 @@ html.theme-fading body { transition: background-color 1s ease, color 1s ease !im
   mask-image: linear-gradient(to bottom right, transparent 0%, rgba(0, 0, 0, .55) 35%, #000 70%), linear-gradient(to right, transparent, #000 22%);
   mask-composite: intersect;
 }
-.site-nav.open { opacity: 1; visibility: visible; transform: translateY(0); }
+.site-nav.open {
+  opacity: 1; visibility: visible; transform: none;
+  /* opening: shoots out, overshoots a touch, then settles */
+  transition: transform .6s cubic-bezier(.32, 1.18, .45, 1), opacity .2s ease, visibility 0s;
+}
 .site-nav a {
   font-family: var(--display);
   font-size: 1.35rem;
