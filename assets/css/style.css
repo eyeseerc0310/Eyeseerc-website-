@@ -78,6 +78,24 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 .logo { display: block; width: auto; object-fit: contain; flex-shrink: 0; }
 .logo-small { height: 2.25rem; }
 
+/* right side of the header: light/dark switch, then the menu button */
+.header-actions { display: flex; align-items: center; gap: 1.1rem; }
+
+/* light / dark switch: a circle outline with a moon (light) or sun (dark) */
+.theme-toggle {
+  width: 2rem; height: 2rem;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--text); border-radius: 50%;
+  background: none; color: var(--text);
+  cursor: pointer; padding: 0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.theme-toggle:hover, .theme-toggle:focus-visible { transform: scale(1.1); outline: none; }
+.theme-toggle svg { width: .95rem; height: .95rem; }
+.theme-toggle .icon-sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+:root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
 /* Menu button (top right) */
 .nav-toggle {
   display: flex; align-items: center; gap: .6rem;
@@ -162,21 +180,6 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 }
 .site-nav a.active { color: var(--text); font-weight: 500; }
 
-/* light / dark switch: a small circle at the bottom right of the menu */
-.theme-toggle {
-  width: 2.1rem; height: 2.1rem;
-  margin: .6rem 0 .35rem;
-  display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--menu-link); border-radius: 50%;
-  background: none; color: var(--menu-link);
-  cursor: pointer; padding: 0;
-  transition: transform .25s ease, background-color .25s ease, color .25s ease;
-}
-.theme-toggle:hover, .theme-toggle:focus-visible { transform: scale(1.12); background: var(--text); color: var(--bg); outline: none; }
-.theme-toggle svg { width: 1rem; height: 1rem; }
-.theme-toggle .icon-sun { display: none; }
-:root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
-:root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
 @media (max-width: 760px) {
   .site-nav { left: 0; right: 0; min-width: 0; padding: 1rem clamp(1rem, 4vw, 3rem) .1rem; }
