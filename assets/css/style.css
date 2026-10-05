@@ -5,8 +5,9 @@
   --muted: #6f6a62;
   --line: #e4dfd7;
   --accent: #1c1b19;
-  --serif: "Cormorant Garamond", Georgia, serif;
-  --sans: "Inter", system-ui, -apple-system, sans-serif;
+  /* clean, thin line font (no serifs) used everywhere */
+  --display: "Jost", "Helvetica Neue", Arial, sans-serif;
+  --sans: "Jost", "Helvetica Neue", Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -43,11 +44,11 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   backdrop-filter: blur(8px);
 }
 .brand {
-  font-family: var(--serif);
-  font-size: 1.6rem;
-  font-weight: 600;
+  font-family: var(--display);
+  font-size: 1.4rem;
+  font-weight: 400;
   text-decoration: none;
-  letter-spacing: .02em;
+  letter-spacing: .18em;
 }
 /* Menu button (top right) */
 .nav-toggle {
@@ -96,8 +97,10 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 }
 .site-nav.open { opacity: 1; visibility: visible; transform: translateY(0); }
 .site-nav a {
-  font-family: var(--serif);
-  font-size: 1.5rem;
+  font-family: var(--display);
+  font-size: 1.35rem;
+  font-weight: 300;
+  letter-spacing: .12em;
   text-decoration: none;
   color: #3d3b37;
   padding: .35rem 0;
@@ -105,7 +108,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   transition: transform .25s ease, color .25s ease;
 }
 .site-nav a:hover, .site-nav a:focus-visible { color: var(--text); transform: scale(1.25); outline: none; }
-.site-nav a.active { color: var(--text); font-weight: 600; }
+.site-nav a.active { color: var(--text); font-weight: 500; }
 
 @media (max-width: 760px) {
   .site-nav { left: 0; right: 0; min-width: 0; padding: 1rem clamp(1rem, 4vw, 3rem); }
@@ -119,8 +122,8 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   min-height: 70vh;
 }
 .page-title {
-  font-family: var(--serif);
-  font-weight: 400;
+  font-family: var(--display);
+  font-weight: 300;
   font-size: clamp(2.2rem, 5vw, 3.5rem);
   margin: 0 0 2rem;
   text-align: center;
@@ -144,10 +147,11 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   background: var(--line);
 }
 .hero-text h1 {
-  font-family: var(--serif);
-  font-weight: 400;
+  font-family: var(--display);
+  font-weight: 300;
   font-size: clamp(2.5rem, 6vw, 4.25rem);
   line-height: 1.05;
+  letter-spacing: .08em;
   margin: 0 0 .5rem;
 }
 .tagline {
@@ -194,7 +198,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   border: 1px dashed var(--line);
   color: var(--muted);
 }
-.empty-state p { margin: .25rem 0; font-family: var(--serif); font-size: 1.5rem; }
+.empty-state p { margin: .25rem 0; font-family: var(--display); font-size: 1.5rem; }
 .empty-state .hint { font-family: var(--sans); font-size: .85rem; }
 
 /* ---------- Lightbox ---------- */
@@ -225,7 +229,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 .shop-item { background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; }
 .shop-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 .shop-info { padding: 1.25rem; display: flex; flex-direction: column; flex: 1; }
-.shop-info h2 { font-family: var(--serif); font-weight: 600; font-size: 1.5rem; margin: 0 0 .25rem; }
+.shop-info h2 { font-family: var(--display); font-weight: 400; font-size: 1.5rem; margin: 0 0 .25rem; }
 .shop-info p { color: var(--muted); font-size: .9rem; margin: 0 0 1rem; }
 .shop-buy { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .shop-buy .button { margin: 0; }
