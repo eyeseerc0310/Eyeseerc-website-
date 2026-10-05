@@ -4,12 +4,17 @@ title: "SHOP"
 permalink: /shop/
 ---
 <h1 class="page-title">SHOP</h1>
+<div class="gallery-filter" role="group" aria-label="Show">
+  <button type="button" data-filter="prints" aria-pressed="true">PRINTS</button>
+  <button type="button" data-filter="shirts" aria-pressed="false">SHIRTS</button>
+</div>
 
 {% comment %}
   Items come from _data/shop.yml, three to a row. Every print gets the same
   size spot; inside it a landscape photo fills the width and a portrait photo
   fills the height, so each keeps its own shape. Photos sit on a shared
   baseline with the price underneath. Clicking a photo opens its print page.
+  The PRINTS / SHIRTS buttons show one category at a time (prints first).
 {% endcomment %}
 {% assign items = site.data.shop | where_exp: "i", "i.image" %}
 {% if items.size > 0 %}
@@ -23,7 +28,8 @@ permalink: /shop/
     {% assign link = item.link | default: "" %}
     {% assign external = false %}
     {% if link contains "://" %}{% assign external = true %}{% endif %}
-    <figure class="shop-item">
+    {% assign kind = item.category | default: "prints" | downcase %}
+    <figure class="shop-item{% if kind != "prints" %} is-filtered-out{% endif %}" data-kind="{{ kind }}">
       <div class="shop-frame">
         <a class="shop-photo shop-{{ shape }}"{% if link != "" %} href="{% if external %}{{ link }}{% else %}{{ link | relative_url }}{% endif %}"{% if external %} target="_blank" rel="noopener"{% endif %}{% endif %}>
           <img src="{{ item.image | relative_url }}" alt="{{ item.title | default: 'Print' | escape }}" loading="lazy">
@@ -35,6 +41,8 @@ permalink: /shop/
     </figure>
   {% endfor %}
 </div>
+{% assign shirts = items | where: "category", "shirts" %}
+{% if shirts.size == 0 %}<div class="empty-state is-filtered-out" data-kind="shirts"><p>Shirts are coming soon.</p></div>{% endif %}
 {% else %}
 <div class="empty-state">
   <p>The shop is opening soon.</p>
