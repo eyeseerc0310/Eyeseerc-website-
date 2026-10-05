@@ -1,0 +1,30 @@
+# =============================================================
+#  YOUR SITE SETTINGS — edit the text in quotes below.
+#  (After saving, the site rebuilds itself in about a minute.)
+# =============================================================
+
+# Your name or brand — shows in the top-left corner and browser tab.
+title: "EYESEERC"
+
+# A short line under your name on the home page.
+tagline: "Color · Black & White · Art"
+
+# Used by search engines and when your link is shared.
+description: "Photography portfolio of EYESEERC."
+
+# Contact details (leave blank "" to hide any of them).
+email: ""
+instagram: ""        # just the username, e.g. "eyeseerc"
+
+# Currency symbol used on the Shop page.
+currency: "$"
+
+# -------------------------------------------------------------
+#  Technical settings — you normally don't need to touch these.
+# -------------------------------------------------------------
+markdown: kramdown
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - vendor

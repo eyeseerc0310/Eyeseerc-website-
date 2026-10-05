@@ -1,0 +1,17 @@
+# =============================================================
+#  SHOP ITEMS
+#  Copy the example below, remove the "# " at the start of each
+#  line, and fill in your own details. One block per item.
+#
+#  image:     path to a photo you've uploaded, e.g. /photos/color/sunset.jpg
+#  price:     just the number (the currency symbol is set in _config.yml)
+#  buy_link:  a checkout link from Stripe, PayPal, Square, Etsy, etc.
+#             Leave it out and the button will email you instead.
+#  sold_out:  true  (optional — shows "Sold out" instead of a button)
+# =============================================================
+
+# - title: "Golden Hour Print"
+#   image: /photos/color/golden-hour.jpg
+#   description: "Archival 12x18 print on lustre paper."
+#   price: 45
+#   buy_link: "https://buy.stripe.com/your-link-here"

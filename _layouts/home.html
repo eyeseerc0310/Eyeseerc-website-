@@ -1,0 +1,14 @@
+---
+layout: default
+---
+<section class="hero">
+  <div class="hero-photo">
+    <img src="{{ '/images/me.jpg' | relative_url }}" alt="Portrait of {{ site.title }}"
+         onerror="this.onerror=null;this.src='{{ '/images/profile-placeholder.svg' | relative_url }}';">
+  </div>
+  <div class="hero-text">
+    {% if site.tagline != "" %}<p class="tagline">{{ site.tagline }}</p>{% endif %}
+    <div class="bio">{{ content }}</div>
+    {% if site.email != "" %}<a class="button" href="mailto:{{ site.email }}">Contact me</a>{% endif %}
+  </div>
+</section>

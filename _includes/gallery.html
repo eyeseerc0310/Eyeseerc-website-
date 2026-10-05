@@ -1,0 +1,30 @@
+{% comment %}
+  Shows every image found in the folder passed in as include.folder.
+  Just upload photos into that folder — no code changes needed.
+{% endcomment %}
+{% assign folder_path = "/photos/" | append: include.folder | append: "/" %}
+{% assign photos = site.static_files | where_exp: "f", "f.path contains folder_path" | sort: "path" %}
+{% if include.newest_first %}{% assign photos = photos | reverse %}{% endif %}
+
+{% assign count = 0 %}
+<div class="gallery">
+  {% for photo in photos %}
+    {% assign ext = photo.extname | downcase %}
+    {% if ext == ".jpg" or ext == ".jpeg" or ext == ".png" or ext == ".webp" or ext == ".gif" or ext == ".avif" %}
+      {% assign count = count | plus: 1 %}
+      {% assign caption = photo.basename | replace: "-", " " | replace: "_", " " %}
+      <figure class="gallery-item">
+        <a href="{{ photo.path | relative_url }}" data-lightbox data-caption="{{ caption | escape }}">
+          <img src="{{ photo.path | relative_url }}" alt="{{ caption | escape }}" loading="lazy">
+        </a>
+      </figure>
+    {% endif %}
+  {% endfor %}
+</div>
+
+{% if count == 0 %}
+  <div class="empty-state">
+    <p>Photos coming soon.</p>
+    <p class="hint">Site owner: upload images to the <code>photos/{{ include.folder }}</code> folder and they'll appear here automatically.</p>
+  </div>
+{% endif %}
