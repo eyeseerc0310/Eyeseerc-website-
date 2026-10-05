@@ -6,34 +6,33 @@ permalink: /shop/
 <h1 class="page-title">SHOP</h1>
 
 {% comment %}
-  Items come from _data/shop.yml. They're laid out three to a row; every
-  photo in a row is the same height, so landscape photos are wide and
-  portrait photos are narrow. Clicking a photo opens its print page.
+  Items come from _data/shop.yml, three to a row. Every print gets the same
+  size spot; inside it a landscape photo fills the width and a portrait photo
+  fills the height, so each keeps its own shape. Photos sit on a shared
+  baseline with the price underneath. Clicking a photo opens its print page.
 {% endcomment %}
 {% assign items = site.data.shop | where_exp: "i", "i.image" %}
 {% if items.size > 0 %}
 <div class="shop">
   {% for item in items %}
-    {% assign col = forloop.index0 | modulo: 3 %}
-    {% if col == 0 %}<div class="shop-row">{% endif %}
     {% case item.shape %}
-      {% when "portrait" %}{% assign ratio = "2 / 3" %}{% assign grow = 0.667 %}
-      {% when "square" %}{% assign ratio = "1 / 1" %}{% assign grow = 1 %}
-      {% else %}{% assign ratio = "3 / 2" %}{% assign grow = 1.5 %}
+      {% when "portrait" %}{% assign shape = "portrait" %}
+      {% when "square" %}{% assign shape = "square" %}
+      {% else %}{% assign shape = "landscape" %}
     {% endcase %}
-    <figure class="shop-item" style="flex-grow: {{ grow }}">
-      {% if item.link and item.link != "" %}
-        <a class="shop-photo" href="{{ item.link }}" target="_blank" rel="noopener" style="aspect-ratio: {{ ratio }}">
-      {% else %}
-        <a class="shop-photo" style="aspect-ratio: {{ ratio }}">
-      {% endif %}
+    {% assign link = item.link | default: "" %}
+    {% assign external = false %}
+    {% if link contains "://" %}{% assign external = true %}{% endif %}
+    <figure class="shop-item">
+      <div class="shop-frame">
+        <a class="shop-photo shop-{{ shape }}"{% if link != "" %} href="{% if external %}{{ link }}{% else %}{{ link | relative_url }}{% endif %}"{% if external %} target="_blank" rel="noopener"{% endif %}{% endif %}>
           <img src="{{ item.image | relative_url }}" alt="{{ item.title | default: 'Print' | escape }}" loading="lazy">
         </a>
+      </div>
       <figcaption class="shop-price">
         {% if item.sold_out %}Sold out{% elsif item.price %}{{ site.currency }}{{ item.price }}{% endif %}
       </figcaption>
     </figure>
-    {% if col == 2 or forloop.last %}</div>{% endif %}
   {% endfor %}
 </div>
 {% else %}

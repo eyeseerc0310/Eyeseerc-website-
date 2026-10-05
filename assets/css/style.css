@@ -281,12 +281,20 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 }
 
 /* ---------- Shop ---------- */
-/* Rows of three; every photo in a row is the same height (landscape wide,
-   portrait narrow), with the price underneath. */
-.shop { display: flex; flex-direction: column; gap: clamp(2rem, 4.5vw, 3.75rem); }
-.shop-row { display: flex; align-items: flex-start; gap: clamp(1.5rem, 3.5vw, 3rem); }
-.shop-item { margin: 0; flex-basis: 0; min-width: 0; }
+/* Three equal spots per row. Inside each square spot a landscape photo fills
+   the width and a portrait photo fills the height, so every print is the
+   same size but keeps its own shape. Photos share a baseline, price below. */
+.shop {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(2rem, 4.5vw, 3.75rem) clamp(1.5rem, 3.5vw, 3rem);
+}
+.shop-item { margin: 0; }
+.shop-frame { aspect-ratio: 1; display: flex; align-items: flex-end; justify-content: center; }
 .shop-photo { display: block; overflow: hidden; background: var(--line); }
+.shop-landscape { width: 100%; aspect-ratio: 3 / 2; }
+.shop-portrait { width: 66.667%; aspect-ratio: 2 / 3; }
+.shop-square { width: 100%; aspect-ratio: 1; }
 .shop-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease, opacity .3s; }
 a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .shop-price {
@@ -297,8 +305,8 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   color: var(--text);
 }
 @media (max-width: 560px) {
-  .shop-row { flex-direction: column; }
-  .shop-item { width: 100%; }
+  .shop { grid-template-columns: 1fr; }
+  .shop-frame { aspect-ratio: auto; } /* no empty space above landscape prints on phones */
 }
 
 /* ---------- Footer ---------- */
@@ -312,3 +320,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: .5rem; }
 .footer-links a { text-decoration: none; }
 .footer-links a:hover { color: var(--text); }
+
+/* ---------- 404 page ---------- */
+.not-found { text-align: center; padding: 3rem 0 4rem; }
+.not-found p { color: var(--muted); margin: -.5rem 0 1.5rem; letter-spacing: .04em; }
