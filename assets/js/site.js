@@ -272,7 +272,9 @@
       var doc = new DOMParser().parseFromString(html, 'text/html');
       var main = doc.querySelector('main');
       if (!main || doc.querySelector('meta[http-equiv="refresh"]')) throw new Error('not swappable');
-      main = document.adoptNode(main);
+      // copy it in as brand-new elements (not moved across): Safari can drop
+      // photos that are moved over from the page loaded in the background
+      main = document.importNode(main, true);
       return Promise.all([ready(main), menuClosed]).then(function () {
         function update() {
           document.querySelector('main').replaceWith(main);
