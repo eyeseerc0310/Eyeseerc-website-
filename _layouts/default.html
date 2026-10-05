@@ -46,7 +46,7 @@
     </nav>
   </header>
 
-  <main class="site-main{% if page.layout == "home" %} is-home{% endif %}">
+  <main class="site-main{% if page.layout == "home" %} is-home{% endif %}{% if page.tight_top %} tight-top{% endif %}">
     {{ content }}
   </main>
 
