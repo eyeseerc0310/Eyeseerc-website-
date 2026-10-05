@@ -163,10 +163,10 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 .site-nav a::after {
   content: "";
   position: absolute;
-  left: -18%; right: -18%; top: 0; bottom: -12%;
+  left: -18%; right: -18%; top: 22%; bottom: 2%; /* a flatter oval */
   z-index: -1;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgb(var(--glow)) 0%, rgba(var(--glow), .85) 30%, rgba(var(--glow), .35) 55%, rgba(var(--glow), 0) 72%);
+  background: radial-gradient(ellipse at center, rgba(var(--glow), .75) 0%, rgba(var(--glow), .55) 30%, rgba(var(--glow), .2) 55%, rgba(var(--glow), 0) 72%);
   opacity: 0;
   transition: opacity .25s ease;
   pointer-events: none;
@@ -177,7 +177,7 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   transform: scale(1.25);
   outline: none;
   /* soft white glow around the letters (plus the oval glow underneath) */
-  text-shadow: 0 0 6px rgb(var(--glow)), 0 0 14px rgba(var(--glow), .9);
+  text-shadow: 0 0 6px rgba(var(--glow), .8), 0 0 12px rgba(var(--glow), .6);
 }
 .site-nav a.active { color: var(--text); font-weight: 500; }
 
