@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
+  <meta name="description" content="{{ page.description | default: site.description }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+    <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="site-nav">
+      {% assign nav = "/|Home,/color/|Color,/black-and-white/|Black & White,/art/|Art,/shop/|Shop" | split: "," %}
+      {% for item in nav %}
+        {% assign parts = item | split: "|" %}
+        <a href="{{ parts[0] | relative_url }}"{% if page.url == parts[0] %} class="active"{% endif %}>{{ parts[1] }}</a>
+      {% endfor %}
+    </nav>
+  </header>
+
+  <main class="site-main">
+    {{ content }}
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      {% if site.email != "" %}<a href="mailto:{{ site.email }}">{{ site.email }}</a>{% endif %}
+      {% if site.instagram != "" %}<a href="https://instagram.com/{{ site.instagram }}" target="_blank" rel="noopener">Instagram @{{ site.instagram }}</a>{% endif %}
+    </div>
+    <p>&copy; {{ site.time | date: "%Y" }} {{ site.title }}. All photographs are the property of the artist.</p>
+  </footer>
+
+  <script src="{{ '/assets/js/site.js' | relative_url }}"></script>
+</body>
+</html>

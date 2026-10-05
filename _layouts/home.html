@@ -1,0 +1,22 @@
+---
+layout: default
+---
+<section class="hero">
+  <div class="hero-photo">
+    <img src="{{ '/images/me.jpg' | relative_url }}" alt="Portrait of {{ site.title }}"
+         onerror="this.onerror=null;this.src='{{ '/images/profile-placeholder.svg' | relative_url }}';">
+  </div>
+  <div class="hero-text">
+    <h1>{{ site.title }}</h1>
+    {% if site.tagline != "" %}<p class="tagline">{{ site.tagline }}</p>{% endif %}
+    <div class="bio">{{ content }}</div>
+    {% if site.email != "" %}<a class="button" href="mailto:{{ site.email }}">Contact me</a>{% endif %}
+  </div>
+</section>
+
+<section class="portfolio-links">
+  <a class="tile" href="{{ '/color/' | relative_url }}"><span>Color</span></a>
+  <a class="tile tile-bw" href="{{ '/black-and-white/' | relative_url }}"><span>Black &amp; White</span></a>
+  <a class="tile tile-art" href="{{ '/art/' | relative_url }}"><span>Art</span></a>
+  <a class="tile tile-shop" href="{{ '/shop/' | relative_url }}"><span>Shop</span></a>
+</section>
