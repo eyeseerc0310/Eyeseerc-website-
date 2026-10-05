@@ -18,8 +18,18 @@
     try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (err) {}
 
     // Slow, gentle fade. Where the browser supports it, the whole page
-    // dissolves from the old look to the new one as one picture.
-    if (document.startViewTransition) { document.startViewTransition(apply); return; }
+    // dissolves from the old look to the new one as one picture. Photos on
+    // screen are lifted out of that dissolve so they never lose contrast.
+    if (document.startViewTransition) {
+      var photos = Array.prototype.filter.call(
+        document.querySelectorAll('.hero-photo img, .gallery-item img, .shop-photo img'),
+        function (img) { var r = img.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight && r.width > 0; });
+      photos.forEach(function (img, i) { img.style.viewTransitionName = 'photo-' + i; });
+      var vt = document.startViewTransition(apply);
+      var cleanUp = function () { photos.forEach(function (img) { img.style.viewTransitionName = ''; }); };
+      vt.finished.then(cleanUp, cleanUp);
+      return;
+    }
     // Otherwise every colour eases to its new value together.
     clearTimeout(fadeTimer);
     root.classList.add('theme-fading');
