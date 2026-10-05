@@ -36,7 +36,6 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  transition: background-color .3s ease, color .3s ease;
   font-family: var(--sans);
   font-weight: 300;
   line-height: 1.7;
@@ -96,6 +95,17 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 .theme-toggle .icon-sun { display: none; }
 :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
 :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+/* slow, gentle fade between light and dark (about one second) */
+::view-transition-old(root), ::view-transition-new(root) {
+  animation-duration: 1s;
+  animation-timing-function: ease-in-out;
+}
+/* fallback for browsers without view transitions: every colour eases over */
+html.theme-fading *, html.theme-fading *::before, html.theme-fading *::after {
+  transition: background-color 1s ease, color 1s ease, border-color 1s ease, fill 1s ease, stroke 1s ease, text-shadow 1s ease !important;
+}
+html.theme-fading body { transition: background-color 1s ease, color 1s ease !important; }
 
 /* Menu button (top right) */
 .nav-toggle {
