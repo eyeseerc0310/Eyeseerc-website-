@@ -7,8 +7,11 @@
     nav.classList.toggle('open', open);
     toggle.setAttribute('aria-expanded', open);
   }
+  var hoverOpenedAt = 0;
   toggle.addEventListener('click', function (e) {
     e.stopPropagation();
+    // a click right after hovering opened it shouldn't immediately close it
+    if (Date.now() - hoverOpenedAt < 600) return;
     setOpen(!nav.classList.contains('open'));
   });
   document.addEventListener('click', function (e) {
@@ -17,6 +20,22 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') setOpen(false);
   });
+
+  // On computers, open when the mouse moves over the menu icon and close
+  // shortly after it leaves both the icon and the menu.
+  if (window.matchMedia('(hover: hover)').matches) {
+    var closeTimer;
+    [toggle, nav].forEach(function (el) {
+      el.addEventListener('mouseenter', function () {
+        clearTimeout(closeTimer);
+        if (!nav.classList.contains('open')) hoverOpenedAt = Date.now();
+        setOpen(true);
+      });
+      el.addEventListener('mouseleave', function () {
+        closeTimer = setTimeout(function () { setOpen(false); }, 250);
+      });
+    });
+  }
 })();
 
 // Full-screen photo viewer (click a photo to open; arrows / swipe to browse)
