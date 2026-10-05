@@ -25,8 +25,15 @@
         document.querySelectorAll('.hero-photo img, .gallery-item img, .shop-photo img'),
         function (img) { var r = img.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight && r.width > 0; });
       photos.forEach(function (img, i) { img.style.viewTransitionName = 'photo-' + i; });
+      // the header is lifted too (only for the fade), so photos scrolled
+      // underneath it stay underneath instead of showing through on top
+      var header = document.querySelector('.site-header');
+      if (header) header.style.viewTransitionName = 'site-header';
       var vt = document.startViewTransition(apply);
-      var cleanUp = function () { photos.forEach(function (img) { img.style.viewTransitionName = ''; }); };
+      var cleanUp = function () {
+        photos.forEach(function (img) { img.style.viewTransitionName = ''; });
+        if (header) header.style.viewTransitionName = '';
+      };
       vt.finished.then(cleanUp, cleanUp);
       return;
     }
