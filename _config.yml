@@ -6,6 +6,9 @@
 # Your name or brand — shows in the top-left corner and browser tab.
 title: "EYESEERC"
 
+# Company name shown in the copyright line at the bottom of every page.
+copyright_name: "EYESEERC PRODUCTIONS INC"
+
 # Used by search engines and when your link is shared.
 description: "Photography portfolio of EYESEERC."
 
