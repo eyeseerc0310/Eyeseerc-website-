@@ -208,6 +208,7 @@ html.theme-fading .theme-toggle * { transition: none !important; }
   color: var(--menu-link);
   padding: .35rem 0;
   transform-origin: right center;
+  -webkit-tap-highlight-color: transparent; /* no blue box flashing on tap */
   transition: transform .25s ease, color .25s ease, text-shadow .25s ease;
   position: relative;
 }
