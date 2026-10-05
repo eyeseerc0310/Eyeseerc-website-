@@ -40,7 +40,7 @@ Open the folder for the gallery you want, then **Add file → Upload files**:
 | Gallery          | Folder                     |
 |------------------|----------------------------|
 | Photography      | `photos/photography/color` or `photos/photography/black-and-white` |
-| Projects         | `photos/projects`          |
+| Projects         | `photos/projects/digital` or `photos/projects/physical` |
 
 - Photos appear automatically — no code needed. (JPG, PNG, WEBP, GIF.)
 - On the Photography page, put colour photos in `photos/photography/color` and
@@ -48,6 +48,9 @@ Open the folder for the gallery you want, then **Add file → Upload files**:
   colour photos first; the B&W button switches to the black & white ones.
 - On the Photography page each photo gets a title underneath, numbered in
   order: COLOR ARCHIVE #1, #2 … and B&W ARCHIVE #1, #2 … (Projects has none).
+- On the Projects page, put digital work in `photos/projects/digital` and
+  physical work in `photos/projects/physical`. DIGITAL shows first; the
+  PHYSICAL button switches to the others.
 - They're shown in alphabetical order by file name. To control the order,
   start names with numbers: `01-sunset.jpg`, `02-city.jpg` …
 - The file name becomes the caption (`golden-hour.jpg` → "golden hour").
