@@ -1,7 +1,7 @@
 # EYESEERC — Website
 
 A simple photography portfolio with a **Home** page (your bio + photo),
-three galleries — **Color**, **Black & White**, **Art** — and a **Shop**.
+three galleries — **Color**, **Black & White**, **Projects** — and a **Shop**.
 
 Everything can be edited right here on GitHub, from a computer or phone browser.
 After any change, the site updates itself in about 1–2 minutes.
@@ -39,7 +39,7 @@ Open the folder for the gallery you want, then **Add file → Upload files**:
 |------------------|----------------------------|
 | Color            | `photos/color`             |
 | Black & White    | `photos/black-and-white`   |
-| Art              | `photos/art`               |
+| Projects         | `photos/projects`          |
 
 - Photos appear automatically — no code needed. (JPG, PNG, WEBP, GIF.)
 - They're shown in alphabetical order by file name. To control the order,
