@@ -81,15 +81,15 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   position: absolute;
   top: calc(100% + 1px);
   right: clamp(1rem, 4vw, 3rem);
-  min-width: 360px;
+  min-width: 270px;
   display: flex; flex-direction: column; align-items: flex-end;
   padding: 1.25rem 1.75rem;
   /* light grey, fully see-through on the left, fading to more solid on the right */
-  background: linear-gradient(to right, rgba(188, 188, 188, 0) 0%, rgba(188, 188, 188, .6) 45%, rgba(188, 188, 188, .94) 100%);
-  /* thin, slightly darker line along the top and bottom, fading the same way */
+  background: linear-gradient(to right, rgba(214, 214, 214, 0) 0%, rgba(214, 214, 214, .7) 25%, rgba(214, 214, 214, .94) 55%);
+  /* thin, slightly darker line along the top, right and bottom, fading in from the left */
   border-style: solid;
-  border-width: 1px 0;
-  border-image: linear-gradient(to right, rgba(120, 120, 120, 0), rgba(120, 120, 120, .9)) 1;
+  border-width: 1px 1px 1px 0;
+  border-image: linear-gradient(to right, rgba(120, 120, 120, 0), rgba(120, 120, 120, .9) 55%) 1;
   opacity: 0; visibility: hidden; transform: translateY(-8px);
   transition: opacity .25s ease, transform .25s ease, visibility .25s;
 }
@@ -99,8 +99,8 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   position: absolute; inset: 0; z-index: -1;
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 60%);
-  mask-image: linear-gradient(to right, transparent, #000 60%);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 35%);
+  mask-image: linear-gradient(to right, transparent, #000 35%);
 }
 .site-nav.open { opacity: 1; visibility: visible; transform: translateY(0); }
 .site-nav a {
@@ -152,13 +152,6 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   aspect-ratio: 3 / 2; /* full-frame camera ratio */
   object-fit: cover;
   background: var(--line);
-}
-.tagline {
-  text-transform: uppercase;
-  letter-spacing: .2em;
-  font-size: .75rem;
-  color: var(--muted);
-  margin: 0 0 2rem;
 }
 .bio { font-size: 1.05rem; }
 .bio p { margin: 0 0 1.1rem; }
