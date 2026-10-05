@@ -46,6 +46,8 @@ Open the folder for the gallery you want, then **Add file → Upload files**:
 - On the Photography page, put colour photos in `photos/photography/color` and
   black & white ones in `photos/photography/black-and-white`. The page shows the
   colour photos first; the B&W button switches to the black & white ones.
+- On the Photography page each photo gets a title underneath, numbered in
+  order: COLOR ARCHIVE #1, #2 … and B&W ARCHIVE #1, #2 … (Projects has none).
 - They're shown in alphabetical order by file name. To control the order,
   start names with numbers: `01-sunset.jpg`, `02-city.jpg` …
 - The file name becomes the caption (`golden-hour.jpg` → "golden hour").
