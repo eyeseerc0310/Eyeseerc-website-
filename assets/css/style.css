@@ -49,7 +49,15 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   font-weight: 400;
   text-decoration: none;
   letter-spacing: .18em;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
 }
+/* logo beside the name (upload images/logo.png to show it) */
+.logo { display: block; width: auto; object-fit: contain; flex-shrink: 0; }
+.logo-small { height: 2.25rem; }
+.logo-large { height: .9em; }
+.hero-title { display: flex; align-items: center; gap: .3em; flex-wrap: wrap; }
 /* Menu button (top right) */
 .nav-toggle {
   display: flex; align-items: center; gap: .6rem;

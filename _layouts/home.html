@@ -7,7 +7,7 @@ layout: default
          onerror="this.onerror=null;this.src='{{ '/images/profile-placeholder.svg' | relative_url }}';">
   </div>
   <div class="hero-text">
-    <h1>{{ site.title }}</h1>
+    <h1 class="hero-title">{% include logo.html class="logo-large" %}<span>{{ site.title }}</span></h1>
     {% if site.tagline != "" %}<p class="tagline">{{ site.tagline }}</p>{% endif %}
     <div class="bio">{{ content }}</div>
     {% if site.email != "" %}<a class="button" href="mailto:{{ site.email }}">Contact me</a>{% endif %}

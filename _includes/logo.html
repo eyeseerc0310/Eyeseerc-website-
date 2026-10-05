@@ -1,0 +1,9 @@
+{% comment %}
+  Shows your logo if you've uploaded one to the images folder named
+  logo.png, logo.svg, logo.jpg or logo.webp. Shows nothing otherwise.
+{% endcomment %}
+{% assign logo_file = nil %}
+{% for f in site.static_files %}
+  {% if f.path contains "/images/" and f.basename == "logo" %}{% assign logo_file = f %}{% break %}{% endif %}
+{% endfor %}
+{% if logo_file %}<img class="logo {{ include.class }}" src="{{ logo_file.path | relative_url }}" alt="">{% endif %}
