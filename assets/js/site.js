@@ -202,3 +202,16 @@
   window.addEventListener('hashchange', fromAddress);
   fromAddress();
 })();
+
+// Instagram / YouTube buttons: on phones and tablets open the link in the
+// same tab, so the phone can hand it straight to the Instagram or YouTube
+// app (links opened in a new tab often stay in the browser). Computers keep
+// opening them in a new tab.
+(function () {
+  var touch = window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  if (!touch) return;
+  Array.prototype.forEach.call(document.querySelectorAll('.social-btn[target]'), function (a) {
+    a.removeAttribute('target');
+  });
+})();
+
