@@ -365,19 +365,22 @@
     }
     var els = movers();
     if (!animate || before === kind || !els.length || !els[0].animate) { swap(); return; }
-    // later button: everything slides left; earlier button: slides right
+    // later button: everything slides left; earlier button: slides right.
+    // The whole move follows one smooth speed curve: it starts slowly, picks
+    // up speed as the old photos leave and the new ones arrive, then eases
+    // gently to a stop (the two halves of an ease-in-out).
     var dir = to > from ? 1 : -1;
     var off = window.innerWidth;
     busy = true;
     var outs = els.map(function (el) {
       return el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(' + (-dir * off) + 'px)' }],
-        { duration: 340, easing: 'cubic-bezier(.5, 0, .9, .5)', fill: 'forwards' });
+        { duration: 400, easing: 'cubic-bezier(.32, 0, .67, 0)', fill: 'forwards' });
     });
     outs[0].onfinish = function () {
       swap();
       var ins = movers().map(function (el) {
         return el.animate([{ transform: 'translateX(' + (dir * off) + 'px)' }, { transform: 'translateX(0)' }],
-          { duration: 520, easing: 'cubic-bezier(.15, .75, .25, 1)' });
+          { duration: 400, easing: 'cubic-bezier(.33, 1, .68, 1)' });
       });
       outs.forEach(function (a) { a.cancel(); });
       var done = function () { busy = false; };
