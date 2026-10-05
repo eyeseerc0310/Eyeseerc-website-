@@ -12,13 +12,6 @@
   <script>
     // apply the saved light/dark choice before the page draws (no flash)
     try { if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) {}
-    // moving between pages: mark the fade so it uses the page speed, not the slower light/dark one
-    window.addEventListener('pagereveal', function (e) {
-      if (!e.viewTransition) return;
-      var html = document.documentElement, done = function () { html.classList.remove('page-fading'); };
-      html.classList.add('page-fading');
-      e.viewTransition.finished.then(done, done);
-    });
   </script>
 </head>
 <body>

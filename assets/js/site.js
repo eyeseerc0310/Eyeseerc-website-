@@ -215,3 +215,23 @@
   });
 })();
 
+
+// Moving between pages: fade the page out, then go. The next page fades
+// itself in (see style.css). New tabs, other sites, email links and the
+// photo viewer are left alone.
+(function () {
+  var root = document.documentElement;
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if ((a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+    var url = new URL(a.href, location.href);
+    if (url.origin !== location.origin) return;
+    if (url.pathname === location.pathname && url.search === location.search) return;
+    e.preventDefault();
+    root.classList.add('page-leaving');
+    setTimeout(function () { location.href = url.href; }, 300);
+  });
+  // coming back with the browser's back button shows the page again
+  window.addEventListener('pageshow', function (e) { if (e.persisted) root.classList.remove('page-leaving'); });
+})();
