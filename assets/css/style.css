@@ -126,6 +126,11 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 /* the page itself crossfades */
 ::view-transition-old(root) { display: block; animation: theme-fade-out 1.5s ease-in-out both; }
 ::view-transition-new(root) { animation: theme-fade-in 1.5s ease-in-out both; }
+/* the header fades between the two looks too, staying above the photos: the
+   new look fades in over the old one, which stays solid underneath so the
+   header never turns see-through halfway */
+::view-transition-old(site-header) { display: block; animation: none; opacity: 1; mix-blend-mode: normal; }
+::view-transition-new(site-header) { animation: theme-fade-in 1.5s ease-in-out both; mix-blend-mode: normal; }
 /* fallback for browsers without view transitions: every colour eases over */
 html.theme-fading *, html.theme-fading *::before, html.theme-fading *::after {
   transition: background-color 1.5s ease, color 1.5s ease, border-color 1.5s ease, fill 1.5s ease, stroke 1.5s ease, text-shadow 1.5s ease !important;
