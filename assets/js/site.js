@@ -182,26 +182,33 @@
   });
 })();
 
-// COLOR / B&W buttons on the Photography page. The page shows one kind at a
-// time: colour by default, black & white when B&W is tapped.
+// Two-way switches: COLOR / B&W on the Photography page and PRINTS / SHIRTS
+// on the Shop page. One kind shows at a time; the first button is the
+// default and the other one is remembered in the address (e.g. #bw).
 (function () {
   function apply(kind) {
     var bar = document.querySelector('.gallery-filter');
     if (!bar) return;
-    Array.prototype.forEach.call(bar.querySelectorAll('button'), function (b) {
+    var buttons = bar.querySelectorAll('button');
+    if (!kind) kind = buttons[0].dataset.filter;
+    Array.prototype.forEach.call(buttons, function (b) {
       b.setAttribute('aria-pressed', b.dataset.filter === kind ? 'true' : 'false');
     });
-    Array.prototype.forEach.call(document.querySelectorAll('.gallery-item'), function (it) {
+    Array.prototype.forEach.call(document.querySelectorAll('main [data-kind]'), function (it) {
       it.classList.toggle('is-filtered-out', it.dataset.kind !== kind);
     });
-    try { history.replaceState(history.state, '', kind === 'bw' ? '#bw' : location.pathname + location.search); } catch (e) {}
+    var hash = kind === buttons[0].dataset.filter ? '' : '#' + kind;
+    try { history.replaceState(history.state, '', hash || location.pathname + location.search); } catch (e) {}
   }
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('.gallery-filter button');
     if (b) apply(b.dataset.filter);
   });
   function fromAddress() {
-    if (document.querySelector('.gallery-filter')) apply(location.hash === '#bw' ? 'bw' : 'color');
+    var bar = document.querySelector('.gallery-filter');
+    if (!bar) return;
+    var want = location.hash.slice(1);
+    apply(want && bar.querySelector('button[data-filter="' + want + '"]') ? want : null);
   }
   window.addEventListener('hashchange', fromAddress);
   document.addEventListener('pageswap:done', fromAddress);

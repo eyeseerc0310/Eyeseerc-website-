@@ -384,7 +384,7 @@ html.theme-fading .theme-toggle * { transition: none !important; }
   opacity: 0; transition: opacity .2s ease;
 }
 .gallery-filter button[aria-pressed="true"]::after { opacity: 1; }
-.gallery-item.is-filtered-out { display: none; }
+.is-filtered-out { display: none !important; }
 
 /* drop shadow on photos shown on the page (not when opened full screen) */
 .gallery-item a,

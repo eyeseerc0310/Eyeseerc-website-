@@ -54,14 +54,16 @@ Open the folder for the gallery you want, then **Add file → Upload files**:
 
 ## 🛒 Shop
 
-The Shop page shows your prints three to a row with the price underneath.
-Clicking a photo opens that print's page on your print-on-demand site
-(for example Fine Art America or Darkroom), which handles payment, printing
+The Shop page has two buttons, **PRINTS** and **SHIRTS**, and shows one at a
+time (prints first), three to a row with the price underneath. Clicking a
+photo opens that item's page on your print-on-demand site (for example Fine
+Art America, Darkroom or a shirt printer), which handles payment, printing
 and shipping.
 
-Open **`_data/shop.yml`** and add one block per print: the photo, its shape
-(landscape / portrait / square), the price, and the link to the product page.
-The three items in there now are temporary samples — replace them with yours.
+Open **`_data/shop.yml`** and add one block per item: its category (`prints`
+or `shirts`), the photo, its shape (landscape / portrait / square), the price,
+and the link to the product page. Shirt photos can go in `photos/shop`.
+The items in there now are temporary samples — replace them with yours.
 
 ---
 

@@ -1,8 +1,10 @@
 # =============================================================
 #  SHOP ITEMS
-#  One block per print. They show three to a row, in this order.
+#  One block per item. They show three to a row, in this order.
 #
-#  title:     name of the print (used for screen readers / search)
+#  category:  prints or shirts — which button (PRINTS / SHIRTS) shows it
+#             (leave it out and it counts as a print)
+#  title:     name of the item (used for screen readers / search)
 #  image:     a photo you've uploaded, e.g. /photos/photography/color/sunset.jpg
 #  shape:     landscape, portrait or square
 #  price:     just the number (the currency symbol is set in _config.yml)
@@ -11,24 +13,48 @@
 #             samples link to /404.html (a "page not found" page).
 #  sold_out:  true  (optional — shows "Sold out" instead of the price)
 #
-#  The three items below are TEMPORARY SAMPLES — replace them with
-#  your own prints.
+#  The items below are TEMPORARY SAMPLES — replace them with your own
+#  prints and shirts. Shirt photos can go in the photos/shop folder.
 # =============================================================
 
-- title: "Sunset (sample)"
+- category: prints
+  title: "Sunset (sample)"
   image: /photos/photography/color/sample-01-sunset.png
   shape: landscape
   price: 45
   link: /404.html
 
-- title: "Ocean (sample)"
+- category: prints
+  title: "Ocean (sample)"
   image: /photos/photography/color/sample-02-ocean.png
   shape: portrait
   price: 60
   link: /404.html
 
-- title: "Forest (sample)"
+- category: prints
+  title: "Forest (sample)"
   image: /photos/photography/color/sample-03-forest.png
   shape: landscape
   price: 45
+  link: /404.html
+
+- category: shirts
+  title: "Black tee (sample)"
+  image: /photos/shop/sample-shirt-1.svg
+  shape: square
+  price: 35
+  link: /404.html
+
+- category: shirts
+  title: "Bone tee (sample)"
+  image: /photos/shop/sample-shirt-2.svg
+  shape: square
+  price: 35
+  link: /404.html
+
+- category: shirts
+  title: "Olive tee (sample)"
+  image: /photos/shop/sample-shirt-3.svg
+  shape: square
+  price: 35
   link: /404.html
