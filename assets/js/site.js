@@ -83,8 +83,7 @@
 
 // Full-screen photo viewer (click a photo to open; arrows / swipe to browse)
 (function () {
-  var links = Array.prototype.slice.call(document.querySelectorAll('[data-lightbox]'));
-  if (!links.length) return;
+  var links = [];
 
   var box = document.createElement('div');
   box.className = 'lightbox';
@@ -152,13 +151,13 @@
   }
 
   // only browse the photos currently shown (e.g. just COLOR or just B&W)
-  var allLinks = links.slice();
-  allLinks.forEach(function (link) {
-    link.addEventListener('click', function (e) {
-      e.preventDefault();
-      links = allLinks.filter(function (l) { return !l.closest('.is-filtered-out'); });
-      open(Math.max(0, links.indexOf(link)));
-    });
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest && e.target.closest('[data-lightbox]');
+    if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    links = Array.prototype.filter.call(document.querySelectorAll('[data-lightbox]'),
+      function (l) { return !l.closest('.is-filtered-out'); });
+    open(Math.max(0, links.indexOf(link)));
   });
   box.querySelector('.lb-close').addEventListener('click', close);
   box.querySelector('.lb-prev').addEventListener('click', function () { show(index - 1); });
@@ -186,20 +185,26 @@
 // COLOR / B&W buttons on the Photography page. The page shows one kind at a
 // time: colour by default, black & white when B&W is tapped.
 (function () {
-  var bar = document.querySelector('.gallery-filter');
-  if (!bar) return;
-  var buttons = Array.prototype.slice.call(bar.querySelectorAll('button'));
-  var items = Array.prototype.slice.call(document.querySelectorAll('.gallery-item'));
   function apply(kind) {
-    buttons.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.filter === kind ? 'true' : 'false'); });
-    items.forEach(function (it) { it.classList.toggle('is-filtered-out', it.dataset.kind !== kind); });
-    try { history.replaceState(null, '', kind === 'bw' ? '#bw' : location.pathname + location.search); } catch (e) {}
+    var bar = document.querySelector('.gallery-filter');
+    if (!bar) return;
+    Array.prototype.forEach.call(bar.querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', b.dataset.filter === kind ? 'true' : 'false');
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.gallery-item'), function (it) {
+      it.classList.toggle('is-filtered-out', it.dataset.kind !== kind);
+    });
+    try { history.replaceState(history.state, '', kind === 'bw' ? '#bw' : location.pathname + location.search); } catch (e) {}
   }
-  buttons.forEach(function (b) {
-    b.addEventListener('click', function () { apply(b.dataset.filter); });
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.gallery-filter button');
+    if (b) apply(b.dataset.filter);
   });
-  function fromAddress() { apply(location.hash === '#bw' ? 'bw' : 'color'); }
+  function fromAddress() {
+    if (document.querySelector('.gallery-filter')) apply(location.hash === '#bw' ? 'bw' : 'color');
+  }
   window.addEventListener('hashchange', fromAddress);
+  document.addEventListener('pageswap:done', fromAddress);
   fromAddress();
 })();
 
@@ -216,22 +221,88 @@
 })();
 
 
-// Moving between pages: fade the page out, then go. The next page fades
-// itself in (see style.css). New tabs, other sites, email links and the
-// photo viewer are left alone.
+// Moving between pages: instead of loading a whole new page (a hard snap),
+// fetch the next page and swap its content in, letting the old page
+// dissolve into the new one exactly like the light/dark fade does. The
+// header and footer simply stay put. If anything goes wrong it falls back
+// to a normal page load.
 (function () {
+  if (!window.fetch || !window.DOMParser || !history.pushState) return;
   var root = document.documentElement;
+  var nav = document.querySelector('.site-nav');
+  var busy = false;
+
+  function samePage(url) { return url.pathname === location.pathname && url.search === location.search; }
+
+  // give the first photos a moment to arrive so the new page fades in whole
+  function ready(main) {
+    var imgs = Array.prototype.slice.call(main.querySelectorAll('img'), 0, 6);
+    var loads = imgs.map(function (el) {
+      var im = new Image(); im.src = el.currentSrc || el.src;
+      return im.decode ? im.decode().catch(function () {}) : Promise.resolve();
+    });
+    return Promise.race([Promise.all(loads), new Promise(function (r) { setTimeout(r, 600); })]);
+  }
+
+  function go(url, push, scrollY) {
+    if (busy) return;
+    busy = true;
+    fetch(url.href, { credentials: 'same-origin' }).then(function (r) {
+      if (!r.ok) throw new Error('status ' + r.status);
+      return r.text();
+    }).then(function (html) {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var main = doc.querySelector('main');
+      if (!main || doc.querySelector('meta[http-equiv="refresh"]')) throw new Error('not swappable');
+      main = document.adoptNode(main);
+      return ready(main).then(function () {
+        function update() {
+          document.querySelector('main').replaceWith(main);
+          document.title = doc.title;
+          if (push) {
+            history.replaceState({ y: window.scrollY }, '');
+            history.pushState({ y: 0 }, '', url.href);
+          }
+          if (nav) {
+            nav.classList.remove('open');
+            var t = document.querySelector('.nav-toggle'); if (t) t.setAttribute('aria-expanded', 'false');
+            Array.prototype.forEach.call(nav.querySelectorAll('a'), function (a) {
+              a.classList.toggle('active', new URL(a.href, location.href).pathname === location.pathname);
+            });
+          }
+          window.scrollTo(0, scrollY || 0);
+          document.dispatchEvent(new Event('pageswap:done'));
+        }
+        if (document.startViewTransition) {
+          root.classList.add('page-fading');
+          var vt = document.startViewTransition(update);
+          var done = function () { root.classList.remove('page-fading'); busy = false; };
+          vt.finished.then(done, done);
+        } else {
+          update();
+          if (main.animate) main.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, easing: 'ease-out' });
+          busy = false;
+        }
+      });
+    }).catch(function () { location.href = url.href; });
+  }
+
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href]');
     if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if ((a.target && a.target !== '_self') || a.hasAttribute('download')) return;
     var url = new URL(a.href, location.href);
-    if (url.origin !== location.origin) return;
-    if (url.pathname === location.pathname && url.search === location.search) return;
+    if (url.origin !== location.origin || samePage(url)) return;
+    if (/\.(jpe?g|png|gif|webp|pdf)$/i.test(url.pathname)) return;
     e.preventDefault();
-    root.classList.add('page-leaving');
-    setTimeout(function () { location.href = url.href; }, 300);
+    go(url, true);
   });
-  // coming back with the browser's back button shows the page again
-  window.addEventListener('pageshow', function (e) { if (e.persisted) root.classList.remove('page-leaving'); });
+
+  // browser back / forward buttons
+  var shown = location.pathname + location.search;
+  document.addEventListener('pageswap:done', function () { shown = location.pathname + location.search; });
+  window.addEventListener('popstate', function (e) {
+    if (location.pathname + location.search === shown) return; // just the #bw switch
+    go(new URL(location.href), false, e.state && e.state.y);
+  });
 })();
