@@ -453,7 +453,6 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: .5rem; }
 .footer-links a { text-decoration: none; }
 .footer-links a:hover { color: var(--text); }
-.footer-links:empty { display: none; }
 /* Instagram / YouTube buttons */
 .social { display: flex; justify-content: center; gap: 1.1rem; margin-bottom: .9rem; }
 .social-btn { color: var(--text); opacity: .8; display: inline-flex; transition: opacity .2s ease, transform .2s ease; }
