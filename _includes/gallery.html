@@ -19,7 +19,8 @@
       {% assign count = count | plus: 1 %}
       {% assign caption = photo.basename | replace: "-", " " | replace: "_", " " %}
       {% assign kind = "" %}
-      {% if photo.path contains "/black-and-white/" %}{% assign kind = "bw" %}{% elsif photo.path contains "/color/" %}{% assign kind = "color" %}{% endif %}
+      {% if photo.path contains "/black-and-white/" %}{% assign kind = "bw" %}{% elsif photo.path contains "/color/" %}{% assign kind = "color" %}
+      {% elsif photo.path contains "/digital/" %}{% assign kind = "digital" %}{% elsif photo.path contains "/physical/" %}{% assign kind = "physical" %}{% endif %}
       {% if include.titles %}
         {% if kind == "bw" %}{% assign bw_n = bw_n | plus: 1 %}{% assign caption = "B&W ARCHIVE #" | append: bw_n %}
         {% else %}{% assign color_n = color_n | plus: 1 %}{% assign caption = "COLOR ARCHIVE #" | append: color_n %}{% endif %}
