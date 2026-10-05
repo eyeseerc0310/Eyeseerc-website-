@@ -313,6 +313,8 @@ html.theme-fading .theme-toggle * { transition: none !important; }
   padding: clamp(2rem, 5vw, 5rem);
   max-width: 40rem;
 }
+/* the blue mark above the bio */
+.hero-mark { display: block; width: clamp(150px, 16vw, 230px); height: auto; margin: 0 0 1.75rem; }
 .bio { font-size: 1.05rem; }
 .bio p { margin: 0 0 1.1rem; }
 .bio strong { font-weight: 500; }
