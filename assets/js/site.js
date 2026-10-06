@@ -244,15 +244,21 @@
       gap: P.top - F.bottom
     };
   }
-  function applyProg() {
-    if (!geo) return;
-    // past the details, keep scrolling down to the bottom of the page:
-    // everything moves up and the footer (links and copyright) comes in
-    var p2 = Math.max(0, prog - 1), fh = foot.offsetHeight;
+  // scrolling on to the bottom of the page: everything moves up and the
+  // footer (links and copyright) comes in
+  function applyFoot(p2) {
+    var fh = foot.offsetHeight;
     stage.style.transform = p2 ? 'translateY(' + (-p2 * fh) + 'px)' : '';
     foot.style.transform = 'translateY(' + ((1 - p2) * 100) + '%)';
     foot.style.opacity = p2;
     foot.style.pointerEvents = p2 > 0.6 ? '' : 'none';
+  }
+  function applyProg() {
+    // Photography / Projects: one step, photo -> footer, the photo keeps its size
+    if (!box.classList.contains('shop-mode')) { applyFoot(prog); return; }
+    if (!geo) return;
+    // shop items: photo -> details -> footer
+    applyFoot(Math.max(0, prog - 1));
     var p = Math.min(1, prog), s = geo.s * (1 - p) + p, ox = geo.ox * (1 - p), oy = geo.oy * (1 - p);
     img.style.transform = 'translate(' + ox + 'px,' + oy + 'px) scale(' + s + ')';
     var bottom = geo.F.top + geo.F.height / 2 + oy + geo.F.height * s / 2;
@@ -279,12 +285,14 @@
   // once the details have been revealed they stay: scrolling back up only
   // goes back as far as the details, never to the big photo again
   var minStep = 0;
+  function maxStep() { return box.classList.contains('shop-mode') ? 2 : 1; }
   function scrollTo(t) {
-    if (t >= 1) minStep = 1;
-    target = Math.max(minStep, Math.min(2, t));
+    if (t >= 1 && box.classList.contains('shop-mode')) minStep = 1;
+    target = Math.max(minStep, Math.min(maxStep(), t));
     if (!raf) raf = requestAnimationFrame(step);
   }
   function shopOpen() { return box.classList.contains('open') && box.classList.contains('shop-mode') && geo; }
+  function viewerOpen() { return box.classList.contains('open') && (geo || !box.classList.contains('shop-mode')); }
   // tapping the photo once the details are showing brings it back up big
   // (the only way back: scrolling up doesn't)
   img.addEventListener('click', function () {
@@ -296,20 +304,20 @@
   // however long its momentum keeps going; it then glides to that step.
   var gesture = null, gestureTimer;
   box.addEventListener('wheel', function (e) {
-    // the photo viewer never scrolls or zooms anything on its own: in the
-    // Photography and Projects viewers the wheel / trackpad does nothing
-    // (no page moving behind it, no browser zoom); only shop items use it
+    // the page behind never scrolls and the browser never zooms; the wheel /
+    // trackpad steps through the viewer instead (Photography / Projects:
+    // photo -> footer; shop items: photo -> details -> footer)
     if (!box.classList.contains('open')) return;
     e.preventDefault();
-    if (!shopOpen()) return;
+    if (!viewerOpen() || sliding) return;
     var d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
     if (!d) return;
     var dir = d > 0 ? 1 : -1;
     if (!gesture || gesture.dir !== dir) {
       var from = Math.round(target);
-      gesture = { dir: dir, stop: Math.max(minStep, Math.min(2, from + dir)) };
+      gesture = { dir: dir, stop: Math.max(minStep, Math.min(maxStep(), from + dir)) };
     }
-    var t = target + d / geo.D;
+    var t = target + d / (geo ? geo.D : 160);
     scrollTo(dir > 0 ? Math.min(t, gesture.stop) : Math.max(t, gesture.stop));
     clearTimeout(gestureTimer);
     gestureTimer = setTimeout(function () { gesture = null; }, 220);
@@ -322,12 +330,20 @@
   box.addEventListener('gesturechange', function (e) { if (box.classList.contains('open')) e.preventDefault(); });
   var swipe = null, D_touch = 110;
   box.addEventListener('touchstart', function (e) {
-    if (!shopOpen() || e.touches.length !== 1) return;
-    swipe = { y: e.touches[0].clientY, t: target };
+    if (!viewerOpen() || e.touches.length !== 1 || e.target.closest('button')) return;
+    swipe = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: target, axis: null };
     D_touch = 110;
   }, { passive: true });
   box.addEventListener('touchmove', function (e) {
-    if (!swipe || !shopOpen()) return;
+    if (!swipe || !viewerOpen()) return;
+    // Photography / Projects: sideways swipes still browse the photos; only
+    // up / down swipes move to the footer
+    if (!swipe.axis) {
+      var ax = Math.abs(e.touches[0].clientX - swipe.x), ay = Math.abs(e.touches[0].clientY - swipe.y);
+      if (ax < 6 && ay < 6) return;
+      swipe.axis = ay > ax ? 'y' : 'x';
+    }
+    if (swipe.axis !== 'y' && !box.classList.contains('shop-mode')) { swipe = null; return; }
     e.preventDefault();
     scrollTo(swipe.t + (swipe.y - e.touches[0].clientY) / D_touch);
   }, { passive: false });
@@ -411,6 +427,9 @@
       img.style.transform = ''; stage.style.transform = '';
       panel.style.transform = ''; panel.style.opacity = ''; panel.style.maskImage = ''; panel.style.webkitMaskImage = '';
       foot.style.opacity = 0; more.style.opacity = 0;
+      var siteFoot2 = document.querySelector('.site-footer');
+      foot.innerHTML = siteFoot2 ? siteFoot2.innerHTML : '';
+      applyFoot(0);
     }
     if (shopItem) {
       links = [link]; // shop items open on their own: no browsing
@@ -430,10 +449,10 @@
   document.addEventListener('keydown', function (e) {
     if (!box.classList.contains('open')) return;
     if (e.key === 'Escape') close();
-    if (shopOpen()) {
+    if (viewerOpen()) {
       if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); scrollTo(Math.floor(target + 0.001) + 1); }
       if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); scrollTo(Math.ceil(target - 0.001) - 1); }
-      return;
+      if (box.classList.contains('shop-mode')) return;
     }
     if (e.key === 'ArrowLeft') slide(-1);
     if (e.key === 'ArrowRight') slide(1);
