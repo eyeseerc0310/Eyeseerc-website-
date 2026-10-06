@@ -195,7 +195,7 @@
       s: (nw * k) / F.width,
       ox: window.innerWidth / 2 - (F.left + F.width / 2),
       oy: window.innerHeight / 2 - (F.top + F.height / 2),
-      D: Math.max(240, nh * k - F.height + P.height),
+      D: 160, // a short flick or one thumb swipe is enough
       Ph: P.height,
       gap: P.top - F.bottom
     };
@@ -208,9 +208,9 @@
     // the box's top always peeks up from the bottom of the screen (tucked
     // just behind the photo if they meet), fading away downward, so you can
     // tell there's more; it comes fully into view as you scroll
-    var top = Math.min(bottom, window.innerHeight - 54 - geo.gap);
+    var top = Math.min(bottom, window.innerHeight - 30 - geo.gap); /* just a sliver peeks up */
     panel.style.transform = 'translateY(' + (top - geo.F.bottom) + 'px)';
-    var shown = 30 + p * geo.Ph;
+    var shown = 14 + p * geo.Ph;
     var mask = p > 0.97 ? '' : 'linear-gradient(to bottom, #000 ' + shown + 'px, transparent ' + (shown + 46) + 'px)';
     panel.style.webkitMaskImage = mask; panel.style.maskImage = mask;
     panel.style.opacity = 0.55 + 0.45 * Math.min(1, p / 0.7);
@@ -233,19 +233,34 @@
   box.addEventListener('wheel', function (e) {
     if (!shopOpen()) return;
     e.preventDefault();
-    scrollTo(target + (e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY) / geo.D);
+    var d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    scrollTo(target + d / geo.D);
+    // once the wheel / trackpad stops, glide the rest of the way in the
+    // direction you were going
+    lastDir = d > 0 ? 1 : -1;
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(function () { scrollTo(lastDir > 0 ? 1 : 0); }, 90);
   }, { passive: false });
-  var swipe = null;
+  var wheelTimer, lastDir = 1;
+  var swipe = null, D_touch = 110;
   box.addEventListener('touchstart', function (e) {
     if (!shopOpen() || e.touches.length !== 1) return;
     swipe = { y: e.touches[0].clientY, t: target };
+    D_touch = 110;
   }, { passive: true });
   box.addEventListener('touchmove', function (e) {
     if (!swipe || !shopOpen()) return;
     e.preventDefault();
-    scrollTo(swipe.t + (swipe.y - e.touches[0].clientY) / geo.D);
+    scrollTo(swipe.t + (swipe.y - e.touches[0].clientY) / D_touch);
   }, { passive: false });
-  box.addEventListener('touchend', function () { swipe = null; });
+  box.addEventListener('touchend', function () {
+    if (!swipe) return;
+    // let go and it finishes on its own: past a small nudge it goes all the way
+    var moved = target - swipe.t;
+    if (Math.abs(moved) > 0.08) scrollTo(moved > 0 ? 1 : 0);
+    else scrollTo(swipe.t > 0.5 ? 1 : 0);
+    swipe = null;
+  });
   window.addEventListener('resize', function () { if (shopOpen()) { sizePanel(); shopGeo(); applyProg(); } });
 
   function open(i) {
