@@ -177,6 +177,23 @@
       { duration: 380, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: reverse ? 'forwards' : 'none' });
   }
 
+  // When the photo's tile is partly tucked under the sticky header, the
+  // growing / shrinking photo is trimmed at the header's bottom edge as it
+  // reaches the tile, so it slides under the header instead of covering it
+  // and then popping behind it.
+  function headerTrim(reverse) {
+    var tile = thumbRect(), header = document.querySelector('.site-header');
+    if (!tile || !header || !stage.animate) return null;
+    var hb = header.getBoundingClientRect().bottom;
+    if (tile.top >= hb) return null;
+    var st = stage.getBoundingClientRect().top;
+    function cut(y) { return 'polygon(-9999px ' + y + 'px, 9999px ' + y + 'px, 9999px 9999px, -9999px 9999px)'; }
+    // from the top of the screen (nothing trimmed) to the header's bottom edge
+    var frames = [{ clipPath: cut(-st) }, { clipPath: cut(hb - st) }];
+    return stage.animate(reverse ? frames : frames.reverse(),
+      { duration: 380, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: reverse ? 'forwards' : 'none' });
+  }
+
   // Shop items open as big as on the Photography page. Scrolling (wheel,
   // swipe up, arrow keys) then shrinks the photo and lifts it, and the
   // details box fades in underneath; it stops once the photo reaches the
@@ -275,6 +292,7 @@
       } else {
         geo = null; panel.style.transform = ''; panel.style.opacity = '';
       }
+      headerTrim(false);
       if (!flip(from) && img.animate) {
         img.animate([{ transform: 'scale(.9)' }, { transform: 'none' }],
           { duration: 300, easing: 'ease-out' });
@@ -294,6 +312,7 @@
     peekDir = 0; peek.classList.remove('show');
     caption.classList.remove('is-changing'); box.classList.remove('changing');
     var anim = flip(thumbRect(), true);
+    var trim = anim ? headerTrim(true) : null;
     box.classList.remove('open');
     document.body.style.overflow = '';
     function hideNow() {
@@ -301,6 +320,7 @@
       setTimeout(function () {
         box.classList.remove('instant');
         if (anim) anim.cancel(); // reset the photo for next time, now that it's hidden
+        if (trim) trim.cancel();
       }, 50);
     }
     if (!anim) {
