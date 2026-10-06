@@ -384,9 +384,11 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   color: var(--muted);
 }
 @media (max-width: 700px) { .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-/* phones: one photo per row, a bit narrower than the screen so opening one
-   feels like a real step up in size */
-@media (max-width: 560px) { .gallery-grid { grid-template-columns: minmax(0, 78%); justify-content: center; } }
+/* phones: two photos per row, a little closer together, with smaller titles */
+@media (max-width: 560px) {
+  .gallery-grid { gap: 1.1rem .9rem; }
+  .gallery-title { font-size: .6rem; letter-spacing: .12em; padding-left: .12em; margin-top: .35rem; }
+}
 
 /* COLOR / B&W buttons under the Photography title */
 .gallery-filter { display: flex; justify-content: center; gap: 2.2rem; margin: -1.8rem 0 2.25rem; } /* tucked up close under the page title */
@@ -551,9 +553,11 @@ a.shop-photo[href]:hover img, .shop-soon:hover img { transform: scale(1.03); opa
   letter-spacing: .12em;
   color: var(--text);
 }
+/* phones: two items per row (same square spots as on computers) */
 @media (max-width: 560px) {
-  .shop { grid-template-columns: 1fr; }
-  .shop-frame { aspect-ratio: auto; } /* no empty space above landscape prints on phones */
+  .shop { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem .9rem; }
+  .shop-price { margin-top: .5rem; font-size: .8rem; }
+  .shop-soon-note { font-size: .62rem; letter-spacing: .22em; padding-left: .22em; }
 }
 
 /* ---------- Footer ---------- */
