@@ -48,6 +48,12 @@ tight_top: true
       <figcaption class="shop-price">
         {% if item.sold_out %}Sold out{% elsif item.price %}{{ site.currency }}{{ item.price }}{% endif %}
       </figcaption>
+      {% unless item.sold_out %}{% if item.price %}
+      {% assign item_id = kind | append: "-" | append: item.title | slugify %}
+      <button type="button" class="add-to-cart"
+        data-id="{{ item_id }}" data-title="{{ item.title | escape }}" data-price="{{ item.price }}"
+        data-image="{{ item.image | relative_url }}" data-variant="{{ item.shopify_variant }}">ADD TO CART</button>
+      {% endif %}{% endunless %}
     </figure>
   {% endfor %}
 </div>

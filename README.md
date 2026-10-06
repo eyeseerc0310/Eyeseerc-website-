@@ -70,6 +70,21 @@ or `shirts`), the photo, its shape (landscape / portrait / square), the price,
 and the link to the product page. Shirt photos can go in `photos/shop`.
 The items in there now are temporary samples — replace them with yours.
 
+### Cart and Shopify checkout
+
+Each shop item has an **ADD TO CART** button. A cart icon appears beside the
+menu once something is added, and the cart page lists everything with a
+purple **Check out** button. To make checkout work:
+
+1. In Shopify, add each print / shirt as a product.
+2. Put your store's address in **`_config.yml`** → `shopify_store`
+   (e.g. `"eyeseerc.myshopify.com"`).
+3. In **`_data/shop.yml`**, give each item its `shopify_variant` number
+   (in Shopify: open the product → the variant → the number at the end of
+   the page address).
+
+Until then, Check out just says "Checkout opens soon."
+
 ---
 
 ## 🚀 Turn the website on (one time)

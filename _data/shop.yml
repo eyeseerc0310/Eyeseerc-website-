@@ -12,6 +12,8 @@
 #             Darkroom, Etsy...). Clicking the photo opens it. Leave it
 #             empty ("") and clicking the photo just shows COMING SOON.
 #  sold_out:  true  (optional — shows "Sold out" instead of the price)
+#  shopify_variant: the item's variant ID number from Shopify (optional —
+#             needed for the cart's CHECK OUT button to go to Shopify)
 #
 #  The items below are TEMPORARY SAMPLES — replace them with your own
 #  prints and shirts. Shirt photos can go in the photos/shop folder.
