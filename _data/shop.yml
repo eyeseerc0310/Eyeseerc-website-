@@ -21,21 +21,21 @@
   title: "Forest"
   image: /photos/shop/print-forest.jpg
   shape: landscape
-  price: 45
+  price: 75
   link: ""
 
 - category: prints
   title: "Salmon"
   image: /photos/shop/print-salmon.jpg
   shape: portrait
-  price: 60
+  price: 75
   link: ""
 
 - category: prints
   title: "Motion"
   image: /photos/shop/print-motion.jpg
   shape: landscape
-  price: 45
+  price: 75
   link: ""
 
 - category: shirts
