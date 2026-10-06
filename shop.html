@@ -14,7 +14,8 @@ tight_top: true
   Items come from _data/shop.yml, three to a row. Every print gets the same
   size spot; inside it a landscape photo fills the width and a portrait photo
   fills the height, so each keeps its own shape. Photos sit on a shared
-  baseline with the price underneath. Clicking a photo opens its print page.
+  baseline with the price underneath. Clicking a photo opens its print page
+  (or, with no link yet, briefly shows COMING SOON over it).
   The PRINTS / SHIRTS buttons show one category at a time (prints first).
 {% endcomment %}
 {% assign items = site.data.shop | where_exp: "i", "i.image" %}
@@ -32,9 +33,17 @@ tight_top: true
     {% assign kind = item.category | default: "prints" | downcase %}
     <figure class="shop-item{% if kind != "prints" %} is-filtered-out{% endif %}" data-kind="{{ kind }}">
       <div class="shop-frame">
-        <a class="shop-photo shop-{{ shape }}"{% if link != "" %} href="{% if external %}{{ link }}{% else %}{{ link | relative_url }}{% endif %}"{% if external %} target="_blank" rel="noopener"{% endif %}{% endif %}>
+        {% if link != "" %}
+        <a class="shop-photo shop-{{ shape }}" href="{% if external %}{{ link }}{% else %}{{ link | relative_url }}{% endif %}"{% if external %} target="_blank" rel="noopener"{% endif %}>
           <img src="{{ item.image | relative_url }}" alt="{{ item.title | default: 'Print' | escape }}" loading="lazy">
         </a>
+        {% else %}
+        {% comment %} no link yet: clicking greys the photo out and shows COMING SOON for a moment {% endcomment %}
+        <button type="button" class="shop-photo shop-{{ shape }} shop-soon" aria-label="{{ item.title | default: 'Print' | escape }} — coming soon">
+          <img src="{{ item.image | relative_url }}" alt="{{ item.title | default: 'Print' | escape }}" loading="lazy">
+          <span class="shop-soon-note" aria-hidden="true">COMING SOON</span>
+        </button>
+        {% endif %}
       </div>
       <figcaption class="shop-price">
         {% if item.sold_out %}Sold out{% elsif item.price %}{{ site.currency }}{{ item.price }}{% endif %}

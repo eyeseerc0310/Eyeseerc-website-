@@ -526,7 +526,24 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 .shop-portrait { width: 66.667%; aspect-ratio: 2 / 3; }
 .shop-square { width: 100%; aspect-ratio: 1; }
 .shop-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease, opacity .3s; }
-a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
+a.shop-photo[href]:hover img, .shop-soon:hover img { transform: scale(1.03); opacity: .92; }
+/* items without a link yet: a tap greys the photo out with COMING SOON on it,
+   then it fades back to normal */
+.shop-soon { position: relative; border: 0; padding: 0; margin: 0; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.shop-soon::after {
+  content: ""; position: absolute; inset: 0;
+  background: rgba(28, 28, 28, .62);
+  opacity: 0; transition: opacity .5s ease;
+}
+.shop-soon-note {
+  position: absolute; inset: 0; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-family: var(--display); font-size: .95rem; font-weight: 400;
+  letter-spacing: .3em; padding-left: .3em; /* keeps it centred despite the spacing */
+  opacity: 0; transition: opacity .5s ease;
+}
+.shop-soon.show-soon::after, .shop-soon.show-soon .shop-soon-note { opacity: 1; }
+.shop-soon:focus-visible { outline: 1px solid var(--text); outline-offset: 3px; }
 .shop-price {
   margin-top: .9rem;
   text-align: center;
