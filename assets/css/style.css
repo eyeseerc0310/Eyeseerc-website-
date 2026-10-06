@@ -652,7 +652,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .lightbox.shop-mode .lb-stage { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .lightbox.shop-mode .lb-figure { display: flex; flex-direction: column; align-items: center; }
 .lightbox.shop-mode .lb-figure img {
-  max-width: calc(100vw - 3rem); max-height: calc(100vh - 19rem); max-height: calc(100svh - 19rem);
+  max-width: calc(100vw - 3rem); max-height: calc(100vh - 15rem); max-height: calc(100svh - 15rem);
 }
 /* the box: the menu's translucent grey, blur and thin outline, no fades */
 .lightbox.shop-mode .lb-panel {
@@ -688,7 +688,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 @media (max-width: 760px) {
   .lightbox.shop-mode .lb-stage { display: flex; }
   .lightbox.shop-mode .lb-figure { display: flex; }
-  .lightbox.shop-mode .lb-figure img { grid-column: auto; max-width: calc(100vw - 1.5rem); max-height: calc(100svh - 21.5rem); }
+  .lightbox.shop-mode .lb-figure img { grid-column: auto; max-width: calc(100vw - 1.5rem); max-height: calc(100svh - 18.5rem); }
   .lightbox.shop-mode .lb-panel { margin-top: 1.5rem; min-width: 0; padding: .95rem 1rem .9rem; }
   .lb-panel-row { gap: .6rem; }
   .lightbox .lb-panel button.lb-panel-add { padding: .5rem .65rem; font-size: .68rem; letter-spacing: .14em; }
