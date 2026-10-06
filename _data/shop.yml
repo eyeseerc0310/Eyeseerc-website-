@@ -11,6 +11,8 @@
 #  link:      the product's page on your print site (Fine Art America,
 #             Darkroom, Etsy...). Clicking the photo opens it. Leave it
 #             empty ("") and clicking the photo opens it big instead.
+#  description: a few words about the item, shown in the box under the
+#             photo when it's opened (a placeholder is used if left out)
 #  sold_out:  true  (optional — shows "Sold out" instead of the price)
 #  shopify_variant: the item's variant ID number from Shopify (optional —
 #             needed for the cart's CHECK OUT button to go to Shopify)
@@ -21,6 +23,7 @@
 
 - category: prints
   title: "Forest"
+  description: "Placeholder description. Size, paper and edition details for this piece will go here."
   image: /photos/shop/print-forest.jpg
   shape: landscape
   price: 75
@@ -28,6 +31,7 @@
 
 - category: prints
   title: "Salmon"
+  description: "Placeholder description. Size, paper and edition details for this piece will go here."
   image: /photos/shop/print-salmon.jpg
   shape: portrait
   price: 75
@@ -35,6 +39,7 @@
 
 - category: prints
   title: "Motion"
+  description: "Placeholder description. Size, paper and edition details for this piece will go here."
   image: /photos/shop/print-motion.jpg
   shape: landscape
   price: 75
@@ -42,6 +47,7 @@
 
 - category: shirts
   title: "Black tee (sample)"
+  description: "Placeholder description. Size, paper and edition details for this piece will go here."
   image: /photos/shop/sample-shirt-1.svg
   shape: square
   price: 35
@@ -49,6 +55,7 @@
 
 - category: shirts
   title: "Bone tee (sample)"
+  description: "Placeholder description. Size, paper and edition details for this piece will go here."
   image: /photos/shop/sample-shirt-2.svg
   shape: square
   price: 35
@@ -56,6 +63,7 @@
 
 - category: shirts
   title: "Olive tee (sample)"
+  description: "Placeholder description. Size, paper and edition details for this piece will go here."
   image: /photos/shop/sample-shirt-3.svg
   shape: square
   price: 35

@@ -15,7 +15,8 @@ tight_top: true
   size spot; inside it a landscape photo fills the width and a portrait photo
   fills the height, so each keeps its own shape. Photos sit on a shared
   baseline with the price underneath. Clicking a photo opens its print page
-  (or, with no link, opens the photo big in the photo viewer).
+  (or, with no link, opens the photo big with a details box under it:
+  description, quantity, price and ADD TO CART).
   The PRINTS / SHIRTS buttons show one category at a time (prints first).
 {% endcomment %}
 {% assign items = site.data.shop | where_exp: "i", "i.image" %}
@@ -31,6 +32,8 @@ tight_top: true
     {% assign external = false %}
     {% if link contains "://" %}{% assign external = true %}{% endif %}
     {% assign kind = item.category | default: "prints" | downcase %}
+    {% assign item_id = kind | append: "-" | append: item.title | slugify %}
+    {% assign item_desc = item.description | default: "Placeholder description. Size, paper and edition details for this piece will go here." %}
     <figure class="shop-item{% if kind != "prints" %} is-filtered-out{% endif %}" data-kind="{{ kind }}">
       <div class="shop-frame">
         {% if link != "" %}
@@ -39,7 +42,9 @@ tight_top: true
         </a>
         {% else %}
         {% comment %} no product link: clicking opens the photo big, like the other pages {% endcomment %}
-        <a class="shop-photo shop-{{ shape }}" href="{{ item.image | relative_url }}" data-lightbox data-caption="{{ item.title | default: 'Print' | escape }}">
+        <a class="shop-photo shop-{{ shape }}" href="{{ item.image | relative_url }}" data-lightbox data-caption="{{ item.title | default: 'Print' | escape }}"
+           data-shop data-id="{{ item_id }}" data-title="{{ item.title | default: 'Print' | escape }}" data-price="{{ item.price }}"
+           data-desc="{{ item_desc | escape }}" data-variant="{{ item.shopify_variant }}" data-image="{{ item.image | relative_url }}"{% if item.sold_out %} data-sold-out{% endif %}>
           <img src="{{ item.image | relative_url }}" alt="{{ item.title | default: 'Print' | escape }}" loading="lazy">
         </a>
         {% endif %}
@@ -48,7 +53,6 @@ tight_top: true
         {% if item.sold_out %}Sold out{% elsif item.price %}{{ site.currency }}{{ item.price }}{% endif %}
       </figcaption>
       {% unless item.sold_out %}{% if item.price %}
-      {% assign item_id = kind | append: "-" | append: item.title | slugify %}
       <button type="button" class="add-to-cart"
         data-id="{{ item_id }}" data-title="{{ item.title | escape }}" data-price="{{ item.price }}"
         data-image="{{ item.image | relative_url }}" data-variant="{{ item.shopify_variant }}">ADD TO CART</button>
