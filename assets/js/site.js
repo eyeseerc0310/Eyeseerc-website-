@@ -189,20 +189,31 @@
   }
 
   // When the photo's tile is partly tucked under the sticky header, the
-  // growing / shrinking photo is trimmed at the header's bottom edge as it
-  // reaches the tile, so it slides under the header instead of covering it
-  // and then popping behind it.
-  function headerTrim(reverse) {
+  // header is lifted above the viewer while the photo grows out of / shrinks
+  // back into the tile, so the photo always passes underneath it, exactly
+  // as the tile does. The header is dimmed and blurred to match the viewer's
+  // backdrop and that fades in step, so lifting it doesn't show.
+  function headerLift(closing) {
     var tile = thumbRect(), header = document.querySelector('.site-header');
-    if (!tile || !header || !stage.animate) return null;
-    var hb = header.getBoundingClientRect().bottom;
-    if (tile.top >= hb) return null;
-    var st = stage.getBoundingClientRect().top;
-    function cut(y) { return 'polygon(-9999px ' + y + 'px, 9999px ' + y + 'px, 9999px 9999px, -9999px 9999px)'; }
-    // from the top of the screen (nothing trimmed) to the header's bottom edge
-    var frames = [{ clipPath: cut(-st) }, { clipPath: cut(hb - st) }];
-    return stage.animate(reverse ? frames : frames.reverse(),
-      { duration: 380, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: reverse ? 'forwards' : 'none' });
+    if (!tile || !header || !header.animate) return null;
+    if (tile.top >= header.getBoundingClientRect().bottom) return null;
+    var dim = header.querySelector('.header-dim');
+    if (!dim) { dim = document.createElement('span'); dim.className = 'header-dim'; header.appendChild(dim); }
+    header.classList.add('lb-lift');
+    var timing = { duration: closing ? 350 : 380, easing: closing ? 'ease' : 'cubic-bezier(.2, .7, .2, 1)', fill: 'both' };
+    var a = dim.animate([{ opacity: 1 }, { opacity: 0 }], timing);
+    var b = header.animate([{ filter: 'blur(14px)' }, { filter: 'blur(0px)' }], timing);
+    if (!closing) { a.reverse(); b.reverse(); }
+    var finished = false;
+    function done() {
+      if (finished) return; finished = true;
+      a.cancel(); b.cancel(); header.classList.remove('lb-lift');
+    }
+    // opening: once the viewer has fully covered the page, the header drops
+    // back underneath it; closing: once the viewer is gone
+    if (!closing) a.onfinish = done;
+    else setTimeout(done, 600);
+    return { done: done };
   }
 
   // Shop items open as big as on the Photography page. Scrolling (wheel,
@@ -325,7 +336,7 @@
       } else {
         geo = null; panel.style.transform = ''; panel.style.opacity = '';
       }
-      headerTrim(false);
+      headerLift(false);
       if (!flip(from) && img.animate) {
         img.animate([{ transform: 'scale(.9)' }, { transform: 'none' }],
           { duration: 300, easing: 'ease-out' });
@@ -345,16 +356,8 @@
     }
     peekDir = 0; peek.classList.remove('show');
     caption.classList.remove('is-changing'); box.classList.remove('changing');
-    // if the photo's tile is partly hidden under the header, quietly scroll
-    // the (blurred) page behind so the whole tile is in view first; the photo
-    // then shrinks straight into it with nothing in the way
-    var tile = thumbRect(), header = document.querySelector('.site-header');
-    if (tile && header) {
-      var hb = header.getBoundingClientRect().bottom;
-      if (tile.top < hb + 12) window.scrollTo({ top: window.scrollY - (hb + 16 - tile.top), behavior: 'instant' });
-    }
     var anim = flip(thumbRect(), true);
-    var trim = null;
+    var trim = anim ? headerLift(true) : null;
     box.classList.remove('open');
     document.body.style.overflow = '';
     function hideNow() {
@@ -362,7 +365,7 @@
       setTimeout(function () {
         box.classList.remove('instant');
         if (anim) anim.cancel(); // reset the photo for next time, now that it's hidden
-        if (trim) trim.cancel();
+        if (trim) trim.done();
         stage.style.transform = '';
         foot.style.opacity = 0;
       }, 50);

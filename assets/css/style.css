@@ -719,3 +719,11 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .lb-foot .social-btn { color: var(--text); display: inline-flex; }
 .lb-foot .social-btn svg { width: 22px; height: 22px; }
 .lb-foot p { margin: 0; }
+
+/* the header lifted above the photo viewer while a photo grows from / shrinks
+   into a tile tucked under it; the dim layer matches the viewer's backdrop */
+.site-header.lb-lift { z-index: 101; }
+.header-dim {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: rgba(12, 12, 12, .62);
+}
