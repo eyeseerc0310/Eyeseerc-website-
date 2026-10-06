@@ -663,9 +663,9 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   border: 1px solid var(--menu-line);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   color: var(--menu-link); text-align: left;
-  opacity: 0; transition: opacity .3s ease;
+  opacity: 0; /* faded in by the script as you scroll down */
+  will-change: transform, opacity;
 }
-.lightbox.shop-mode.open .lb-panel { opacity: 1; }
 .lb-panel-title { font-family: var(--display); font-size: 1rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text); }
 .lb-panel-desc { margin: .35rem 0 .9rem; font-size: .85rem; line-height: 1.55; }
 .lb-panel-row {

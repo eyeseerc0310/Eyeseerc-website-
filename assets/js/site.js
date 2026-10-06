@@ -152,7 +152,12 @@
   // photo is scaled to cover the tile and cropped to the tile's shape, so at
   // the small end it matches the tile exactly, whatever the photo's shape.
   function flip(from, reverse) {
+    // measure the photo's own box (without any resting transform), and end
+    // the animation on whatever transform it rests at (shop items rest big)
+    var base = img.style.transform;
+    img.style.transform = '';
     var to = img.getBoundingClientRect();
+    img.style.transform = base;
     if (!from || !to.width || !to.height || !img.animate) return null;
     var scale = Math.max(from.width / to.width, from.height / to.height);
     var cropX = Math.max(0, (to.width - from.width / scale) / 2);
@@ -161,13 +166,73 @@
     var dy = (from.top + from.height / 2) - (to.top + to.height / 2);
     var small = { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ')',
                   clipPath: 'inset(' + cropY + 'px ' + cropX + 'px)' };
-    var big = { transform: 'translate(0px, 0px) scale(1)', clipPath: 'inset(0px 0px)' };
+    var big = { transform: base || 'translate(0px, 0px) scale(1)', clipPath: 'inset(0px 0px)' };
     var frames = reverse ? [big, small] : [small, big];
     // closing holds the last frame, so the photo stays in its tile's spot
     // until the viewer is gone (instead of jumping back to full size)
     return img.animate(frames,
       { duration: 380, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: reverse ? 'forwards' : 'none' });
   }
+
+  // Shop items open as big as on the Photography page. Scrolling (wheel,
+  // swipe up, arrow keys) then shrinks the photo and lifts it, and the
+  // details box fades in underneath; it stops once the photo reaches the
+  // size where the box fits below it. Scrolling back reverses it.
+  var prog = 0, target = 0, geo = null, raf = null;
+  function shopGeo() {
+    img.style.transform = ''; panel.style.transform = '';
+    var F = img.getBoundingClientRect(), P = panel.getBoundingClientRect();
+    var nw = img.naturalWidth || F.width, nh = img.naturalHeight || F.height;
+    var wide = window.innerWidth > 760;
+    var maxW = wide ? window.innerWidth - 160 : window.innerWidth - 24;
+    var maxH = (wide ? 0.84 : 0.78) * window.innerHeight;
+    var k = Math.min(maxW / nw, maxH / nh);
+    geo = {
+      F: F,
+      s: (nw * k) / F.width,
+      ox: window.innerWidth / 2 - (F.left + F.width / 2),
+      oy: window.innerHeight / 2 - (F.top + F.height / 2),
+      D: Math.max(240, nh * k - F.height + P.height)
+    };
+  }
+  function applyProg() {
+    if (!geo) return;
+    var p = prog, s = geo.s * (1 - p) + p, ox = geo.ox * (1 - p), oy = geo.oy * (1 - p);
+    img.style.transform = 'translate(' + ox + 'px,' + oy + 'px) scale(' + s + ')';
+    var bottom = geo.F.top + geo.F.height / 2 + oy + geo.F.height * s / 2;
+    panel.style.transform = 'translateY(' + (bottom - geo.F.bottom) + 'px)';
+    var op = Math.max(0, Math.min(1, (p - 0.3) / 0.7));
+    panel.style.opacity = op;
+    panel.style.pointerEvents = op > 0.6 ? '' : 'none';
+  }
+  function step() {
+    prog += (target - prog) * 0.2;
+    if (Math.abs(target - prog) < 0.002) prog = target;
+    applyProg();
+    raf = prog === target ? null : requestAnimationFrame(step);
+  }
+  function scrollTo(t) {
+    target = Math.max(0, Math.min(1, t));
+    if (!raf) raf = requestAnimationFrame(step);
+  }
+  function shopOpen() { return box.classList.contains('open') && box.classList.contains('shop-mode') && geo; }
+  box.addEventListener('wheel', function (e) {
+    if (!shopOpen()) return;
+    e.preventDefault();
+    scrollTo(target + (e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY) / geo.D);
+  }, { passive: false });
+  var swipe = null;
+  box.addEventListener('touchstart', function (e) {
+    if (!shopOpen() || e.touches.length !== 1) return;
+    swipe = { y: e.touches[0].clientY, t: target };
+  }, { passive: true });
+  box.addEventListener('touchmove', function (e) {
+    if (!swipe || !shopOpen()) return;
+    e.preventDefault();
+    scrollTo(swipe.t + (swipe.y - e.touches[0].clientY) / geo.D);
+  }, { passive: false });
+  box.addEventListener('touchend', function () { swipe = null; });
+  window.addEventListener('resize', function () { if (shopOpen()) { sizePanel(); shopGeo(); applyProg(); } });
 
   function open(i) {
     show(i);
@@ -176,6 +241,11 @@
     document.body.style.overflow = 'hidden';
     var go = function () {
       sizePanel();
+      if (box.classList.contains('shop-mode')) {
+        shopGeo(); prog = target = 0; applyProg();
+      } else {
+        geo = null; panel.style.transform = ''; panel.style.opacity = '';
+      }
       if (!flip(from) && img.animate) {
         img.animate([{ transform: 'scale(.9)' }, { transform: 'none' }],
           { duration: 300, easing: 'ease-out' });
@@ -185,7 +255,13 @@
   }
   function close() {
     if (sliding) return;
-    place(0); peekDir = 0; peek.classList.remove('show');
+    if (box.classList.contains('shop-mode')) {
+      if (raf) { cancelAnimationFrame(raf); raf = null; }
+      panel.style.opacity = 0; panel.style.pointerEvents = 'none';
+    } else {
+      place(0);
+    }
+    peekDir = 0; peek.classList.remove('show');
     caption.classList.remove('is-changing'); box.classList.remove('changing');
     var anim = flip(thumbRect(), true);
     box.classList.remove('open');
@@ -217,7 +293,7 @@
       links = [link]; // shop items open on their own: no browsing
       buildPanel(link);
     } else {
-      panel.innerHTML = ''; panel.style.width = '';
+      panel.innerHTML = ''; panel.style.width = ''; img.style.transform = ''; geo = null;
       links = Array.prototype.filter.call(document.querySelectorAll('main:not([aria-hidden]) [data-lightbox]'),
         function (l) { return !l.closest('.is-filtered-out'); });
     }
@@ -232,6 +308,11 @@
   document.addEventListener('keydown', function (e) {
     if (!box.classList.contains('open')) return;
     if (e.key === 'Escape') close();
+    if (shopOpen()) {
+      if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); scrollTo(1); }
+      if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); scrollTo(0); }
+      return;
+    }
     if (e.key === 'ArrowLeft') slide(-1);
     if (e.key === 'ArrowRight') slide(1);
   });
