@@ -1,0 +1,26 @@
+---
+layout: default
+title: "CART"
+permalink: /cart/
+tight_top: true
+noindex: true
+---
+<h1 class="page-title">CART</h1>
+{% comment %}
+  Not in the menu: reached from the cart icon or by adding something to the
+  cart. The list is filled in by the script from what's been added.
+{% endcomment %}
+<div class="cart" id="cart-root">
+  <ul class="cart-items"></ul>
+  <div class="cart-summary">
+    <div class="cart-subtotal"><span>SUBTOTAL</span><span class="cart-subtotal-amount"></span></div>
+    <p class="cart-note">Shipping and taxes are worked out at checkout.</p>
+    <button type="button" class="shopify-checkout">Check out</button>
+    <p class="cart-secure">Secure checkout with Shopify</p>
+    <p class="cart-soon" hidden>Checkout opens soon.</p>
+  </div>
+  <div class="cart-empty" hidden>
+    <p>Your cart is empty.</p>
+    <a class="cart-back" href="{{ '/shop/' | relative_url }}">BACK TO SHOP</a>
+  </div>
+</div>

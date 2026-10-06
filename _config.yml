@@ -23,6 +23,12 @@ youtube: "eyeseerc"     # the channel handle (the part after @)
 # Currency symbol used on the Shop page.
 currency: "$"
 
+# Your Shopify store's address, e.g. "eyeseerc.myshopify.com". When this is
+# set (and each shop item has a shopify_variant number in _data/shop.yml) the
+# cart's CHECK OUT button sends buyers to Shopify's checkout. Until then the
+# button says checkout is coming soon.
+shopify_store: ""
+
 # -------------------------------------------------------------
 #  Technical settings — you normally don't need to touch these.
 # -------------------------------------------------------------
