@@ -285,6 +285,13 @@
     if (!raf) raf = requestAnimationFrame(step);
   }
   function shopOpen() { return box.classList.contains('open') && box.classList.contains('shop-mode') && geo; }
+  // tapping the photo once the details are showing brings it back up big
+  // (the only way back: scrolling up doesn't)
+  img.addEventListener('click', function () {
+    if (!shopOpen() || target < 1) return;
+    minStep = 0;
+    scrollTo(0);
+  });
   // One wheel / trackpad gesture moves one step (photo -> details -> footer),
   // however long its momentum keeps going; it then glides to that step.
   var gesture = null, gestureTimer;
