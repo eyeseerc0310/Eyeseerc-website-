@@ -374,6 +374,10 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 .gallery-grid .gallery-item a { display: block; overflow: hidden; }
 .gallery-grid .gallery-item img { aspect-ratio: 3 / 2; height: auto; object-fit: cover; }
 .gallery-grid.gallery-square .gallery-item img { aspect-ratio: 1; object-position: center top; } /* Projects page: square tiles, showing the top of tall pieces (the artwork, not the blank border under it) */
+/* Projects page: each piece at its own true shape, so it opens and closes
+   in the photo viewer without any cropping or resizing */
+.gallery-grid.gallery-natural { align-items: start; }
+.gallery-grid.gallery-natural .gallery-item img { aspect-ratio: auto; height: auto; object-fit: contain; }
 /* Photography page: a small numbered title just under each photo */
 .gallery-title {
   margin-top: .45rem;
