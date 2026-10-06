@@ -345,8 +345,16 @@
     }
     peekDir = 0; peek.classList.remove('show');
     caption.classList.remove('is-changing'); box.classList.remove('changing');
+    // if the photo's tile is partly hidden under the header, quietly scroll
+    // the (blurred) page behind so the whole tile is in view first; the photo
+    // then shrinks straight into it with nothing in the way
+    var tile = thumbRect(), header = document.querySelector('.site-header');
+    if (tile && header) {
+      var hb = header.getBoundingClientRect().bottom;
+      if (tile.top < hb + 12) window.scrollTo({ top: window.scrollY - (hb + 16 - tile.top), behavior: 'instant' });
+    }
     var anim = flip(thumbRect(), true);
-    var trim = anim ? headerTrim(true) : null;
+    var trim = null;
     box.classList.remove('open');
     document.body.style.overflow = '';
     function hideNow() {
