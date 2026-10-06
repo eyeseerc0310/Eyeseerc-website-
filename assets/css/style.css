@@ -705,3 +705,17 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .lightbox.shop-mode.open .lb-more { opacity: 1; }
 .lb-more svg { width: 100%; height: 100%; display: block; animation: lb-more-bob 1.8s ease-in-out infinite; }
 @keyframes lb-more-bob { 50% { transform: translateY(4px); } }
+
+/* in a shop item, scrolling past the details brings the page's footer up */
+.lb-foot {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 2;
+  background: var(--bg); color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding: 1.6rem clamp(1rem, 4vw, 3rem) 1.4rem;
+  text-align: center; font-size: .8rem;
+  opacity: 0; transform: translateY(100%); pointer-events: none;
+}
+.lb-foot .social { display: flex; justify-content: center; gap: 1.4rem; margin-bottom: .8rem; }
+.lb-foot .social-btn { color: var(--text); display: inline-flex; }
+.lb-foot .social-btn svg { width: 22px; height: 22px; }
+.lb-foot p { margin: 0; }
