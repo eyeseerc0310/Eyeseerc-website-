@@ -260,8 +260,12 @@
     applyProg();
     raf = prog === target ? null : requestAnimationFrame(step);
   }
+  // once the details have been revealed they stay: scrolling back up only
+  // goes back as far as the details, never to the big photo again
+  var minStep = 0;
   function scrollTo(t) {
-    target = Math.max(0, Math.min(2, t));
+    if (t >= 1) minStep = 1;
+    target = Math.max(minStep, Math.min(2, t));
     if (!raf) raf = requestAnimationFrame(step);
   }
   function shopOpen() { return box.classList.contains('open') && box.classList.contains('shop-mode') && geo; }
@@ -276,7 +280,7 @@
     var dir = d > 0 ? 1 : -1;
     if (!gesture || gesture.dir !== dir) {
       var from = Math.round(target);
-      gesture = { dir: dir, stop: Math.max(0, Math.min(2, from + dir)) };
+      gesture = { dir: dir, stop: Math.max(minStep, Math.min(2, from + dir)) };
     }
     var t = target + d / geo.D;
     scrollTo(dir > 0 ? Math.min(t, gesture.stop) : Math.max(t, gesture.stop));
@@ -317,7 +321,7 @@
       if (box.classList.contains('shop-mode')) {
         var siteFoot = document.querySelector('.site-footer');
         foot.innerHTML = siteFoot ? siteFoot.innerHTML : '';
-        shopGeo(); prog = target = 0; applyProg();
+        shopGeo(); prog = target = 0; minStep = 0; applyProg();
       } else {
         geo = null; panel.style.transform = ''; panel.style.opacity = '';
       }
