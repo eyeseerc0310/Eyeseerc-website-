@@ -10,7 +10,7 @@
 #  price:     just the number (the currency symbol is set in _config.yml)
 #  link:      the product's page on your print site (Fine Art America,
 #             Darkroom, Etsy...). Clicking the photo opens it. Leave it
-#             empty ("") and clicking the photo just shows COMING SOON.
+#             empty ("") and clicking the photo opens it big instead.
 #  sold_out:  true  (optional — shows "Sold out" instead of the price)
 #  shopify_variant: the item's variant ID number from Shopify (optional —
 #             needed for the cart's CHECK OUT button to go to Shopify)

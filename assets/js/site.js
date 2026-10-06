@@ -538,17 +538,6 @@
   });
 })();
 
-// Shop items without a link yet: tapping greys the photo out with COMING SOON
-// on it for a moment, then it fades back to normal.
-(function () {
-  document.addEventListener('click', function (e) {
-    var btn = e.target.closest && e.target.closest('.shop-soon');
-    if (!btn) return;
-    clearTimeout(btn._soonTimer);
-    btn.classList.add('show-soon');
-    btn._soonTimer = setTimeout(function () { btn.classList.remove('show-soon'); }, 1600);
-  });
-})();
 
 // Cart. What's been added is kept in this browser (localStorage), so it's
 // still there when you move between pages or come back later. The cart icon

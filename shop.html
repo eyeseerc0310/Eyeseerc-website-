@@ -15,7 +15,7 @@ tight_top: true
   size spot; inside it a landscape photo fills the width and a portrait photo
   fills the height, so each keeps its own shape. Photos sit on a shared
   baseline with the price underneath. Clicking a photo opens its print page
-  (or, with no link yet, briefly shows COMING SOON over it).
+  (or, with no link, opens the photo big in the photo viewer).
   The PRINTS / SHIRTS buttons show one category at a time (prints first).
 {% endcomment %}
 {% assign items = site.data.shop | where_exp: "i", "i.image" %}
@@ -38,11 +38,10 @@ tight_top: true
           <img src="{{ item.image | relative_url }}" alt="{{ item.title | default: 'Print' | escape }}" loading="lazy">
         </a>
         {% else %}
-        {% comment %} no link yet: clicking greys the photo out and shows COMING SOON for a moment {% endcomment %}
-        <button type="button" class="shop-photo shop-{{ shape }} shop-soon" aria-label="{{ item.title | default: 'Print' | escape }} — coming soon">
+        {% comment %} no product link: clicking opens the photo big, like the other pages {% endcomment %}
+        <a class="shop-photo shop-{{ shape }}" href="{{ item.image | relative_url }}" data-lightbox data-caption="{{ item.title | default: 'Print' | escape }}">
           <img src="{{ item.image | relative_url }}" alt="{{ item.title | default: 'Print' | escape }}" loading="lazy">
-          <span class="shop-soon-note" aria-hidden="true">COMING SOON</span>
-        </button>
+        </a>
         {% endif %}
       </div>
       <figcaption class="shop-price">
