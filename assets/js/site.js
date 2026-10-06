@@ -208,9 +208,9 @@
     // the box's top always peeks up from the bottom of the screen (tucked
     // just behind the photo if they meet), fading away downward, so you can
     // tell there's more; it comes fully into view as you scroll
-    var top = Math.min(bottom, window.innerHeight - 30 - geo.gap); /* just a sliver peeks up */
+    var top = Math.min(bottom, window.innerHeight - 58 - geo.gap); /* the top of the box peeks up */
     panel.style.transform = 'translateY(' + (top - geo.F.bottom) + 'px)';
-    var shown = 14 + p * geo.Ph;
+    var shown = 40 + p * geo.Ph;
     var mask = p > 0.97 ? '' : 'linear-gradient(to bottom, #000 ' + shown + 'px, transparent ' + (shown + 46) + 'px)';
     panel.style.webkitMaskImage = mask; panel.style.maskImage = mask;
     panel.style.opacity = 0.55 + 0.45 * Math.min(1, p / 0.7);
@@ -820,4 +820,33 @@
   window.addEventListener('pageshow', function () { renderCart(); updateIcon(false); });
   updateIcon(false);
   renderCart();
+})();
+
+// Keep the site up to date when it's saved to a phone's home screen. Those
+// web apps can keep showing an old copy of a page for a long time, so each
+// time the site comes back into view it quietly checks whether a newer
+// version has been published and, if so, reloads to it.
+(function () {
+  var meta = document.querySelector('meta[name="build"]');
+  if (!meta || !window.fetch) return;
+  var current = meta.content, last = 0;
+  var home = (document.querySelector('.brand') || {}).href || '/';
+  function check() {
+    if (Date.now() - last < 30000) return;
+    last = Date.now();
+    fetch(home + (home.indexOf('?') < 0 ? '?' : '&') + 'check=' + last, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.text() : ''; })
+      .then(function (html) {
+        var m = html.match(/<meta name="build" content="(\d+)"/);
+        if (!m || m[1] === current) return;
+        // only once per new version, in case a copy somewhere is still catching up
+        var key = 'eyeseerc-reloaded-for';
+        try { if (sessionStorage.getItem(key) === m[1]) return; sessionStorage.setItem(key, m[1]); } catch (e) { return; }
+        location.reload();
+      })
+      .catch(function () {});
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
+  window.addEventListener('pageshow', function (e) { if (e.persisted) check(); });
+  check();
 })();
