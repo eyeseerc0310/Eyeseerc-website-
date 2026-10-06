@@ -201,13 +201,18 @@
     if (!dim) { dim = document.createElement('span'); dim.className = 'header-dim'; header.appendChild(dim); }
     header.classList.add('lb-lift');
     var timing = { duration: closing ? 350 : 380, easing: closing ? 'ease' : 'cubic-bezier(.2, .7, .2, 1)', fill: 'both' };
-    var a = dim.animate([{ opacity: 1 }, { opacity: 0 }], timing);
-    var b = header.animate([{ filter: 'blur(14px)' }, { filter: 'blur(0px)' }], timing);
-    if (!closing) { a.reverse(); b.reverse(); }
+    // only the header's contents are blurred (blurring the header itself
+    // would switch off its frosted background for a moment)
+    var anims = [dim.animate([{ opacity: 1 }, { opacity: 0 }], timing)];
+    Array.prototype.forEach.call(header.querySelectorAll('.brand, .header-actions'), function (el) {
+      anims.push(el.animate([{ filter: 'blur(14px)' }, { filter: 'blur(0px)' }], timing));
+    });
+    var a = anims[0];
+    if (!closing) anims.forEach(function (x) { x.reverse(); });
     var finished = false;
     function done() {
       if (finished) return; finished = true;
-      a.cancel(); b.cancel(); header.classList.remove('lb-lift');
+      anims.forEach(function (x) { x.cancel(); }); header.classList.remove('lb-lift');
     }
     // opening: once the viewer has fully covered the page, the header drops
     // back underneath it; closing: once the viewer is gone
