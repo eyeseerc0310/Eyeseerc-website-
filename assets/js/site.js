@@ -87,9 +87,20 @@
   document.body.appendChild(box);
 
   var img = box.querySelector('img');
+  var stage = box.querySelector('.lb-stage');
   var caption = box.querySelector('.lightbox-caption');
   var panel = box.querySelector('.lb-panel');
   var more = box.querySelector('.lb-more');
+  var foot = document.createElement('div');
+  foot.className = 'lb-foot';
+  box.appendChild(foot);
+  // a link in it (Instagram, email...) closes the viewer first
+  foot.addEventListener('click', function () {
+    box.classList.add('instant'); box.classList.remove('open', 'shop-mode');
+    document.body.style.overflow = '';
+    stage.style.transform = '';
+    setTimeout(function () { box.classList.remove('instant'); }, 50);
+  });
   more.addEventListener('click', function () { scrollTo(1); });
   var index = 0;
 
@@ -219,7 +230,14 @@
   }
   function applyProg() {
     if (!geo) return;
-    var p = prog, s = geo.s * (1 - p) + p, ox = geo.ox * (1 - p), oy = geo.oy * (1 - p);
+    // past the details, keep scrolling down to the bottom of the page:
+    // everything moves up and the footer (links and copyright) comes in
+    var p2 = Math.max(0, prog - 1), fh = foot.offsetHeight;
+    stage.style.transform = p2 ? 'translateY(' + (-p2 * fh) + 'px)' : '';
+    foot.style.transform = 'translateY(' + ((1 - p2) * 100) + '%)';
+    foot.style.opacity = p2;
+    foot.style.pointerEvents = p2 > 0.6 ? '' : 'none';
+    var p = Math.min(1, prog), s = geo.s * (1 - p) + p, ox = geo.ox * (1 - p), oy = geo.oy * (1 - p);
     img.style.transform = 'translate(' + ox + 'px,' + oy + 'px) scale(' + s + ')';
     var bottom = geo.F.top + geo.F.height / 2 + oy + geo.F.height * s / 2;
     // the box's top always peeks up from the bottom of the screen (tucked
@@ -227,8 +245,8 @@
     // tell there's more; it comes fully into view as you scroll
     var top = Math.min(bottom, window.innerHeight - 58 - geo.gap); /* the top of the box peeks up */
     panel.style.transform = 'translateY(' + (top - geo.F.bottom) + 'px)';
-    var shown = 40 + p * geo.Ph;
-    var mask = p > 0.97 ? '' : 'linear-gradient(to bottom, #000 ' + shown + 'px, transparent ' + (shown + 46) + 'px)';
+    var shown = 16 + p * geo.Ph;
+    var mask = p > 0.97 ? '' : 'linear-gradient(to bottom, #000 ' + shown + 'px, transparent ' + (shown + 34) + 'px)';
     panel.style.webkitMaskImage = mask; panel.style.maskImage = mask;
     panel.style.opacity = 0.55 + 0.45 * Math.min(1, p / 0.7);
     panel.style.pointerEvents = p > 0.6 ? '' : 'none';
@@ -243,22 +261,31 @@
     raf = prog === target ? null : requestAnimationFrame(step);
   }
   function scrollTo(t) {
-    target = Math.max(0, Math.min(1, t));
+    target = Math.max(0, Math.min(2, t));
     if (!raf) raf = requestAnimationFrame(step);
   }
   function shopOpen() { return box.classList.contains('open') && box.classList.contains('shop-mode') && geo; }
+  // One wheel / trackpad gesture moves one step (photo -> details -> footer),
+  // however long its momentum keeps going; it then glides to that step.
+  var gesture = null, gestureTimer;
   box.addEventListener('wheel', function (e) {
     if (!shopOpen()) return;
     e.preventDefault();
     var d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-    scrollTo(target + d / geo.D);
-    // once the wheel / trackpad stops, glide the rest of the way in the
-    // direction you were going
-    lastDir = d > 0 ? 1 : -1;
+    if (!d) return;
+    var dir = d > 0 ? 1 : -1;
+    if (!gesture || gesture.dir !== dir) {
+      var from = Math.round(target);
+      gesture = { dir: dir, stop: Math.max(0, Math.min(2, from + dir)) };
+    }
+    var t = target + d / geo.D;
+    scrollTo(dir > 0 ? Math.min(t, gesture.stop) : Math.max(t, gesture.stop));
+    clearTimeout(gestureTimer);
+    gestureTimer = setTimeout(function () { gesture = null; }, 220);
     clearTimeout(wheelTimer);
-    wheelTimer = setTimeout(function () { scrollTo(lastDir > 0 ? 1 : 0); }, 90);
+    wheelTimer = setTimeout(function () { if (gesture) scrollTo(gesture.stop); }, 90);
   }, { passive: false });
-  var wheelTimer, lastDir = 1;
+  var wheelTimer;
   var swipe = null, D_touch = 110;
   box.addEventListener('touchstart', function (e) {
     if (!shopOpen() || e.touches.length !== 1) return;
@@ -274,8 +301,8 @@
     if (!swipe) return;
     // let go and it finishes on its own: past a small nudge it goes all the way
     var moved = target - swipe.t;
-    if (Math.abs(moved) > 0.08) scrollTo(moved > 0 ? 1 : 0);
-    else scrollTo(swipe.t > 0.5 ? 1 : 0);
+    if (Math.abs(moved) > 0.08) scrollTo(moved > 0 ? Math.ceil(target - 0.001) : Math.floor(target + 0.001));
+    else scrollTo(Math.round(swipe.t));
     swipe = null;
   });
   window.addEventListener('resize', function () { if (shopOpen()) { sizePanel(); shopGeo(); applyProg(); } });
@@ -288,6 +315,8 @@
     var go = function () {
       sizePanel();
       if (box.classList.contains('shop-mode')) {
+        var siteFoot = document.querySelector('.site-footer');
+        foot.innerHTML = siteFoot ? siteFoot.innerHTML : '';
         shopGeo(); prog = target = 0; applyProg();
       } else {
         geo = null; panel.style.transform = ''; panel.style.opacity = '';
@@ -306,6 +335,7 @@
       if (raf) { cancelAnimationFrame(raf); raf = null; }
       panel.style.opacity = 0; panel.style.pointerEvents = 'none';
       more.style.opacity = 0; more.style.pointerEvents = 'none';
+      foot.style.opacity = 0; foot.style.pointerEvents = 'none';
     } else {
       place(0);
     }
@@ -321,6 +351,8 @@
         box.classList.remove('instant');
         if (anim) anim.cancel(); // reset the photo for next time, now that it's hidden
         if (trim) trim.cancel();
+        stage.style.transform = '';
+        foot.style.opacity = 0;
       }, 50);
     }
     if (!anim) {
@@ -352,15 +384,14 @@
   box.querySelector('.lb-close').addEventListener('click', close);
   box.querySelector('.lb-prev').addEventListener('click', function () { slide(-1); });
   box.querySelector('.lb-next').addEventListener('click', function () { slide(1); });
-  var stage = box.querySelector('.lb-stage');
   box.addEventListener('click', function (e) { if (e.target === box || e.target === stage) close(); });
 
   document.addEventListener('keydown', function (e) {
     if (!box.classList.contains('open')) return;
     if (e.key === 'Escape') close();
     if (shopOpen()) {
-      if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); scrollTo(1); }
-      if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); scrollTo(0); }
+      if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); scrollTo(Math.floor(target + 0.001) + 1); }
+      if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); scrollTo(Math.ceil(target - 0.001) - 1); }
       return;
     }
     if (e.key === 'ArrowLeft') slide(-1);
