@@ -657,7 +657,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 /* the box: the menu's translucent grey, blur and thin outline, no fades */
 .lightbox.shop-mode .lb-panel {
   display: block; box-sizing: border-box; min-width: 260px;
-  margin-top: 3rem; /* about half an inch under the photo */
+  margin-top: 1.5rem; /* a quarter inch under the photo */
   padding: 1.1rem 1.25rem 1rem;
   background: var(--menu-bg);
   border: 1px solid var(--menu-line);
@@ -689,7 +689,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   .lightbox.shop-mode .lb-stage { display: flex; }
   .lightbox.shop-mode .lb-figure { display: flex; }
   .lightbox.shop-mode .lb-figure img { grid-column: auto; max-width: calc(100vw - 1.5rem); max-height: calc(100svh - 21.5rem); }
-  .lightbox.shop-mode .lb-panel { margin-top: 3rem; min-width: 0; padding: .95rem 1rem .9rem; }
+  .lightbox.shop-mode .lb-panel { margin-top: 1.5rem; min-width: 0; padding: .95rem 1rem .9rem; }
   .lb-panel-row { gap: .6rem; }
   .lightbox .lb-panel button.lb-panel-add { padding: .5rem .65rem; font-size: .68rem; letter-spacing: .14em; }
 }
