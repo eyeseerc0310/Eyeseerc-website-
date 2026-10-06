@@ -53,11 +53,21 @@
 @supports (width: round(1px, 1px)) { :root { --edge: round(clamp(1rem, 4vw, 3rem), 1px); } }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  /* no rubber-band bounce at the ends of the page: on short pages (Shop) a
+     fast flick from the top used to hit the bottom so hard that Safari's
+     toolbar kept showing and hiding, making the bottom jitter */
+  overscroll-behavior-y: none;
+}
 body {
   margin: 0;
   /* header, page, footer stacked so the page fills the space between them */
-  display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+  /* a fixed height (the smallest screen height) rather than one that grows and
+     shrinks as the browser's toolbar slides away, so the page never resizes mid-scroll */
+  min-height: 100vh; min-height: 100svh;
+  overscroll-behavior-y: none;
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
