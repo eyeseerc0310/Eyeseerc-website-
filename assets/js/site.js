@@ -296,8 +296,12 @@
   // however long its momentum keeps going; it then glides to that step.
   var gesture = null, gestureTimer;
   box.addEventListener('wheel', function (e) {
-    if (!shopOpen()) return;
+    // the photo viewer never scrolls or zooms anything on its own: in the
+    // Photography and Projects viewers the wheel / trackpad does nothing
+    // (no page moving behind it, no browser zoom); only shop items use it
+    if (!box.classList.contains('open')) return;
     e.preventDefault();
+    if (!shopOpen()) return;
     var d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
     if (!d) return;
     var dir = d > 0 ? 1 : -1;
@@ -313,6 +317,9 @@
     wheelTimer = setTimeout(function () { if (gesture) scrollTo(gesture.stop); }, 90);
   }, { passive: false });
   var wheelTimer;
+  // Safari's trackpad pinch: don't let it zoom the page while the viewer is open
+  box.addEventListener('gesturestart', function (e) { if (box.classList.contains('open')) e.preventDefault(); });
+  box.addEventListener('gesturechange', function (e) { if (box.classList.contains('open')) e.preventDefault(); });
   var swipe = null, D_touch = 110;
   box.addEventListener('touchstart', function (e) {
     if (!shopOpen() || e.touches.length !== 1) return;
@@ -398,6 +405,13 @@
     e.preventDefault();
     var shopItem = link.hasAttribute('data-shop');
     box.classList.toggle('shop-mode', shopItem);
+    if (!shopItem) {
+      geo = null; prog = target = 0; minStep = 0;
+      if (raf) { cancelAnimationFrame(raf); raf = null; }
+      img.style.transform = ''; stage.style.transform = '';
+      panel.style.transform = ''; panel.style.opacity = ''; panel.style.maskImage = ''; panel.style.webkitMaskImage = '';
+      foot.style.opacity = 0; more.style.opacity = 0;
+    }
     if (shopItem) {
       links = [link]; // shop items open on their own: no browsing
       buildPanel(link);
