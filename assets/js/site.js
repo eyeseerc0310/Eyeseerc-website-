@@ -81,6 +81,7 @@
     '<div class="lb-stage">' +
       '<button class="lb-prev" aria-label="Previous">&#8249;</button>' +
       '<figure class="lb-figure"><img alt=""><figcaption class="lightbox-caption"></figcaption><div class="lb-panel"></div></figure>' +
+      '<button class="lb-more" type="button" aria-label="Show details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg></button>' +
       '<button class="lb-next" aria-label="Next">&#8250;</button>' +
     '</div>';
   document.body.appendChild(box);
@@ -88,6 +89,8 @@
   var img = box.querySelector('img');
   var caption = box.querySelector('.lightbox-caption');
   var panel = box.querySelector('.lb-panel');
+  var more = box.querySelector('.lb-more');
+  more.addEventListener('click', function () { scrollTo(1); });
   var index = 0;
 
   // Shop items: no arrows or name; instead a box like the menu sits under
@@ -192,7 +195,9 @@
       s: (nw * k) / F.width,
       ox: window.innerWidth / 2 - (F.left + F.width / 2),
       oy: window.innerHeight / 2 - (F.top + F.height / 2),
-      D: Math.max(240, nh * k - F.height + P.height)
+      D: Math.max(240, nh * k - F.height + P.height),
+      Ph: P.height,
+      gap: P.top - F.bottom
     };
   }
   function applyProg() {
@@ -200,10 +205,19 @@
     var p = prog, s = geo.s * (1 - p) + p, ox = geo.ox * (1 - p), oy = geo.oy * (1 - p);
     img.style.transform = 'translate(' + ox + 'px,' + oy + 'px) scale(' + s + ')';
     var bottom = geo.F.top + geo.F.height / 2 + oy + geo.F.height * s / 2;
-    panel.style.transform = 'translateY(' + (bottom - geo.F.bottom) + 'px)';
-    var op = Math.max(0, Math.min(1, (p - 0.3) / 0.7));
-    panel.style.opacity = op;
-    panel.style.pointerEvents = op > 0.6 ? '' : 'none';
+    // the box's top always peeks up from the bottom of the screen (tucked
+    // just behind the photo if they meet), fading away downward, so you can
+    // tell there's more; it comes fully into view as you scroll
+    var top = Math.min(bottom, window.innerHeight - 54 - geo.gap);
+    panel.style.transform = 'translateY(' + (top - geo.F.bottom) + 'px)';
+    var shown = 30 + p * geo.Ph;
+    var mask = p > 0.97 ? '' : 'linear-gradient(to bottom, #000 ' + shown + 'px, transparent ' + (shown + 46) + 'px)';
+    panel.style.webkitMaskImage = mask; panel.style.maskImage = mask;
+    panel.style.opacity = 0.55 + 0.45 * Math.min(1, p / 0.7);
+    panel.style.pointerEvents = p > 0.6 ? '' : 'none';
+    // the little arrow fades away as soon as you start scrolling
+    more.style.opacity = Math.max(0, 1 - p * 3.5);
+    more.style.pointerEvents = p > 0.2 ? 'none' : '';
   }
   function step() {
     prog += (target - prog) * 0.2;
@@ -258,6 +272,7 @@
     if (box.classList.contains('shop-mode')) {
       if (raf) { cancelAnimationFrame(raf); raf = null; }
       panel.style.opacity = 0; panel.style.pointerEvents = 'none';
+      more.style.opacity = 0; more.style.pointerEvents = 'none';
     } else {
       place(0);
     }

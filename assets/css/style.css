@@ -693,3 +693,15 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   .lb-panel-row { gap: .6rem; }
   .lightbox .lb-panel button.lb-panel-add { padding: .5rem .65rem; font-size: .68rem; letter-spacing: .14em; }
 }
+
+/* the photo sits in front of the details box when they meet */
+.lightbox.shop-mode .lb-figure img { position: relative; z-index: 1; }
+/* little arrow at the bottom hinting there's more below (shop items only) */
+.lightbox .lb-more {
+  display: none; position: fixed; z-index: 2; left: 50%; bottom: .4rem; transform: translateX(-50%);
+  width: 2.6rem; height: 2.6rem; padding: .5rem; color: #fff;
+}
+.lightbox.shop-mode .lb-more { display: block; }
+.lightbox.shop-mode.open .lb-more { opacity: 1; }
+.lb-more svg { width: 100%; height: 100%; display: block; animation: lb-more-bob 1.8s ease-in-out infinite; }
+@keyframes lb-more-bob { 50% { transform: translateY(4px); } }
