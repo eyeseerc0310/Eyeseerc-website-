@@ -854,7 +854,10 @@
     var start = null;
     // after a swipe it carries on from the finger and slows down; from the
     // arrows / keys it's slow-fast-slow (a bell curve of speed)
-    function ease(t) { return bell ? (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) : 1 - Math.pow(1 - t, 3); }
+    function ease(t) {
+      if (bell === 'soft') return -(Math.cos(Math.PI * t) - 1) / 2; // gentler slow-fast-slow (after a swipe)
+      return bell ? (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) : 1 - Math.pow(1 - t, 3);
+    }
     function step(now) {
       if (start === null) start = now;
       var t = Math.min(1, (now - start) / ms);
@@ -883,14 +886,15 @@
     var start = fromDx || 0;
     var to = -dir * distance();
     if (!start) { animateTo(0, to, 700, function () { commit(dir); }, true); return; } // arrows / keys
-    var ms = Math.max(180, (fast ? 260 : 420) * Math.abs(to - start) / distance());
-    animateTo(start, to, ms, function () { commit(dir); });
+    // after a swipe: the same slow-fast-slow feel, for the distance still to go
+    var ms = Math.max(fast ? 320 : 380, 700 * Math.abs(to - start) / distance());
+    animateTo(start, to, ms, function () { commit(dir); }, 'soft');
   }
   function springBack(fromDx) {
-    animateTo(fromDx, 0, 260, function () {
+    animateTo(fromDx, 0, Math.max(300, 600 * Math.abs(fromDx) / distance()), function () {
       place(0); peekDir = 0; peek.classList.remove('show');
       caption.classList.remove('is-changing'); box.classList.remove('changing');
-    });
+    }, 'soft');
   }
 
   box.addEventListener('touchstart', function (e) {
