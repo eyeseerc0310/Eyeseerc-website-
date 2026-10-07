@@ -227,7 +227,7 @@
     var W = img.offsetWidth || 1, over = deckRoom().over * show;
     deck.style.transform = (img.style.transform || '') + ' scale(' + (1 - 2 * over / W) + ')';
     deck.style.opacity = show ? 1 : 0;
-    deck.style.pointerEvents = show > 0.9 ? '' : 'none';
+    deck.style.pointerEvents = show > 0.9 ? 'auto' : 'none';
     img.style.opacity = show ? 0 : '';
     if (show !== deckShown) { deckShown = show; layoutCards(); }
   }
