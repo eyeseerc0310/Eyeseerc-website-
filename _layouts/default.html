@@ -17,18 +17,26 @@
     var savedTheme = null;
     try { savedTheme = localStorage.getItem('theme-choice'); } catch (e) {}
     if (savedTheme !== 'light') document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('js');
     // phones and iPads (touch screens): no close X in the photo viewer
-    if (navigator.maxTouchPoints > 0) document.documentElement.classList.add('touch');{% if page.layout == "home" %}
+    if (navigator.maxTouchPoints > 0) document.documentElement.classList.add('touch');
+    // opening the site: the spinning logo shows for a moment first (once per
+    // visit, not on every page)
+    var splash = false;
+    try { splash = !sessionStorage.getItem('eyeseerc-splash'); sessionStorage.setItem('eyeseerc-splash', '1'); } catch (e) {}
+    if (splash) document.documentElement.classList.add('splash');{% if page.layout == "home" %}
     // opening the site on the home page: play its entrance (not when coming
     // back to it from another page)
     document.documentElement.classList.add('home-intro');
     // (ended once everything has loaded and the last fade has had time to finish)
-    addEventListener('load', function () {
-      setTimeout(function () { document.documentElement.classList.remove('home-intro'); }, 1800);
-    });{% endif %}
+    // (and after the logo screen, if there is one)
+    function endIntro() { setTimeout(function () { document.documentElement.classList.remove('home-intro'); }, 1800); }
+    if (splash) document.addEventListener('splashdone', endIntro); else addEventListener('load', endIntro);{% endif %}
   </script>
 </head>
 <body>
+  {% comment %} the logo screen shown for a moment when the site is first opened {% endcomment %}
+  <div class="splash-screen" aria-hidden="true"><img src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392"></div>
   <header class="site-header">
     <a class="brand" href="{{ '/' | relative_url }}">
       <span class="brand-text">

@@ -31,8 +31,10 @@
       {% if include.digital_caption and kind == "digital" %}{% assign caption = include.digital_caption %}{% endif %}
       {% comment %} with show_kind, only that kind is shown when the page first loads {% endcomment %}
       <figure class="gallery-item{% if include.show_kind and kind != include.show_kind %} is-filtered-out{% endif %}"{% if kind != "" %} data-kind="{{ kind }}"{% endif %}>
-        <a href="{{ photo.path | relative_url }}" data-lightbox data-caption="{{ caption | escape }}">
-          <img src="{{ photo.path | relative_url }}" alt="{{ caption | escape }}" loading="lazy">
+        {% comment %} a tiny soft preview shows first and the photo sharpens in over it (_data/blur.yml) {% endcomment %}
+        {% assign soft = site.data.blur[photo.path] %}
+        <a href="{{ photo.path | relative_url }}" data-lightbox data-caption="{{ caption | escape }}"{% if soft %} class="soft" style="--soft: url({{ soft.src }})"{% endif %}>
+          <img src="{{ photo.path | relative_url }}" alt="{{ caption | escape }}" loading="lazy"{% if soft %} width="{{ soft.w }}" height="{{ soft.h }}"{% endif %}>
         </a>
         {% if include.titles %}<figcaption class="gallery-title">{{ caption | escape }}</figcaption>{% endif %}
       </figure>

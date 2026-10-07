@@ -540,6 +540,16 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   .grid-size button[data-cols="4"] { display: block; }
   .grid-size button[data-cols="1"] { display: none; }
 }
+/* soft-focus loading: a tiny blurred preview shows straight away and the
+   photo sharpens in over it once it has arrived */
+.soft { position: relative; isolation: isolate; }
+.soft::before {
+  content: ""; position: absolute; inset: -12px; z-index: -1;
+  background: var(--soft) center / cover no-repeat;
+  filter: blur(14px); transform: scale(1.04);
+}
+.js .soft img { opacity: 0; transition: opacity .9s cubic-bezier(.45, 0, .55, 1); }
+.js .soft img.sharp { opacity: 1; }
 /* photos sliding off the side of the screen never make the page scroll sideways */
 .site-main { overflow-x: clip; }
 .is-filtered-out { display: none !important; }
@@ -760,6 +770,52 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 }
 .add-to-cart:hover::after, .add-to-cart:focus-visible::after { opacity: 1; }
 
+/* the logo screen: shown for a moment when the site is first opened (once
+   per visit), then it fades away slow-fast-slow. Until it's gone, the home
+   page's own entrance waits. */
+.splash-screen { display: none; }
+.splash .splash-screen {
+  display: flex; position: fixed; inset: 0; z-index: 200;
+  align-items: center; justify-content: center; background: var(--bg);
+  perspective: 700px; transition: opacity .75s cubic-bezier(.65, 0, .35, 1);
+}
+.splash-screen img { width: clamp(96px, 16vw, 150px); height: auto; animation: mark-spin 2.4s linear -1.2s infinite; backface-visibility: hidden; } /* (starts facing you) */
+.splash.splash-out .splash-screen { opacity: 0; pointer-events: none; }
+.splash .is-home *, .splash .is-home *::before, .splash .is-home *::after { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) { .splash-screen img { animation: none; } }
+/* the slide-in cart: a slim panel from the right over everything, moving
+   slow-fast-slow; the page behind dims */
+.cart-drawer { position: fixed; inset: 0; z-index: 140; visibility: hidden; transition: visibility 0s linear .62s; }
+.cart-drawer.open { visibility: visible; transition-delay: 0s; }
+.cart-drawer-backdrop {
+  position: absolute; inset: 0; background: rgba(0, 0, 0, .45);
+  opacity: 0; transition: opacity .6s cubic-bezier(.65, 0, .35, 1);
+}
+.cart-drawer.open .cart-drawer-backdrop { opacity: 1; }
+.cart-drawer-panel {
+  position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 88vw);
+  display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text); border-left: 1px solid var(--line);
+  box-shadow: -18px 0 50px rgba(0, 0, 0, .35);
+  padding: 1.1rem clamp(1rem, 4vw, 1.6rem) calc(1.4rem + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto; overscroll-behavior: contain;
+  transform: translateX(105%); transition: transform .6s cubic-bezier(.65, 0, .35, 1);
+}
+.cart-drawer.open .cart-drawer-panel { transform: none; }
+.cart-drawer.instant, .cart-drawer.instant * { transition: none !important; }
+.cart-drawer-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--display); font-size: 1rem; letter-spacing: .2em; padding-bottom: .9rem;
+}
+.cart-drawer-close { background: none; border: 0; color: var(--muted); font-size: 1.9rem; line-height: 1; cursor: pointer; padding: 0 .2rem; }
+.cart-drawer-close:hover { color: var(--text); }
+.cart-drawer .cart { max-width: none; width: 100%; }
+.cart-drawer .cart-item { grid-template-columns: 64px 1fr auto; gap: .8rem; padding: .9rem 0; }
+.cart-drawer .cart-item img { width: 64px; height: 64px; }
+.cart-drawer .cart-item-title { font-size: .82rem; }
+.cart-drawer .cart-empty { padding: 2.5rem 0 1rem; }
+.cart-drawer-page { display: block; margin-top: 1.2rem; text-align: center; font-size: .72rem; letter-spacing: .2em; color: var(--muted); text-decoration: none; }
+.cart-drawer-page:hover { color: var(--text); }
 /* the cart page */
 .cart { max-width: 640px; margin: 0 auto; }
 .cart-items { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }

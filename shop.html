@@ -37,16 +37,17 @@ tight_top: true
     {% comment %} prints come in the sizes set in _config.yml (print_sizes) {% endcomment %}
     {% assign sized = false %}
     {% if kind == "prints" and site.print_sizes and site.print_sizes.size > 0 %}{% assign sized = true %}{% assign first_size = site.print_sizes | first %}{% endif %}
+    {% assign soft = site.data.blur[item.image] %}
     {% assign item_desc = item.description | default: "Placeholder description. Size, paper and edition details for this piece will go here." %}
     <figure class="shop-item{% if kind != "prints" %} is-filtered-out{% endif %}" data-kind="{{ kind }}">
       <div class="shop-frame">
         {% if link != "" %}
-        <a class="shop-photo shop-{{ shape }}" href="{% if external %}{{ link }}{% else %}{{ link | relative_url }}{% endif %}"{% if external %} target="_blank" rel="noopener"{% endif %}>
+        <a class="shop-photo shop-{{ shape }}{% if soft %} soft{% endif %}"{% if soft %} style="--soft: url({{ soft.src }})"{% endif %} href="{% if external %}{{ link }}{% else %}{{ link | relative_url }}{% endif %}"{% if external %} target="_blank" rel="noopener"{% endif %}>
           <img src="{{ item.image | relative_url }}" alt="{{ item.title | default: 'Print' | escape }}" loading="lazy">
         </a>
         {% else %}
         {% comment %} no product link: clicking opens the photo big, like the other pages {% endcomment %}
-        <a class="shop-photo shop-{{ shape }}" href="{{ item.image | relative_url }}" data-lightbox data-caption="{{ item.title | default: 'Print' | escape }}"
+        <a class="shop-photo shop-{{ shape }}{% if soft %} soft{% endif %}"{% if soft %} style="--soft: url({{ soft.src }})"{% endif %} href="{{ item.image | relative_url }}" data-lightbox data-caption="{{ item.title | default: 'Print' | escape }}"
            data-shop data-id="{{ item_id }}" data-title="{{ item.title | default: 'Print' | escape }}" data-price="{{ item.price }}"
            data-desc="{{ item_desc | escape }}"{% if sized %} data-sizes{% endif %} data-variant="{{ item.shopify_variant }}" data-image="{{ item.image | relative_url }}"{% if item.sold_out %} data-sold-out{% endif %}
            {% if item.more_photos %}data-more="{% for m in item.more_photos limit: 4 %}{{ m | relative_url }}{% unless forloop.last %}|{% endunless %}{% endfor %}"{% endif %}>
