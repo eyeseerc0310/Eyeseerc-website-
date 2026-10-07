@@ -1088,24 +1088,33 @@ body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 
 /* iPad and desktop: the photo starts just under the header (at its full
    size; the bottom runs off the screen), and behind the header there's a
    strip of the same photo magnified a little, softened by the header's blur,
-   so it looks like the photo carries on up underneath it. It works like a
-   magnifying glass: the strip stays behind the header and shows the photo
-   magnified around a point (--lens, set by site.js) that starts in the
-   middle of the photo and, as the page scrolls, rises to the header, so
-   scrolling moves the magnified view over the part of the photo passing
-   underneath. --s is how far the page is scrolled. */
+   so it looks like the photo carries on up underneath it. The header works
+   as a magnifying glass: the strip is the part of the photo the header is
+   over, magnified around the header's bottom edge (so it lines up with the
+   photo there, nudged a little right), and scrolling slides the photo
+   through it. Above the photo's top edge it shows a mirrored copy of the
+   photo, so there's always something under the glass. --s is how far the
+   page is scrolled (set by site.js). */
 .show-band { display: none; }
 @media (min-width: 561px) {
   .show-slide .show-photo { top: var(--hdr, 0px); }
   .show-band {
-    display: block; position: absolute; inset: 0;
+    display: block; position: absolute; inset: 0; z-index: 1; /* (over the photo itself, which can drift up under the header) */
     -webkit-clip-path: inset(var(--s, 0px) 0 calc(100% - var(--s, 0px) - var(--hdr, 0px)) 0);
     clip-path: inset(var(--s, 0px) 0 calc(100% - var(--s, 0px) - var(--hdr, 0px)) 0);
   }
-  /* (a copy of the photo, exactly where the photo is, magnified 1.3x and
-     nudged right a little so it reads as a lens over the photo below) */
-  .show-lens { position: absolute; inset: 0; transform: scale(1.3); transform-origin: 50% var(--lens, 50%); translate: 3% 0; }
-  .show-slide .show-band img { top: var(--hdr, 0px); }
+  .show-lens {
+    position: absolute; inset: 0;
+    transform: scale(1.3); transform-origin: 50% calc(var(--s, 0px) + var(--hdr, 0px)); translate: 3% 0;
+  }
+  /* the copy sits exactly where the photo is and drifts with it */
+  .show-drift { position: absolute; left: 0; right: 0; top: var(--hdr, 0px); height: 100%; transform: scale(1.07); }
+  .show-slide.on .show-drift, .show-slide.was .show-drift { transform: scale(1); transition: transform 9s cubic-bezier(.3, 0, .4, 1); }
+  .show-slide .show-band .show-drift img { transform: none; transition: none; }
+  .show-slide .show-band .show-drift img.show-mirror { top: -100%; transform: scaleY(-1); }
+}
+@media (min-width: 561px) and (prefers-reduced-motion: reduce) {
+  .show-drift, .show-slide.on .show-drift, .show-slide.was .show-drift { transform: none; transition: none; }
 }
 .show-dots { display: flex; gap: .45rem; }
 .show-dot { width: 1.9rem; height: 1.4rem; padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: center; }

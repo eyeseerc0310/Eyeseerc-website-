@@ -1831,7 +1831,7 @@
     // (the first photo's drift starts once the logo screen has gone)
     function start() {
       if (!document.contains(root)) return;
-      Array.prototype.forEach.call(slides[0].querySelectorAll('img'), function (im) { im.style.transform = ''; });
+      Array.prototype.forEach.call(slides[0].querySelectorAll('.show-photo, .show-drift'), function (el) { el.style.transform = ''; });
       schedule();
     }
     if (document.documentElement.classList.contains('splash')) {
@@ -1839,17 +1839,10 @@
       document.addEventListener('splashdone', start, { once: true });
     } else start();
   }
-  // The magnified strip behind the header: it stays put as the page scrolls,
-  // and the point it magnifies around rises from the middle of the photo
-  // to the header, so it's always showing (magnified) the bit of photo
-  // passing under the header, never the empty space above the photo.
-  var LENS = 1.3;
+  // the magnifying strip behind the header stays with the header as the
+  // page scrolls (the photo slides through it)
   function lens() {
-    if (!root || !document.contains(root)) return;
-    var s = document.body.scrollTop, h = header ? header.getBoundingClientRect().height : 0;
-    var o = Math.max(h / 2, (h - s) / (1 - 1 / LENS)); // (on screen)
-    root.style.setProperty('--s', s + 'px');
-    root.style.setProperty('--lens', (s + o) + 'px');
+    if (root && document.contains(root)) root.style.setProperty('--s', document.body.scrollTop + 'px');
   }
   document.body.addEventListener('scroll', lens, { passive: true });
   // the photos run up behind the see-through header: the page is pulled up by its height
