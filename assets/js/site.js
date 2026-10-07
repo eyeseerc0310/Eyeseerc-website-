@@ -808,6 +808,8 @@
     if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if ((a.target && a.target !== '_self') || a.hasAttribute('download')) return;
     var url = new URL(a.href, location.href);
+    // the EYESEERC name on the page it leads to (home): do nothing, no reload
+    if (a.classList.contains('brand') && url.origin === location.origin && samePage(url) && !url.hash) { e.preventDefault(); return; }
     if (url.origin !== location.origin || samePage(url)) return;
     if (/\.(jpe?g|png|gif|webp|pdf)$/i.test(url.pathname)) return;
     e.preventDefault();
