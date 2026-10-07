@@ -761,6 +761,14 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .lightbox.shop-mode .lb-figure img {
   max-width: calc(100vw - 3rem); max-height: calc(100vh - 15rem); max-height: calc(100svh - 15rem);
 }
+/* the item's other photos, stacked behind the main one (placed by the script) */
+.lb-deck { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; }
+.lightbox.shop-mode .lb-figure .lb-deck img.lb-card {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  max-width: none; max-height: none; object-fit: cover;
+  transition: transform .5s cubic-bezier(.4, 0, .2, 1), filter .5s ease, opacity .35s ease;
+  cursor: pointer; -webkit-user-select: none; user-select: none;
+}
 /* the box: the menu's translucent grey, blur and thin outline, no fades */
 .lightbox.shop-mode .lb-panel {
   display: block; box-sizing: border-box; min-width: 260px;

@@ -45,7 +45,8 @@ tight_top: true
         {% comment %} no product link: clicking opens the photo big, like the other pages {% endcomment %}
         <a class="shop-photo shop-{{ shape }}" href="{{ item.image | relative_url }}" data-lightbox data-caption="{{ item.title | default: 'Print' | escape }}"
            data-shop data-id="{{ item_id }}" data-title="{{ item.title | default: 'Print' | escape }}" data-price="{{ item.price }}"
-           data-desc="{{ item_desc | escape }}" data-variant="{{ item.shopify_variant }}" data-image="{{ item.image | relative_url }}"{% if item.sold_out %} data-sold-out{% endif %}>
+           data-desc="{{ item_desc | escape }}" data-variant="{{ item.shopify_variant }}" data-image="{{ item.image | relative_url }}"{% if item.sold_out %} data-sold-out{% endif %}
+           {% if item.more_photos %}data-more="{% for m in item.more_photos limit: 4 %}{{ m | relative_url }}{% unless forloop.last %}|{% endunless %}{% endfor %}"{% endif %}>
           <img src="{{ item.image | relative_url }}" alt="{{ item.title | default: 'Print' | escape }}" loading="lazy">
         </a>
         {% endif %}
