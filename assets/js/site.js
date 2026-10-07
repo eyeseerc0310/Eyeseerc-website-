@@ -1810,6 +1810,7 @@
     if (!el || el === root) return;
     root = el; cur = 0; busy = false;
     root.style.setProperty('--show-time', TIME + 'ms');
+    root.style.setProperty('--s', document.body.scrollTop + 'px');
     slides = Array.prototype.slice.call(root.querySelectorAll('.show-slide'));
     dots = Array.prototype.slice.call(root.querySelectorAll('.show-dot'));
     title = root.querySelector('.show-title');
@@ -1838,6 +1839,10 @@
       document.addEventListener('splashdone', start, { once: true });
     } else start();
   }
+  // the magnified strip behind the header stays put as the page scrolls
+  document.body.addEventListener('scroll', function () {
+    if (root && document.contains(root)) root.style.setProperty('--s', document.body.scrollTop + 'px');
+  }, { passive: true });
   // the photos run up behind the see-through header: the page is pulled up by its height
   var header = document.querySelector('.site-header');
   function measure() { if (header) document.documentElement.style.setProperty('--hdr', header.getBoundingClientRect().height + 'px'); }
