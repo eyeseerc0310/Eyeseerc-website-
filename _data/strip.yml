@@ -1,0 +1,39 @@
+# Moving strip of small photos at the bottom of the home page (it loops
+# right to left). Each opens the Photography page on its Color or B&W tab.
+# The pictures are small copies in images/strip, so the home page stays quick.
+- image: /images/strip/color-01-forest.jpg
+  link: /photography/
+- image: /images/strip/bw-01-cadets.jpg
+  link: /photography/#bw
+- image: /images/strip/color-02-boat-film.jpg
+  link: /photography/
+- image: /images/strip/bw-02-barn.jpg
+  link: /photography/#bw
+- image: /images/strip/color-03-umbrella.jpg
+  link: /photography/
+- image: /images/strip/bw-03-protest-signs.jpg
+  link: /photography/#bw
+- image: /images/strip/color-04-hands.jpg
+  link: /photography/
+- image: /images/strip/bw-04-car.jpg
+  link: /photography/#bw
+- image: /images/strip/color-05-dragon.jpg
+  link: /photography/
+- image: /images/strip/bw-05-salmon.jpg
+  link: /photography/#bw
+- image: /images/strip/color-06-cows-film.jpg
+  link: /photography/
+- image: /images/strip/bw-06-helmet.jpg
+  link: /photography/#bw
+- image: /images/strip/color-07-graffiti-film.jpg
+  link: /photography/
+- image: /images/strip/bw-07-berries.jpg
+  link: /photography/#bw
+- image: /images/strip/color-08-fallen-log.jpg
+  link: /photography/
+- image: /images/strip/color-09-umbrella-crowd.jpg
+  link: /photography/
+- image: /images/strip/color-10-motion-blur.jpg
+  link: /photography/
+- image: /images/strip/color-11-trucks-film.jpg
+  link: /photography/
