@@ -13,7 +13,10 @@
   <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}?v={{ site.time | date: '%s' }}">
   <script>
     // apply the saved light/dark choice before the page draws (no flash)
-    try { if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) {}{% if page.layout == "home" %}
+    // (the site opens in dark mode unless this visitor has switched to light)
+    var savedTheme = null;
+    try { savedTheme = localStorage.getItem('theme-choice'); } catch (e) {}
+    if (savedTheme !== 'light') document.documentElement.setAttribute('data-theme', 'dark');{% if page.layout == "home" %}
     // opening the site on the home page: play its entrance (not when coming
     // back to it from another page)
     document.documentElement.classList.add('home-intro');
