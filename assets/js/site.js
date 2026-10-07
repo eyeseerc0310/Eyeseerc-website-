@@ -1810,7 +1810,7 @@
     if (!el || el === root) return;
     root = el; cur = 0; busy = false;
     root.style.setProperty('--show-time', TIME + 'ms');
-    root.style.setProperty('--s', document.body.scrollTop + 'px');
+    lens();
     slides = Array.prototype.slice.call(root.querySelectorAll('.show-slide'));
     dots = Array.prototype.slice.call(root.querySelectorAll('.show-dot'));
     title = root.querySelector('.show-title');
@@ -1839,13 +1839,22 @@
       document.addEventListener('splashdone', start, { once: true });
     } else start();
   }
-  // the magnified strip behind the header stays put as the page scrolls
-  document.body.addEventListener('scroll', function () {
-    if (root && document.contains(root)) root.style.setProperty('--s', document.body.scrollTop + 'px');
-  }, { passive: true });
+  // The magnified strip behind the header: it stays put as the page scrolls,
+  // and the point it magnifies around rises from the middle of the photo
+  // to the header, so it's always showing (magnified) the bit of photo
+  // passing under the header, never the empty space above the photo.
+  var LENS = 1.3;
+  function lens() {
+    if (!root || !document.contains(root)) return;
+    var s = document.body.scrollTop, h = header ? header.getBoundingClientRect().height : 0;
+    var o = Math.max(h / 2, (h - s) / (1 - 1 / LENS)); // (on screen)
+    root.style.setProperty('--s', s + 'px');
+    root.style.setProperty('--lens', (s + o) + 'px');
+  }
+  document.body.addEventListener('scroll', lens, { passive: true });
   // the photos run up behind the see-through header: the page is pulled up by its height
   var header = document.querySelector('.site-header');
-  function measure() { if (header) document.documentElement.style.setProperty('--hdr', header.getBoundingClientRect().height + 'px'); }
+  function measure() { if (header) document.documentElement.style.setProperty('--hdr', header.getBoundingClientRect().height + 'px'); lens(); }
   measure();
   window.addEventListener('resize', measure);
   window.addEventListener('load', measure);
