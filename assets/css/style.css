@@ -788,7 +788,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   cursor: pointer; -webkit-user-select: none; user-select: none;
 }
 /* the arrows, taps and keys: the same move, slow-fast-slow (a bell curve) */
-.lightbox.shop-mode .lb-figure .lb-deck.stepping img.lb-card { transition: transform .85s cubic-bezier(.65, 0, .35, 1), filter .85s ease, opacity .35s ease; }
+.lightbox.shop-mode .lb-figure .lb-deck.stepping img.lb-card { transition: transform .9s cubic-bezier(.37, 0, .63, 1), filter .9s ease, opacity .35s ease; }
 /* while a thumb is dragging the stack, the photos follow it exactly */
 .lightbox.shop-mode .lb-figure .lb-deck.dragging img.lb-card { transition: none; }
 /* the arrow to the next photo, to the right of the stack */
