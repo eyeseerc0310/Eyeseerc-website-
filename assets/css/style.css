@@ -867,12 +867,10 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 @media (max-width: 760px) {
   .lightbox.shop-mode .lb-stage { display: flex; }
   .lightbox.shop-mode .lb-figure { display: flex; }
-  .lightbox.shop-mode .lb-figure img { grid-column: auto; max-width: calc(100vw - 1.5rem); max-height: calc(100vh - var(--lb-reserve, 22rem)); max-height: max(140px, calc(100svh - var(--lb-reserve, 22rem))); }
-  /* a strip of space above the photo for the X, so the two never overlap */
-  .lightbox.shop-mode .lb-stage { padding-top: 3.4rem; }
-  .lightbox.shop-mode .lb-panel { margin-top: 1.5rem; min-width: 272px; padding: .95rem 1rem .9rem; }
+  .lightbox.shop-mode .lb-figure img { grid-column: auto; max-width: calc(100vw - 1.5rem); max-height: calc(100svh - 18.5rem); }
+  .lightbox.shop-mode .lb-panel { margin-top: 1.5rem; min-width: 0; padding: .95rem 1rem .9rem; }
   .lb-panel-row { gap: .6rem; }
-  .lightbox .lb-panel button.lb-panel-add { padding: .5rem .6rem; font-size: .68rem; letter-spacing: .12em; white-space: nowrap; }
+  .lightbox .lb-panel button.lb-panel-add { padding: .5rem .65rem; font-size: .68rem; letter-spacing: .14em; }
 }
 
 /* the photo sits in front of the details box when they meet */
