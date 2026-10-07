@@ -910,18 +910,18 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 /* quantity | price | ADD TO CART: the button fills the rest of the row, so
    its right edge always lines up with the SIZE button's under it */
 .lb-panel-row {
-  display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: .8rem;
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: .65rem;
   padding-top: .75rem; border-top: 1px solid var(--menu-line);
 }
 .lightbox .lb-panel button {
   opacity: 1; padding: 0; font-family: var(--sans); font-weight: 400; font-size: inherit; line-height: 1; color: var(--menu-link); background: none; border: 0; cursor: pointer;
 }
 .lightbox .lb-panel button:hover { color: var(--text); }
-.lb-qty { display: flex; align-items: center; gap: .7rem; font-size: .95rem; }
+.lb-qty { display: flex; align-items: center; gap: .55rem; font-size: .95rem; }
 .lightbox .lb-qty button { font-size: 1.15rem; padding: .1rem .2rem; }
 .lb-qty span { min-width: 1.3em; text-align: center; color: var(--text); }
 /* the price keeps the same width whatever the size, so nothing shifts */
-.lb-panel-price { font-size: .95rem; letter-spacing: .1em; color: var(--text); min-width: 4.2em; text-align: center; font-variant-numeric: tabular-nums; }
+.lb-panel-price { font-size: .95rem; letter-spacing: .1em; color: var(--text); min-width: 3.7em; text-align: center; font-variant-numeric: tabular-nums; }
 .lightbox .lb-panel button.lb-panel-add {
   width: 100%; white-space: nowrap; overflow: hidden; text-align: center; /* always one line, never past the edge */
   font-size: .74rem; letter-spacing: .14em; padding: .55rem .4rem .55rem .54rem;

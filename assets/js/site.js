@@ -120,7 +120,7 @@
       '<div class="lb-panel-row">' +
         '<div class="lb-qty"><button type="button" data-q="-1" aria-label="One fewer">\u2212</button><span>1</span><button type="button" data-q="1" aria-label="One more">+</button></div>' +
         '<div class="lb-panel-price"></div>' +
-        '<button type="button" class="lb-panel-add">ADD TO CART</button>' +
+        '<button type="button" class="lb-panel-add"><span>ADD TO CART</span></button>' +
       '</div>' +
       (sizes.length ?
         '<div class="lb-size">' +
@@ -179,12 +179,27 @@
       }
     };
   }
+  // ADD TO CART keeps clear space on both sides of its words: where the box
+  // is narrow (or a browser draws the letters wider) the letters close up a
+  // little until they fit
+  function fitAdd() {
+    var b = panel.querySelector('.lb-panel-add');
+    if (!b || !b.firstChild || !b.offsetWidth) return;
+    var steps = [null, '.12em', '.1em', '.08em', '.06em', '.04em', '.02em'];
+    for (var i = 0; i < steps.length; i++) {
+      b.style.letterSpacing = steps[i] || '';
+      if (b.firstChild.offsetWidth + 22 <= b.clientWidth) return;
+    }
+  }
+  window.addEventListener('resize', fitAdd);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAdd);
   // the box is exactly as wide as the photo
   function sizePanel() {
     if (!box.classList.contains('shop-mode')) return;
     var t = img.style.transform; img.style.transform = '';
     panel.style.width = img.getBoundingClientRect().width + 'px';
     img.style.transform = t;
+    fitAdd();
   }
   window.addEventListener('resize', sizePanel);
   // a click anywhere else in the viewer closes an open SIZE list
@@ -287,7 +302,7 @@
     deckK = 1 - 2 * over / W;
     deck.style.transform = (img.style.transform || '') + ' scale(' + deckK + ')';
     // phones: the details box stays exactly as wide as the (smaller) front photo
-    if (window.innerWidth <= 760) panel.style.width = (W - 2 * over) + 'px';
+    if (window.innerWidth <= 760) { panel.style.width = (W - 2 * over) + 'px'; if (show !== deckShown) fitAdd(); }
     deck.style.opacity = show ? 1 : 0;
     deck.style.pointerEvents = show > 0.9 ? 'auto' : 'none';
     img.style.opacity = show ? 0 : '';
