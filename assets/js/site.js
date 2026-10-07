@@ -1003,11 +1003,11 @@
 
 
 // Arriving with ?open=<photo file> (the moving strip on the home page):
-// once the page (and its Color / B&W tab) is in place, bring that photo into
-// view and open it full screen, then tidy the address so a reload or the
-// back button doesn't open it again.
+// the page (and its Color / B&W tab) fades in first, already scrolled to
+// that photo; then, after a short pause, the photo opens full screen. The
+// address is tidied so a reload or the back button doesn't open it again.
 (function () {
-  function openFromAddress() {
+  function openFromAddress(e) {
     var want = new URLSearchParams(location.search).get('open');
     if (!want) return;
     var clean = location.pathname + location.hash;
@@ -1017,7 +1017,15 @@
     });
     if (!link) return;
     link.scrollIntoView({ block: 'center' });
-    requestAnimationFrame(function () { link.click(); });
+    // coming from another page: wait for its 0.8s fade to finish; a fresh
+    // load: give the page a moment to settle in view
+    var wait = e ? 1150 : 700;
+    var here = location.pathname;
+    setTimeout(function () {
+      if (!link.isConnected || location.pathname !== here) return; // moved on
+      if (document.querySelector('.lightbox.open')) return;
+      link.click();
+    }, wait);
   }
   document.addEventListener('pageswap:done', openFromAddress);
   openFromAddress();
