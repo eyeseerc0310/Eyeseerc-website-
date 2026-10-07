@@ -160,6 +160,10 @@
   var deckNext = document.createElement('button');
   deckNext.type = 'button'; deckNext.className = 'lb-deck-next'; deckNext.setAttribute('aria-label', 'Next photo');
   deckNext.innerHTML = '&#8250;';
+  // and one to go back, on the left, once there's a photo over there
+  var deckPrev = document.createElement('button');
+  deckPrev.type = 'button'; deckPrev.className = 'lb-deck-next lb-deck-prev'; deckPrev.setAttribute('aria-label', 'Previous photo');
+  deckPrev.innerHTML = '&#8249;';
   var deckCards = [], front = 0, deckShown = 0, deckBusy = false;
   function setupDeck(link) {
     deck.innerHTML = ''; deckCards = []; front = 0; deckShown = 0; deckBusy = false;
@@ -171,7 +175,7 @@
       c.className = 'lb-card'; c.alt = ''; c.draggable = false; c.src = src;
       deck.appendChild(c); deckCards.push(c);
     });
-    deck.appendChild(deckNext);
+    deck.appendChild(deckNext); deck.appendChild(deckPrev);
   }
   // room beside the photo for the stack, and how far apart its edges sit
   function deckRoom() {
@@ -181,7 +185,7 @@
     var step = Math.max(7, Math.min(24, Math.min(left, right) / Math.max(1, n - 1)));
     // narrow screens: the front photo shrinks so the edges fit on both sides
     var over = Math.max(0, (n - 1) * step - Math.min(left, right));
-    return { step: step, over: over, right: right };
+    return { step: step, over: over, right: right, left: left };
   }
   // a card's place: d = 0 in front, d > 0 waiting on the right, d < 0
   // already seen, on the left; smaller and darker the further back it is
@@ -206,6 +210,13 @@
     deckNext.style.left = (outside ? W + peek + 8 : W - 44) + 'px';
     deckNext.style.zIndex = n + 1;
     deckNext.classList.toggle('hide', front >= n - 1);
+    // the same on the left, only once a photo has gone over there
+    var lpeek = front * room.step;
+    var loutside = room.left - room.over / 2 - lpeek > 46;
+    deckPrev.classList.toggle('inside', !loutside);
+    deckPrev.style.left = (loutside ? -lpeek - 44 : 8) + 'px';
+    deckPrev.style.zIndex = n + 1;
+    deckPrev.classList.toggle('hide', front <= 0);
   }
   // keeps the stack lined up with the (hidden) main photo as it moves
   function placeDeck(p) {
@@ -231,6 +242,7 @@
     setTimeout(function () { deckBusy = false; if (done) done(); }, 520);
   }
   deckNext.addEventListener('click', function (e) { e.stopPropagation(); if (deckActive()) rotate(1); });
+  deckPrev.addEventListener('click', function (e) { e.stopPropagation(); if (deckActive()) rotate(-1); });
   deck.addEventListener('click', function (e) {
     var c = e.target.closest('.lb-card');
     if (!c || !deckActive()) return;
