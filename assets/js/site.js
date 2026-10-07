@@ -299,70 +299,91 @@
   function deckActive() { return shopOpen() && deckCards.length > 1 && deckShown > 0.9; }
   // move through the photos by m places (+ forward, - back); stops at the ends
   // (quick clicks each count: the slide just carries on to the newest spot)
-  // Moving to the next (or previous) photo: it slides over the top from its
-  // pile into the middle while the one that was in front eases away
-  // underneath to the other pile, so it's always one photo after the other.
-  // With a thumb, the incoming photo follows the thumb; the arrows, taps and
+  // Moving to the next (or previous) photo, like taking the top photo off a
+  // pile: the front photo swings out to the side (going on: to the left;
+  // going back: to the right) while the next one grows into the middle
+  // underneath it, then the old one tucks in behind onto its pile. The
+  // middle is always covered, so only ever one photo after the other.
+  // With a thumb the front photo follows the thumb; the arrows, taps and
   // keys play the same move by themselves, slow-fast-slow.
-  var deckK = 1, settleTimer;
+  var deckK = 1, settleTimer, swing = null;
+  // stop a swing that's still going, leaving that photo where it is now
+  function freezeSwing() {
+    if (!swing) return;
+    var c = swing.effect && swing.effect.target;
+    if (c) {
+      var t = getComputedStyle(c).transform;
+      swing.cancel();
+      c.style.transition = 'none'; c.style.transform = t; void c.offsetWidth; c.style.transition = '';
+    } else swing.cancel();
+    swing = null;
+  }
   function rotate(m, done, fromDrag) {
     var n = deckCards.length;
     var to = Math.max(0, Math.min(n - 1, front + m));
     if (to === front) { if (done) done(); return; }
+    freezeSwing();
     clearTimeout(settleTimer);
-    deck.classList.toggle('stepping', !fromDrag);
+    var was = front, room = deckRoom(), W = deck.offsetWidth, dir = to > was ? 1 : -1;
+    var old = deckCards[was];
+    var startT = fromDrag ? getComputedStyle(old).transform : pose(0, room).transform;
+    deck.classList.toggle('stepping', !fromDrag); // (after a thumb, the photos just carry on)
     front = to;
     layoutCards();
-    settleTimer = setTimeout(function () { deck.classList.remove('stepping'); }, 900);
-    if (done) setTimeout(done, 860);
+    if (Math.abs(to - was) === 1 && old.animate) {
+      var end = pose(was - to, room);
+      var out = 'translateX(' + (-dir * W * 0.58) + 'px) scale(.93) rotate(' + (-dir * 3) + 'deg)';
+      // out to the side (slowing to a stop there), then in behind (slow-fast-slow)
+      var bell = 'cubic-bezier(.37, 0, .63, 1)';
+      swing = old.animate([
+        { transform: startT, filter: 'none', zIndex: n + 1, easing: fromDrag ? 'cubic-bezier(.2, .6, .3, 1)' : bell },
+        { transform: out, filter: 'none', zIndex: n + 1, offset: 0.48, easing: 'linear' },
+        { transform: out, filter: end.filter, zIndex: end.z, offset: 0.5, easing: bell },
+        { transform: end.transform, filter: end.filter, zIndex: end.z }
+      ], { duration: fromDrag ? 900 : 1100, easing: 'linear' });
+      var me = swing;
+      swing.onfinish = function () { me.cancel(); if (swing === me) swing = null; };
+    }
+    settleTimer = setTimeout(function () { deck.classList.remove('stepping'); }, 1120);
+    if (done) setTimeout(done, 1120);
   }
-  // thumb dragging: dx < 0 brings the next photo in, dx > 0 the previous one
-  var dragMover = null;
+  // thumb dragging: the front photo follows the thumb; the photo it uncovers
+  // (the next one going left, the previous one going right) grows into the
+  // middle underneath
   function dragDeck(dx) {
     dx = dx / (deckK || 1); // (phones draw the stack a little smaller: stay under the thumb)
     var n = deckCards.length, room = deckRoom(), W = deck.offsetWidth || 1;
     // at the ends it doesn't move at all: the first photo can't be pulled
     // back and the last one can't be pulled on
     if ((dx < 0 && front >= n - 1) || (dx > 0 && front <= 0)) dx = 0;
+    freezeSwing();
     clearTimeout(settleTimer);
     deck.classList.remove('stepping');
     deck.classList.add('dragging');
     var dir = dx < 0 ? 1 : dx > 0 ? -1 : 0;
-    var p = Math.min(1, Math.abs(dx) / (W * 0.6)); // how far along the move is
-    dragMover = dir ? deckCards[front + dir] : null;
+    var p = Math.min(1, Math.abs(dx) / (W * 0.6));
     deckCards.forEach(function (c, k) {
       var d = k - front, ps;
-      if (dir && d === dir) {
-        // the incoming photo: over the top, under the thumb, growing to full size
-        var start = pose(d, room);
-        var x = start.x + dx;
-        x = dir > 0 ? Math.max(x, -W * 0.06) : Math.min(x, W * 0.06); // stops just past the middle
-        c.style.transform = 'translateX(' + x + 'px) scale(' + (start.sc + (1 - start.sc) * p) + ')';
+      if (d === 0) {
+        c.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / W * 6) + 'deg)';
         c.style.filter = 'none'; c.style.zIndex = n + 1;
         return;
       }
-      if (dir && d === 0) ps = pose(-dir * p, room);       // the front eases towards its pile
-      else if (dir && Math.sign(d) === -dir) ps = pose(d - dir * p, room); // that pile shuffles along
-      else ps = pose(d, room);
+      ps = (dir && d === dir) ? pose(d * (1 - p), room) : pose(d, room);
       c.style.transform = ps.transform; c.style.filter = ps.filter; c.style.zIndex = ps.z;
     });
   }
   function releaseDeck(dx, vx) {
     deck.classList.remove('dragging');
     var W = (deck.offsetWidth || 1) * (deckK || 1), n = deckCards.length;
-    var mover = dragMover; dragMover = null;
-    if (mover && (Math.abs(dx) > W * 0.25 || (Math.abs(dx) > 20 && Math.abs(vx) > 0.3))) {
+    var can = (dx < 0 && front < n - 1) || (dx > 0 && front > 0);
+    if (can && (Math.abs(dx) > W * 0.25 || (Math.abs(dx) > 20 && Math.abs(vx) > 0.3))) {
       rotate(dx < 0 ? 1 : -1, null, true);
       return;
     }
-    // not far enough: everything glides back; the photo that was coming in
-    // stays on top until it's back on its pile
-    layoutCards();
-    if (mover) {
-      mover.style.zIndex = n + 1;
-      settleTimer = setTimeout(function () { layoutCards(); }, 740);
-    }
+    layoutCards(); // not far enough: it springs back to the middle
   }
+
 
   // a double click on the stack or its arrows mustn't select the page
   box.addEventListener('mousedown', function (e) { if (e.detail > 1) e.preventDefault(); });
