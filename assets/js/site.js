@@ -202,19 +202,18 @@
       c.style.transform = ps.transform; c.style.filter = ps.filter; c.style.zIndex = ps.z;
       c.style.opacity = d === 0 ? 1 : deckShown;
     });
-    // the arrow: just past the stack's right edge when there's room,
-    // otherwise on the photo's right edge in a little dark circle
-    var W = deck.offsetWidth, peek = (n - 1 - front) * room.step;
-    var outside = room.right - room.over / 2 - peek > 46;
+    // the arrows stay put (no chasing them): just past the furthest the
+    // stack ever reaches when there's room, otherwise on the photo's edge
+    // in a little circle. The left one only shows once a photo is over there.
+    var W = deck.offsetWidth, reach = (n - 1) * room.step;
+    var outside = room.right - room.over / 2 - reach > 46;
     deckNext.classList.toggle('inside', !outside);
-    deckNext.style.left = (outside ? W + peek + 8 : W - 44) + 'px';
+    deckNext.style.left = (outside ? W + reach + 8 : W - 44) + 'px';
     deckNext.style.zIndex = n + 1;
     deckNext.classList.toggle('hide', front >= n - 1);
-    // the same on the left, only once a photo has gone over there
-    var lpeek = front * room.step;
-    var loutside = room.left - room.over / 2 - lpeek > 46;
+    var loutside = room.left - room.over / 2 - reach > 46;
     deckPrev.classList.toggle('inside', !loutside);
-    deckPrev.style.left = (loutside ? -lpeek - 44 : 8) + 'px';
+    deckPrev.style.left = (loutside ? -reach - 44 : 8) + 'px';
     deckPrev.style.zIndex = n + 1;
     deckPrev.classList.toggle('hide', front <= 0);
   }
@@ -249,9 +248,13 @@
     e.stopPropagation();
     var d = deckCards.indexOf(c) - front;
     if (d) { rotate(d); return; }
-    // the front photo: back to the big view (sliding back to the main photo first)
+    // the front photo: that photo goes big; scrolling down again comes back
+    // to the stack just as it was
     minStep = 0;
-    rotate(-front, function () { scrollTo(0); });
+    if (img.src === c.src) { scrollTo(0); return; }
+    img.src = c.src;
+    var grow = function () { sizePanel(); shopGeo(); applyProg(); scrollTo(0); };
+    if (img.decode) img.decode().then(grow, grow); else grow();
   });
   window.addEventListener('resize', function () { if (deckCards.length) layoutCards(); });
 
@@ -526,7 +529,10 @@
     peekDir = 0; peek.classList.remove('show');
     caption.classList.remove('is-changing'); box.classList.remove('changing');
     // the stack goes; the main photo itself shrinks back into its tile
-    if (deckCards.length) { deck.style.opacity = 0; deck.style.pointerEvents = 'none'; img.style.opacity = ''; }
+    if (deckCards.length) {
+      deck.style.opacity = 0; deck.style.pointerEvents = 'none'; img.style.opacity = '';
+      if (img.src !== deckCards[0].src) img.src = deckCards[0].src;
+    }
     var anim = flip(thumbRect(), true);
     var trim = anim ? headerLift(true) : null;
     box.classList.remove('open');
@@ -582,7 +588,13 @@
   box.querySelector('.lb-close').addEventListener('click', close);
   box.querySelector('.lb-prev').addEventListener('click', function () { slide(-1); });
   box.querySelector('.lb-next').addEventListener('click', function () { slide(1); });
-  box.addEventListener('click', function (e) { if (e.target === box || e.target === stage) close(); });
+  box.addEventListener('click', function (e) {
+    if (e.target !== box && e.target !== stage) return;
+    // a click while a shop item's stack is still fading in (aimed at an
+    // arrow or a photo) doesn't close the viewer
+    if (deckCards.length && target >= 1 && !deckActive()) return;
+    close();
+  });
 
   document.addEventListener('keydown', function (e) {
     if (!box.classList.contains('open')) return;
