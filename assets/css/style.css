@@ -762,7 +762,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   max-width: calc(100vw - 3rem); max-height: calc(100vh - 15rem); max-height: calc(100svh - 15rem);
 }
 /* the item's other photos, stacked behind the main one (placed by the script) */
-.lb-deck { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; }
+.lb-deck { position: absolute; z-index: 2; left: 0; top: 0; opacity: 0; pointer-events: none; } /* above the (hidden) main photo */
 .lightbox.shop-mode .lb-figure .lb-deck img.lb-card {
   position: absolute; inset: 0; width: 100%; height: 100%;
   max-width: none; max-height: none; object-fit: cover;
