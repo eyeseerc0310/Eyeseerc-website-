@@ -165,7 +165,7 @@
   // Animate the big photo between its tile and the centre of the screen. The
   // photo is scaled to cover the tile and cropped to the tile's shape, so at
   // the small end it matches the tile exactly, whatever the photo's shape.
-  function flip(from, reverse) {
+  function flip(from, reverse, tucked) {
     // measure the photo's own box (without any resting transform), and end
     // the animation on whatever transform it rests at (shop items rest big)
     var base = img.style.transform;
@@ -178,9 +178,12 @@
     var cropY = Math.max(0, (to.height - from.height / scale) / 2);
     var dx = (from.left + from.width / 2) - (to.left + to.width / 2);
     var dy = (from.top + from.height / 2) - (to.top + to.height / 2);
+    // tucked: how much of the tile's top is hidden under the sticky header;
+    // the photo starts trimmed at the header line and grows out over it
+    var hideTop = tucked ? tucked / scale : 0;
     var small = { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + scale + ')',
-                  clipPath: 'inset(' + cropY + 'px ' + cropX + 'px)' };
-    var big = { transform: base || 'translate(0px, 0px) scale(1)', clipPath: 'inset(0px 0px)' };
+                  clipPath: 'inset(' + (cropY + hideTop) + 'px ' + cropX + 'px ' + cropY + 'px)' };
+    var big = { transform: base || 'translate(0px, 0px) scale(1)', clipPath: 'inset(0px 0px 0px)' };
     var frames = reverse ? [big, small] : [small, big];
     // closing holds the last frame, so the photo stays in its tile's spot
     // until the viewer is gone (instead of jumping back to full size)
@@ -360,6 +363,8 @@
   function open(i) {
     show(i);
     var from = thumbRect();
+    // the photo stays out of sight until its opening animation starts
+    if (from) img.style.visibility = 'hidden';
     box.classList.add('open');
     document.body.style.overflow = 'hidden';
     var go = function () {
@@ -371,8 +376,13 @@
       } else {
         geo = null; panel.style.transform = ''; panel.style.opacity = '';
       }
-      headerLift(false);
-      if (!flip(from) && img.animate) {
+      img.style.visibility = '';
+      // a tile partly under the header: the photo opens from the header line
+      // up over it (the viewer's backdrop dims the header as it goes), so the
+      // header never sits on top of the photo and then drops behind it
+      var header = document.querySelector('.site-header');
+      var tucked = from && header ? Math.max(0, Math.min(from.height, header.getBoundingClientRect().bottom - from.top)) : 0;
+      if (!flip(from, false, tucked) && img.animate) {
         img.animate([{ transform: 'scale(.9)' }, { transform: 'none' }],
           { duration: 300, easing: 'ease-out' });
       }
