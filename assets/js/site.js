@@ -1787,10 +1787,15 @@
       next.classList.remove('was'); void next.offsetWidth;
       next.classList.add('on');
       cur = n;
-      title.classList.add('out');
+      var old = title; old.classList.add('out');
       setTimeout(function () {
-        title.textContent = next.dataset.title; title.href = next.dataset.link;
-        title.classList.remove('out');
+        // the new name goes in as a fresh element: Safari could leave the end
+        // of a longer old name painted behind a shorter new one
+        var t = old.cloneNode(false);
+        t.textContent = next.dataset.title; t.href = next.dataset.link;
+        if (old.parentNode) old.parentNode.replaceChild(t, old);
+        title = t; void t.offsetWidth;
+        t.classList.remove('out');
       }, 450);
       setTimeout(function () { if (!prev.classList.contains('on')) prev.classList.remove('was'); }, FADE + 50);
       setTimeout(function () { busy = false; }, 500);
