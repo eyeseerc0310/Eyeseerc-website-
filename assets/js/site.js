@@ -1520,3 +1520,70 @@
   document.addEventListener('pageswap:done', openFromAddress);
   openFromAddress();
 })();
+
+// Photography and Projects: a small switch above the photos for how many
+// sit side by side (computers / iPads: 2, 3 or 4; phones: 1, 2 or 3). The
+// photos glide to their new places, and the choice is remembered for next
+// time (for each page, phones and bigger screens separately).
+(function () {
+  function phone() { return window.innerWidth <= 700; }
+  function key() { return 'grid-cols:' + location.pathname + (phone() ? ':phone' : ':wide'); }
+  function saved() { try { return parseInt(localStorage.getItem(key()), 10) || 0; } catch (e) { return 0; } }
+  function icon(n) {
+    var w = 18, g = 2, bw = (w - g * (n - 1)) / n, r = '';
+    for (var i = 0; i < n; i++) r += '<rect x="' + (i * (bw + g)).toFixed(2) + '" y="3" width="' + bw.toFixed(2) + '" height="12" rx=".6"/>';
+    return '<svg viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">' + r + '</svg>';
+  }
+  function grid() { return document.querySelector('main:not([aria-hidden]) .gallery-grid'); }
+  function defaultCols(g) {
+    g.style.gridTemplateColumns = '';
+    return getComputedStyle(g).gridTemplateColumns.split(' ').length;
+  }
+  function setCols(g, bar, n, animate) {
+    var items = Array.prototype.slice.call(g.querySelectorAll('.gallery-item'));
+    var before = animate ? items.map(function (it) { return it.getBoundingClientRect(); }) : null;
+    g.style.gridTemplateColumns = 'repeat(' + n + ', minmax(0, 1fr))';
+    g.dataset.cols = n;
+    Array.prototype.forEach.call(bar.querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', +b.dataset.cols === n ? 'true' : 'false');
+    });
+    if (!before || !items[0] || !items[0].animate) return;
+    // glide from where each photo was to where it is now
+    items.forEach(function (it, i) {
+      var a = before[i], b = it.getBoundingClientRect();
+      if (!b.width || (a.top > innerHeight + 200 && b.top > innerHeight + 200)) return; // (far off screen)
+      it.animate([
+        { transform: 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + (a.width / b.width) + ')', transformOrigin: 'top left' },
+        { transform: 'none', transformOrigin: 'top left' }
+      ], { duration: 520, easing: 'cubic-bezier(.45, 0, .2, 1)' });
+    });
+  }
+  function setup() {
+    var g = grid(), filter = document.querySelector('main:not([aria-hidden]) .gallery-filter');
+    if (!g || !filter) return;
+    var bar = filter.parentNode.querySelector('.grid-size');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'grid-size'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Photos per row');
+      [1, 2, 3, 4].forEach(function (n) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.dataset.cols = n; b.setAttribute('aria-label', n + ' per row'); b.innerHTML = icon(n);
+        bar.appendChild(b);
+      });
+      filter.insertAdjacentElement('afterend', bar);
+      bar.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        var n = +b.dataset.cols;
+        try { localStorage.setItem(key(), n); } catch (err) {}
+        setCols(grid(), bar, n, true);
+      });
+    }
+    var n = saved() || defaultCols(g);
+    if (phone() ? n > 3 : n < 2) n = defaultCols(g);
+    setCols(g, bar, n, false);
+  }
+  var lastPhone = phone();
+  window.addEventListener('resize', function () { if (phone() !== lastPhone) { lastPhone = phone(); setup(); } });
+  document.addEventListener('pageswap:done', setup);
+  setup();
+})();
