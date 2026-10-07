@@ -716,23 +716,6 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .footer-mark-wrap { display: inline-block; vertical-align: middle; margin-left: .55em; perspective: 300px; }
 .footer-mark { display: block; height: 1.45em; width: auto; animation: mark-spin 5s linear infinite; backface-visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .footer-mark { animation: none; } }
-.footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
-/* ABOUT: small, widely spaced capitals above the icons */
-.footer-links a {
-  display: inline-block; text-decoration: none; color: var(--text); opacity: .8;
-  font-size: .72rem; letter-spacing: .38em; padding-left: .38em; /* (centred despite the spacing after the last letter) */
-  -webkit-tap-highlight-color: transparent;
-  transition: transform .25s ease, opacity .25s ease, text-shadow .25s ease;
-  will-change: transform; /* (on its own layer from the start, so hovering it can't nudge the icons) */
-}
-.footer-links a.active { opacity: 1; }
-/* hovering (mouse, or an iPad trackpad): it grows and glows like the menu */
-@media (any-hover: hover) {
-  .footer-links a:hover, .footer-links a:focus-visible {
-    opacity: 1; transform: scale(1.25); outline: none;
-    text-shadow: 0 0 6px rgba(var(--glow), .8), 0 0 12px rgba(var(--glow), .6);
-  }
-}
 /* Instagram / YouTube buttons */
 .social { display: flex; justify-content: center; gap: 1.1rem; margin-bottom: .9rem; }
 .social-btn { color: var(--text); opacity: .8; display: inline-flex; transition: opacity .2s ease, transform .2s ease; }
