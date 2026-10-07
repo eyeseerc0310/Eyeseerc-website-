@@ -228,6 +228,8 @@
       deck.appendChild(c); deckCards.push(c);
     });
     deck.appendChild(deckNext); deck.appendChild(deckPrev);
+    // start on the first photo: no left arrow yet (never a flash of one)
+    deckPrev.classList.add('hide'); deckNext.classList.remove('hide');
   }
   // room beside the photo for the stack, and how far apart its edges sit
   function deckRoom() {
