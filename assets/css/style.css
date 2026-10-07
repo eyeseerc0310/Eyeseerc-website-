@@ -1079,16 +1079,20 @@ body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 
 /* iPad and desktop: the photo starts just under the header (at its full
    size; the bottom runs off the screen), and behind the header there's a
    strip of the same photo magnified a little, softened by the header's blur,
-   so it looks like the photo carries on up underneath it */
+   so it looks like the photo carries on up underneath it. Scrolling, the
+   strip stays behind the header like a magnifying glass while the photo
+   moves through it (--s is how far the page is scrolled, set by site.js). */
 .show-band { display: none; }
 @media (min-width: 561px) {
   .show-slide .show-photo { top: var(--hdr, 0px); }
   .show-band {
     display: block; position: absolute; inset: 0;
-    -webkit-clip-path: inset(0 0 calc(100% - var(--hdr, 0px)) 0); clip-path: inset(0 0 calc(100% - var(--hdr, 0px)) 0);
+    -webkit-clip-path: inset(var(--s, 0px) 0 calc(100% - var(--s, 0px) - var(--hdr, 0px)) 0);
+    clip-path: inset(var(--s, 0px) 0 calc(100% - var(--s, 0px) - var(--hdr, 0px)) 0);
   }
   /* (magnified around the photo's centre, just enough to reach the top) */
-  .show-slide .show-band img { height: calc(100% + 2 * var(--hdr, 0px)); }
+  /* (and nudged right a little, to line up better with the photo below) */
+  .show-slide .show-band img { left: -5%; width: 110%; height: calc(100% + 2 * var(--hdr, 0px)); translate: 3% 0; }
 }
 .show-dots { display: flex; gap: .45rem; }
 .show-dot { width: 1.9rem; height: 1.4rem; padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: center; }
