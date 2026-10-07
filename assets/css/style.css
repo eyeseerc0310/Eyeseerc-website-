@@ -525,9 +525,9 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   font-size: .52rem; letter-spacing: .2em; white-space: nowrap;
   color: var(--muted); opacity: .8; pointer-events: none;
 }
-/* Photography / Projects: how many photos per row (small icons on the right,
+/* Photography / Projects: how many photos per row (small icons on the left,
    just above the photos) */
-.grid-size { display: flex; justify-content: flex-end; gap: .35rem; margin: -1.35rem 0 .9rem; }
+.grid-size { display: flex; justify-content: flex-start; gap: .35rem; margin: -1.35rem 0 .9rem; }
 .grid-size button {
   background: none; border: 0; padding: .3rem; cursor: pointer; color: var(--muted); opacity: .55;
   transition: opacity .2s ease, color .2s ease; -webkit-tap-highlight-color: transparent;
@@ -603,8 +603,6 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 }
 .lightbox .lb-peek.show { display: block; }
 .lightbox { touch-action: none; overflow: hidden; } /* the swipe is handled by the page, not the browser */
-/* zooming in (Photography / Projects): a smooth step for clicks / taps */
-.lightbox img.zoom-anim { transition: transform .38s cubic-bezier(.2, .7, .2, 1); }
 .lightbox.zoomed .lb-prev, .lightbox.zoomed .lb-next, .lightbox.zoomed .lightbox-caption { opacity: 0 !important; pointer-events: none; }
 /* the little magnifying glass that follows a mouse / trackpad over the photo */
 .lb-mag {
