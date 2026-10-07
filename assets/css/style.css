@@ -630,6 +630,13 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   .lightbox:not(.shop-mode) .lb-figure > img { cursor: none; }
 }
 .lightbox.zoom-dragging, .lightbox.zoom-dragging * { cursor: grabbing !important; }
+/* Safari draws fading text differently from still text, so the name and
+   arrows looked brighter while fading in and then dropped dimmer at the
+   end; drawing them the same way throughout keeps them steady */
+.lightbox-caption, .lightbox .lb-prev, .lightbox .lb-next, .lightbox .lb-close {
+  will-change: opacity; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  transform: translateZ(0);
+}
 /* quick clicks on the arrows or photos never select (and tint) anything */
 .lightbox { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 /* caption hangs below the photo so the arrows line up with the photo's middle */
