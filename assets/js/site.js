@@ -183,6 +183,7 @@
     var left = geo ? geo.F.left - 8 : 60;
     var n = deckCards.length;
     var step = Math.max(7, Math.min(24, Math.min(left, right) / Math.max(1, n - 1)));
+    if (window.innerWidth <= 760) step = 10; // phones: the photos behind stick out clearly
     // narrow screens: the front photo shrinks so the edges fit on both sides
     var over = Math.max(0, (n - 1) * step - Math.min(left, right));
     return { step: step, over: over, right: right, left: left };
@@ -225,6 +226,8 @@
     deck.style.width = img.offsetWidth + 'px'; deck.style.height = img.offsetHeight + 'px';
     var W = img.offsetWidth || 1, over = deckRoom().over * show;
     deck.style.transform = (img.style.transform || '') + ' scale(' + (1 - 2 * over / W) + ')';
+    // phones: the details box stays exactly as wide as the (smaller) front photo
+    if (window.innerWidth <= 760) panel.style.width = (W - 2 * over) + 'px';
     deck.style.opacity = show ? 1 : 0;
     deck.style.pointerEvents = show > 0.9 ? 'auto' : 'none';
     img.style.opacity = show ? 0 : '';
