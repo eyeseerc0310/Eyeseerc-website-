@@ -1001,3 +1001,24 @@
   });
 })();
 
+
+// Arriving with ?open=<photo file> (the moving strip on the home page):
+// once the page (and its Color / B&W tab) is in place, bring that photo into
+// view and open it full screen, then tidy the address so a reload or the
+// back button doesn't open it again.
+(function () {
+  function openFromAddress() {
+    var want = new URLSearchParams(location.search).get('open');
+    if (!want) return;
+    var clean = location.pathname + location.hash;
+    try { history.replaceState(history.state, '', clean); } catch (e) {}
+    var link = Array.prototype.find.call(document.querySelectorAll('main:not([aria-hidden]) [data-lightbox]'), function (a) {
+      return decodeURIComponent(a.getAttribute('href') || '').split('/').pop() === want && !a.closest('.is-filtered-out');
+    });
+    if (!link) return;
+    link.scrollIntoView({ block: 'center' });
+    requestAnimationFrame(function () { link.click(); });
+  }
+  document.addEventListener('pageswap:done', openFromAddress);
+  openFromAddress();
+})();
