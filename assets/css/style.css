@@ -346,15 +346,11 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   padding: clamp(2rem, 5vw, 5rem);
   max-width: 40rem;
 }
-/* the blue mark above the bio */
-.hero-mark { display: block; width: clamp(113px, 12vw, 172px); height: auto; margin: 0 auto 1.6rem; } /* centred over the text */
-/* it turns slowly like a spinning sign: each half turn goes from edge-on,
-   round to facing you, and on to edge-on again; at that moment (when it's
-   just a thin line) the next half turn starts, so it's never seen backwards */
-.hero-mark-wrap { perspective: 700px; }
-.hero-mark { animation: mark-spin 5s linear infinite; backface-visibility: hidden; }
+/* the blue mark turns slowly like a spinning sign (used beside the
+   copyright line): each half turn goes from edge-on, round to facing you,
+   and on to edge-on again; at that moment (when it's just a thin line) the
+   next half turn starts, so it's never seen backwards */
 @keyframes mark-spin { from { transform: rotateY(90deg); } to { transform: rotateY(-90deg); } }
-@media (prefers-reduced-motion: reduce) { .hero-mark { animation: none; } }
 .bio { font-size: 1.05rem; }
 .bio p { margin: 0 0 1.1rem; }
 .bio strong { font-weight: 500; }
@@ -404,14 +400,13 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 .strip { position: relative; z-index: 1; } /* the strip's photos sit above the glow */
 
 /* first visit to the home page: the photo fades in with a slight drift,
-   then the mark, the bio and the photo strip follow one by one */
+   then the bio and the photo strip follow one by one */
 @keyframes home-photo-in { from { opacity: 0; transform: scale(1.045); } to { opacity: 1; transform: none; } }
 @keyframes home-rise-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .home-intro .is-home .hero-photo { background: transparent; }
 /* (the photo's fade waits until the photo has actually downloaded) */
 .home-intro .is-home .hero-photo:not(.ready) .hero-main { opacity: 0; }
 .home-intro .is-home .hero-photo.ready .hero-main { animation: home-photo-in 1.6s cubic-bezier(.2, .7, .2, 1) both; }
-.home-intro .is-home .hero-mark-wrap { animation: home-rise-in .9s ease-out .45s both; }
 .home-intro .is-home .bio { animation: home-rise-in .9s ease-out .65s both; }
 .home-intro .is-home .strip { animation: home-rise-in .9s ease-out .9s both; }
 @media (prefers-reduced-motion: reduce) {
@@ -426,7 +421,6 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   .site-main.is-home { min-height: 0; }
   .site-main.is-home .hero-photo { min-height: 0; }
   .site-main.is-home .hero-text { padding-block: clamp(.75rem, 3vh, 5rem); }
-  .site-main.is-home .hero-mark { width: min(clamp(113px, 12vw, 172px), 16vh); margin-bottom: min(1.6rem, 2.5vh); }
 }
 
 /* phones and narrow tablets: photo across the top half, bio underneath */
