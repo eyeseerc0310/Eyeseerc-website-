@@ -183,9 +183,15 @@
     var left = geo ? geo.F.left - 8 : 60;
     var n = deckCards.length;
     var step = Math.max(7, Math.min(24, Math.min(left, right) / Math.max(1, n - 1)));
-    if (window.innerWidth <= 760) step = 10; // phones: the photos behind stick out clearly
     // narrow screens: the front photo shrinks so the edges fit on both sides
     var over = Math.max(0, (n - 1) * step - Math.min(left, right));
+    if (window.innerWidth <= 760) {
+      // phones: each photo behind sticks out a clear 9px, the whole stack
+      // just fits the screen, and the arrows sit at its outer edges
+      var W = img.offsetWidth || 1;
+      var k = Math.min(1, (window.innerWidth / 2 - (n - 1) * 9 - 18) / (W / 2));
+      step = 9 / k; over = (1 - k) * W / 2;
+    }
     return { step: step, over: over, right: right, left: left };
   }
   // a card's place: d = 0 in front, d > 0 waiting on the right, d < 0
@@ -207,14 +213,15 @@
     // stack ever reaches when there's room, otherwise on the photo's edge
     // in a little circle. The left one only shows once a photo is over there.
     var W = deck.offsetWidth, reach = (n - 1) * room.step;
-    var outside = room.right - room.over / 2 - reach > 46;
+    var phone = window.innerWidth <= 760;
+    var outside = phone || room.right - room.over / 2 - reach > 46;
     deckNext.classList.toggle('inside', !outside);
-    deckNext.style.left = (outside ? W + reach + 8 : W - 44) + 'px';
+    deckNext.style.left = (phone ? W + reach - 26 : outside ? W + reach + 8 : W - 44) + 'px';
     deckNext.style.zIndex = n + 1;
     deckNext.classList.toggle('hide', front >= n - 1);
-    var loutside = room.left - room.over / 2 - reach > 46;
+    var loutside = phone || room.left - room.over / 2 - reach > 46;
     deckPrev.classList.toggle('inside', !loutside);
-    deckPrev.style.left = (loutside ? -reach - 44 : 8) + 'px';
+    deckPrev.style.left = (phone ? -reach - 10 : loutside ? -reach - 44 : 8) + 'px';
     deckPrev.style.zIndex = n + 1;
     deckPrev.classList.toggle('hide', front <= 0);
   }
