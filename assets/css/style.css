@@ -347,13 +347,13 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   max-width: 40rem;
 }
 /* the blue mark above the bio */
-.hero-mark { display: block; width: clamp(98px, 10.4vw, 150px); height: auto; margin: 0 auto 1.6rem; } /* centred over the text */
+.hero-mark { display: block; width: clamp(113px, 12vw, 172px); height: auto; margin: 0 auto 1.6rem; } /* centred over the text */
 /* it turns slowly like a spinning sign: each half turn goes from edge-on,
    round to facing you, and on to edge-on again; at that moment (when it's
    just a thin line) the next half turn starts, so it's never seen backwards */
 .hero-mark-wrap { perspective: 700px; }
 .hero-mark { animation: mark-spin 5s linear infinite; backface-visibility: hidden; }
-@keyframes mark-spin { from { transform: rotateY(-90deg); } to { transform: rotateY(90deg); } }
+@keyframes mark-spin { from { transform: rotateY(90deg); } to { transform: rotateY(-90deg); } }
 @media (prefers-reduced-motion: reduce) { .hero-mark { animation: none; } }
 .bio { font-size: 1.05rem; }
 .bio p { margin: 0 0 1.1rem; }
@@ -426,7 +426,7 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   .site-main.is-home { min-height: 0; }
   .site-main.is-home .hero-photo { min-height: 0; }
   .site-main.is-home .hero-text { padding-block: clamp(.75rem, 3vh, 5rem); }
-  .site-main.is-home .hero-mark { width: min(clamp(98px, 10.4vw, 150px), 14vh); margin-bottom: min(1.6rem, 2.5vh); }
+  .site-main.is-home .hero-mark { width: min(clamp(113px, 12vw, 172px), 16vh); margin-bottom: min(1.6rem, 2.5vh); }
 }
 
 /* phones and narrow tablets: photo across the top half, bio underneath */
