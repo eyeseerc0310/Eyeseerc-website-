@@ -157,9 +157,10 @@ html.theme-fading {
   transition: --bg 1.5s ease, --surface 1.5s ease, --text 1.5s ease, --muted 1.5s ease, --line 1.5s ease,
     --accent 1.5s ease, --menu-bg 1.5s ease, --menu-line 1.5s ease, --menu-link 1.5s ease !important;
 }
-html.theme-fading body *, html.theme-fading body *::before, html.theme-fading body *::after {
+html.theme-fading body *:not(.show *), html.theme-fading body *:not(.show *)::before, html.theme-fading body *:not(.show *)::after {
   transition: box-shadow 1.5s ease !important;
 }
+/* (the home page's photos carry on drifting and fading as they were) */
 
 /* Menu button (top right) */
 .nav-toggle {
