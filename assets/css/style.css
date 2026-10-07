@@ -525,6 +525,21 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   font-size: .52rem; letter-spacing: .2em; white-space: nowrap;
   color: var(--muted); opacity: .8; pointer-events: none;
 }
+/* Photography / Projects: how many photos per row (small icons on the right,
+   just above the photos) */
+.grid-size { display: flex; justify-content: flex-end; gap: .35rem; margin: -1.35rem 0 .9rem; }
+.grid-size button {
+  background: none; border: 0; padding: .3rem; cursor: pointer; color: var(--muted); opacity: .55;
+  transition: opacity .2s ease, color .2s ease; -webkit-tap-highlight-color: transparent;
+}
+.grid-size button svg { display: block; width: 18px; height: 18px; }
+.grid-size button:hover { opacity: .9; }
+.grid-size button[aria-pressed="true"] { color: var(--text); opacity: 1; }
+.grid-size button[data-cols="4"] { display: none; }
+@media (min-width: 701px) {
+  .grid-size button[data-cols="4"] { display: block; }
+  .grid-size button[data-cols="1"] { display: none; }
+}
 /* photos sliding off the side of the screen never make the page scroll sideways */
 .site-main { overflow-x: clip; }
 .is-filtered-out { display: none !important; }
