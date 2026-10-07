@@ -766,9 +766,21 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .lightbox.shop-mode .lb-figure .lb-deck img.lb-card {
   position: absolute; inset: 0; width: 100%; height: 100%;
   max-width: none; max-height: none; object-fit: cover;
+  /* a dark edge all round each photo so the layers stand apart */
+  box-shadow: 0 0 18px 2px rgba(0, 0, 0, .65), 0 24px 60px rgba(0, 0, 0, .45);
   transition: transform .5s cubic-bezier(.4, 0, .2, 1), filter .5s ease, opacity .35s ease;
   cursor: pointer; -webkit-user-select: none; user-select: none;
 }
+/* the arrow to the next photo, to the right of the stack */
+.lightbox .lb-deck .lb-deck-next {
+  position: absolute; top: 50%; width: 36px; height: 36px; margin-top: -18px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.2rem; line-height: 1; color: #fff; opacity: .8;
+  transition: opacity .3s ease, left .5s cubic-bezier(.4, 0, .2, 1);
+}
+.lightbox .lb-deck .lb-deck-next:hover { opacity: 1; }
+.lightbox .lb-deck .lb-deck-next.inside { border-radius: 50%; background: rgba(0, 0, 0, .4); font-size: 1.8rem; padding-bottom: 3px; }
+.lightbox .lb-deck .lb-deck-next.hide { opacity: 0; pointer-events: none; }
 /* the box: the menu's translucent grey, blur and thin outline, no fades */
 .lightbox.shop-mode .lb-panel {
   display: block; box-sizing: border-box; min-width: 260px;
