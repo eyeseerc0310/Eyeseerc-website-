@@ -854,10 +854,12 @@
     if (peek.complete && peek.naturalWidth) sizePeek();
   }
   // animate from the current offset to a target offset
-  function animateTo(from, to, ms, done) {
+  function animateTo(from, to, ms, done, bell) {
     sliding = true;
     var start = null;
-    function ease(t) { return 1 - Math.pow(1 - t, 3); }
+    // after a swipe it carries on from the finger and slows down; from the
+    // arrows / keys it's slow-fast-slow (a bell curve of speed)
+    function ease(t) { return bell ? (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) : 1 - Math.pow(1 - t, 3); }
     function step(now) {
       if (start === null) start = now;
       var t = Math.min(1, (now - start) / ms);
@@ -885,6 +887,7 @@
     preparePeek(dir);
     var start = fromDx || 0;
     var to = -dir * distance();
+    if (!start) { animateTo(0, to, 700, function () { commit(dir); }, true); return; } // arrows / keys
     var ms = Math.max(180, (fast ? 260 : 420) * Math.abs(to - start) / distance());
     animateTo(start, to, ms, function () { commit(dir); });
   }
