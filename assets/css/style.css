@@ -1030,6 +1030,7 @@ body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 
 .show-slide.on { opacity: 1; z-index: 2; transition: opacity 1.6s cubic-bezier(.45, 0, .55, 1); }
 .show-slide.was { opacity: 1; z-index: 1; }
 .show-slide img {
+  position: absolute; left: 0; top: 0;
   width: 100%; height: 100%; max-width: none; object-fit: cover;
   transform: scale(1.07); -webkit-user-drag: none;
 }
@@ -1072,11 +1073,23 @@ body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 
   will-change: opacity, transform; /* (its own layer, so it's always repainted whole) */
 }
 /* hovering the name: it grows a little, to show it can be clicked */
-@media (hover: hover) { .show-title:hover, .show-title:focus-visible { transform: scale(1.12); } }
+/* (any-hover: an iPad with a trackpad counts too) */
+@media (any-hover: hover) { .show-title:hover, .show-title:focus-visible { transform: scale(1.12); } }
 .show-title.out { opacity: 0; }
-/* iPad and desktop: the photos sit lower (by the header's height), so less
-   of the top is under the header and more of the bottom runs off the screen */
-@media (min-width: 561px) { .show-slides { bottom: calc(-2 * var(--hdr, 0px)); } }
+/* iPad and desktop: the photo starts just under the header (at its full
+   size; the bottom runs off the screen), and behind the header there's a
+   strip of the same photo magnified a little, softened by the header's blur,
+   so it looks like the photo carries on up underneath it */
+.show-band { display: none; }
+@media (min-width: 561px) {
+  .show-slide .show-photo { top: var(--hdr, 0px); }
+  .show-band {
+    display: block; position: absolute; inset: 0;
+    -webkit-clip-path: inset(0 0 calc(100% - var(--hdr, 0px)) 0); clip-path: inset(0 0 calc(100% - var(--hdr, 0px)) 0);
+  }
+  /* (magnified around the photo's centre, just enough to reach the top) */
+  .show-slide .show-band img { height: calc(100% + 2 * var(--hdr, 0px)); }
+}
 .show-dots { display: flex; gap: .45rem; }
 .show-dot { width: 1.9rem; height: 1.4rem; padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: center; }
 .show-dot i { display: block; position: relative; width: 100%; height: 2px; overflow: hidden; background: rgba(255, 255, 255, .3); }
