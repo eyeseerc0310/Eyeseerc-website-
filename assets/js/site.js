@@ -736,6 +736,7 @@
   function go(url, push, scrollY) {
     if (busy) return;
     busy = true;
+    var fromY = document.body.scrollTop; // where this page was, for the back button
     var menuClosed = closeMenu();
     fetch(url.href, { credentials: 'same-origin' }).then(function (r) {
       if (!r.ok) throw new Error('status ' + r.status);
@@ -751,7 +752,7 @@
         function update() {
           document.title = doc.title;
           if (push) {
-            history.replaceState({ y: window.scrollY }, '');
+            history.replaceState({ y: fromY }, '');
             history.pushState({ y: 0 }, '', url.href);
           }
           if (nav) {
@@ -778,7 +779,7 @@
         old.style.pointerEvents = 'none';
         old.setAttribute('aria-hidden', 'true');
         old.insertAdjacentElement('afterend', main);
-        window.scrollTo(0, scrollY || 0);
+        document.body.scrollTop = scrollY || 0;
         update();
         var finish = function () { old.remove(); busy = false; };
         if (old.animate) {
@@ -960,4 +961,32 @@
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') check(); });
   window.addEventListener('pageshow', function (e) { if (e.persisted) check(); });
   check();
+})();
+
+// The page scrolls inside the body (so it can't bounce past its ends), which
+// browsers don't steer with the keyboard on their own: arrow keys, Page
+// Up/Down, Space, Home and End scroll it here instead. Keys the photo viewer
+// or a text box has already used are left alone.
+(function () {
+  var body = document.body;
+  window.addEventListener('keydown', function (e) {
+    if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName))) return;
+    if (getComputedStyle(body).overflowY === 'hidden') return;
+    var page = body.clientHeight - 60, line = 60, top = null, by = null;
+    switch (e.key) {
+      case 'ArrowDown': by = line; break;
+      case 'ArrowUp': by = -line; break;
+      case 'PageDown': by = page; break;
+      case 'PageUp': by = -page; break;
+      case ' ': by = e.shiftKey ? -page : page; break;
+      case 'Home': top = 0; break;
+      case 'End': top = body.scrollHeight; break;
+      default: return;
+    }
+    e.preventDefault();
+    if (top !== null) body.scrollTo({ top: top, behavior: 'smooth' });
+    else body.scrollBy({ top: by, behavior: 'smooth' });
+  });
 })();

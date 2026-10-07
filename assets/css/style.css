@@ -55,25 +55,30 @@
 * { box-sizing: border-box; }
 html {
   -webkit-text-size-adjust: 100%;
-  /* no rubber-band bounce at the ends of the page: on short pages (Shop) a
-     fast flick from the top used to hit the bottom so hard that Safari's
-     toolbar kept showing and hiding, making the bottom jitter */
-  overscroll-behavior-y: none;
+  /* The page scrolls inside the body rather than the browser window: Safari
+     always lets the window stretch past the top and bottom and snap back, but
+     it respects "no bounce" on a scrolling box, so the page just stops at its
+     ends. The window itself stays put at the screen's size. */
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
 }
 body {
   margin: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
   /* header, page, footer stacked so the page fills the space between them */
   display: flex; flex-direction: column;
-  /* a fixed height (the smallest screen height) rather than one that grows and
-     shrinks as the browser's toolbar slides away, so the page never resizes mid-scroll */
-  min-height: 100vh; min-height: 100svh;
-  overscroll-behavior-y: none;
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
   font-weight: 300;
   line-height: 1.7;
 }
+body > * { flex-shrink: 0; } /* header, page and footer keep their full height */
 img { max-width: 100%; display: block; }
 a { color: inherit; }
 code { font-size: .9em; background: var(--line); padding: .1em .35em; border-radius: 3px; }
@@ -289,7 +294,9 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 
 /* ---------- Main ---------- */
 .site-main {
-  flex: 1;
+  /* grows to fill short pages but never squashes below its contents (Safari
+     would otherwise let the footer ride up over the photos) */
+  flex: 1 0 auto;
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
@@ -317,7 +324,7 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 .site-main.is-home {
   max-width: none; width: 100%;
   padding: 0; margin: 0;
-  flex: 1; display: flex;
+  flex: 1 0 auto; display: flex;
 }
 .hero {
   flex: 1;
