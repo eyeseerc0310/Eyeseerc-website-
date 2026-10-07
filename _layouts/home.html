@@ -13,11 +13,29 @@ layout: default
       {% assign ext = f.extname | downcase %}
       {% if ext == ".jpg" or ext == ".jpeg" or ext == ".png" or ext == ".webp" %}{% assign me_photo = f.path %}{% endif %}
     {% endfor %}
-    <img src="{{ me_photo | relative_url }}" alt="Portrait of {{ site.title }}"
+    {% comment %} dark mode: a soft glow of the photo spills onto the page around it {% endcomment %}
+    <img class="hero-glow" src="{{ me_photo | relative_url }}" alt="" aria-hidden="true">
+    <img class="hero-main" src="{{ me_photo | relative_url }}" alt="Portrait of {{ site.title }}"
          onerror="this.onerror=null;this.src='{{ '/images/profile-placeholder.svg' | relative_url }}';">
   </div>
   <div class="hero-text">
     <img class="hero-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="">
     <div class="bio">{{ content }}</div>
+    <nav class="hero-links" aria-label="Explore">
+      <a href="{{ '/photography/' | relative_url }}">VIEW PHOTOGRAPHY <span aria-hidden="true">→</span></a>
+      <a href="{{ '/shop/' | relative_url }}">SHOP PRINTS <span aria-hidden="true">→</span></a>
+    </nav>
   </div>
 </section>
+{% if site.data.latest and site.data.latest.size > 0 %}
+<section class="latest" aria-label="Latest work">
+  <h2 class="latest-title">LATEST</h2>
+  <div class="latest-row">
+    {% for item in site.data.latest limit: 4 %}
+    <a class="latest-item" href="{{ item.link | relative_url }}" title="{{ item.label }}">
+      <img src="{{ item.image | relative_url }}" alt="{{ item.label }}" loading="lazy" width="600" height="400">
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
