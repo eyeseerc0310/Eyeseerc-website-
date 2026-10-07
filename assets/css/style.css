@@ -585,7 +585,6 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 .lightbox { touch-action: none; overflow: hidden; } /* the swipe is handled by the page, not the browser */
 /* quick clicks on the arrows or photos never select (and tint) anything */
 .lightbox { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
-.lightbox .lb-panel-desc, .lightbox .lb-panel-title { -webkit-user-select: text; user-select: text; }
 /* caption hangs below the photo so the arrows line up with the photo's middle */
 .lightbox-caption { position: absolute; top: 100%; left: 0; right: 0; text-align: center; color: #e6e6e6; font-size: .85rem; margin-top: 1rem; text-transform: capitalize; }
 .lightbox button {

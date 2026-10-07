@@ -241,7 +241,7 @@
     if (done) setTimeout(done, 520);
   }
   // a double click on the stack or its arrows mustn't select the page
-  deck.addEventListener('mousedown', function (e) { if (e.detail > 1) e.preventDefault(); });
+  box.addEventListener('mousedown', function (e) { if (e.detail > 1) e.preventDefault(); });
   deckNext.addEventListener('click', function (e) { e.stopPropagation(); if (deckActive()) rotate(1); });
   deckPrev.addEventListener('click', function (e) { e.stopPropagation(); if (deckActive()) rotate(-1); });
   deck.addEventListener('click', function (e) {
