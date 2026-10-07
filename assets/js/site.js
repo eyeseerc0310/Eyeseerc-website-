@@ -298,43 +298,59 @@
   function deckActive() { return shopOpen() && deckCards.length > 1 && deckShown > 0.9; }
   // move through the photos by m places (+ forward, - back); stops at the ends
   // (quick clicks each count: the slide just carries on to the newest spot)
-  // A single step (arrow, tap, key, trackpad) is a little shuffle: the front
-  // photo and the one coming forward swing apart sideways, pass each other
-  // and settle into their new places. After a thumb drag the photos simply
-  // carry on from where the thumb left them.
+  // A single step (arrow, tap, key, trackpad): the next photo slides over
+  // the top into the middle (overshooting a touch, then settling) while the
+  // old front slides away underneath to its pile, travelling a little past
+  // it before tucking in. They move one after the other in the same
+  // direction, so the middle is always covered (never a glimpse of a photo
+  // further back). After a thumb drag the photos carry on from where the
+  // thumb left them.
   var swings = [], deckK = 1;
+  // stop any slide that's still going, keeping each photo where it is right
+  // now (so a quick second tap or a thumb carries on from there, no jump)
+  function freezeSwings() {
+    swings.forEach(function (a) {
+      var c = a.effect && a.effect.target;
+      if (c) {
+        var cs = getComputedStyle(c), t = cs.transform, f = cs.filter;
+        a.cancel();
+        c.style.transition = 'none'; c.style.transform = t; c.style.filter = f;
+        void c.offsetWidth; c.style.transition = '';
+      } else a.cancel();
+    });
+    swings = [];
+  }
   function rotate(m, done, fromDrag) {
     var n = deckCards.length;
     var to = Math.max(0, Math.min(n - 1, front + m));
     if (to === front) { if (done) done(); return; }
-    swings.forEach(function (a) { a.cancel(); }); swings = [];
+    var busy = swings.length > 0;
+    freezeSwings();
     var was = front, room = deckRoom(), W = deck.offsetWidth;
-    var single = Math.abs(to - was) === 1 && !fromDrag && deckCards[0].animate;
-    var before = single ? [pose(0, room), pose(to - was, room)] : null;
+    // (a tap while photos are still moving just glides them on from there)
+    var single = Math.abs(to - was) === 1 && !fromDrag && !busy && deckCards[0].animate;
+    var from = single ? [pose(0, room), pose(to - was, room)] : null;
     front = to;
     layoutCards();
     if (single) {
-      var dir = to > was ? 1 : -1; // 1: old front goes left, new one comes from the right
-      var after = [pose(-dir, room), pose(0, room)];
-      var out = function (side) { return 'translateX(' + (side * W * 0.4) + 'px) scale(.95) rotate(' + (side * 2.5) + 'deg)'; };
-      var timing = { duration: 760, easing: 'cubic-bezier(.45, 0, .2, 1)' };
-      // the old front swings off its way, then tucks in behind
+      var dir = to > was ? 1 : -1; // 1: moving on (photos travel left)
+      var end = [pose(-dir, room), pose(0, room)];
+      var timing = { duration: 820, easing: 'cubic-bezier(.3, .05, .2, 1)' };
+      // the old front: away underneath, a little past its pile, then settles
       swings.push(deckCards[was].animate([
-        { transform: before[0].transform, filter: before[0].filter, zIndex: n + 1 },
-        { transform: out(-dir), zIndex: n + 1, offset: 0.48 },
-        { transform: out(-dir), zIndex: n - 1, offset: 0.5 },
-        { transform: after[0].transform, filter: after[0].filter, zIndex: n - 1 }
+        { transform: from[0].transform, filter: from[0].filter },
+        { transform: 'translateX(' + (-dir * W * 0.16) + 'px) scale(.94)', filter: end[0].filter, offset: 0.55 },
+        { transform: end[0].transform, filter: end[0].filter }
       ], timing));
-      // the new front swings out the other way, then comes over the top
+      // the new front: over the top into the middle, a touch past, then settles
       swings.push(deckCards[to].animate([
-        { transform: before[1].transform, filter: before[1].filter, zIndex: n - 1 },
-        { transform: out(dir), zIndex: n - 1, offset: 0.48 },
-        { transform: out(dir), zIndex: n + 1, offset: 0.5 },
-        { transform: after[1].transform, filter: after[1].filter, zIndex: n + 1 }
+        { transform: from[1].transform, filter: from[1].filter },
+        { transform: 'translateX(' + (-dir * W * 0.035) + 'px) scale(1.012)', filter: 'none', offset: 0.7 },
+        { transform: end[1].transform, filter: end[1].filter }
       ], timing));
-      swings.forEach(function (a) { a.onfinish = function () { a.cancel(); }; });
+      swings.forEach(function (a) { a.onfinish = function () { a.cancel(); swings = swings.filter(function (x) { return x !== a; }); }; });
     }
-    if (done) setTimeout(done, single ? 780 : 720);
+    if (done) setTimeout(done, single ? 840 : 720);
   }
   // Thumb dragging: the front photo follows the thumb (with a slight tilt)
   // and the next one grows towards the front; past the ends it only gives a
@@ -344,7 +360,7 @@
     dx = dx / (deckK || 1); // (phones draw the stack a little smaller: stay under the thumb)
     var n = deckCards.length, room = deckRoom(), W = deck.offsetWidth || 1;
     if ((dx < 0 && front >= n - 1) || (dx > 0 && front <= 0)) dx *= 0.3;
-    swings.forEach(function (a) { a.cancel(); }); swings = [];
+    freezeSwings();
     deck.classList.add('dragging');
     var t = Math.max(-1, Math.min(1, -dx / W)); // > 0: heading to the next photo
     deckCards.forEach(function (c, k) {
