@@ -148,15 +148,18 @@
 
   // ---- Shop items: more photos stacked behind the main one ----
   // Once the details are showing, the item's other photos (up to 4) fade in
-  // as a stack peeking out to the right of the main photo. Tap one, swipe
-  // sideways or use the arrow keys and the stack turns: the front photo
-  // swings out to the left and tucks in at the back while the next comes
-  // forward (or the back one comes round to the front). Tapping the front
-  // photo brings the big view back, as before.
+  // as a stack peeking out to the right of the main photo. The arrow on the
+  // right, a tap on a photo, a sideways swipe or the arrow keys move through
+  // them: the front photo slides over to the left and stays stacked there
+  // while the next comes forward from the right (and back again the other
+  // way). Tapping the front photo brings the big view back, as before.
   var figure = box.querySelector('.lb-figure');
   var deck = document.createElement('div');
   deck.className = 'lb-deck';
   figure.insertBefore(deck, panel);
+  var deckNext = document.createElement('button');
+  deckNext.type = 'button'; deckNext.className = 'lb-deck-next'; deckNext.setAttribute('aria-label', 'Next photo');
+  deckNext.innerHTML = '&#8250;';
   var deckCards = [], front = 0, deckShown = 0, deckBusy = false;
   function setupDeck(link) {
     deck.innerHTML = ''; deckCards = []; front = 0; deckShown = 0; deckBusy = false;
@@ -168,82 +171,75 @@
       c.className = 'lb-card'; c.alt = ''; c.draggable = false; c.src = src;
       deck.appendChild(c); deckCards.push(c);
     });
+    deck.appendChild(deckNext);
   }
-  function depth(k) { return (k - front + deckCards.length) % deckCards.length; }
-  // how a card at a given depth sits: smaller and further right the deeper it is
-  function pose(d) {
-    var W = deck.offsetWidth || 1, n = deckCards.length;
-    var avail = geo ? window.innerWidth - geo.F.right - 8 : 60;
-    var stepX = Math.max(10, Math.min(26, avail / Math.max(1, n - 1)));
-    var sc = 1 - d * 0.045;
-    return { transform: 'translateX(' + (d * stepX + (1 - sc) * W / 2) + 'px) scale(' + sc + ')',
-             filter: d ? 'brightness(' + (1 - d * 0.12) + ')' : 'none', z: n - d, stepX: stepX };
+  // room beside the photo for the stack, and how far apart its edges sit
+  function deckRoom() {
+    var right = geo ? window.innerWidth - geo.F.right - 8 : 60;
+    var left = geo ? geo.F.left - 8 : 60;
+    var n = deckCards.length;
+    var step = Math.max(7, Math.min(24, Math.min(left, right) / Math.max(1, n - 1)));
+    // narrow screens: the front photo shrinks so the edges fit on both sides
+    var over = Math.max(0, (n - 1) * step - Math.min(left, right));
+    return { step: step, over: over, right: right };
+  }
+  // a card's place: d = 0 in front, d > 0 waiting on the right, d < 0
+  // already seen, on the left; smaller and darker the further back it is
+  function pose(d, room) {
+    var W = deck.offsetWidth || 1, a = Math.abs(d), sc = 1 - a * 0.045;
+    var x = d * room.step + (d > 0 ? 1 : -1) * (1 - sc) * W / 2;
+    return { transform: 'translateX(' + (a ? x : 0) + 'px) scale(' + sc + ')',
+             filter: a ? 'brightness(' + (1 - a * 0.12) + ')' : 'none', z: deckCards.length - a };
   }
   function layoutCards() {
+    var room = deckRoom(), n = deckCards.length;
     deckCards.forEach(function (c, k) {
-      var d = depth(k), ps = pose(d);
+      var d = k - front, ps = pose(d, room);
       c.style.transform = ps.transform; c.style.filter = ps.filter; c.style.zIndex = ps.z;
       c.style.opacity = d === 0 ? 1 : deckShown;
     });
+    // the arrow: just past the stack's right edge when there's room,
+    // otherwise on the photo's right edge in a little dark circle
+    var W = deck.offsetWidth, peek = (n - 1 - front) * room.step;
+    var outside = room.right - room.over / 2 - peek > 46;
+    deckNext.classList.toggle('inside', !outside);
+    deckNext.style.left = (outside ? W + peek + 8 : W - 44) + 'px';
+    deckNext.style.zIndex = n + 1;
+    deckNext.classList.toggle('hide', front >= n - 1);
   }
-  // keeps the stack lined up with the (hidden) main photo as it moves; on
-  // narrow screens the front photo shrinks a little so the stack fits
+  // keeps the stack lined up with the (hidden) main photo as it moves
   function placeDeck(p) {
     if (!deckCards.length) return;
     var show = Math.max(0, Math.min(1, (p - 0.7) / 0.3));
     deck.style.left = img.offsetLeft + 'px'; deck.style.top = img.offsetTop + 'px';
     deck.style.width = img.offsetWidth + 'px'; deck.style.height = img.offsetHeight + 'px';
-    var W = img.offsetWidth || 1, n = deckCards.length;
-    var avail = geo ? window.innerWidth - geo.F.right - 8 : 60;
-    var over = Math.max(0, (n - 1) * pose(1).stepX - avail) * show;
-    deck.style.transform = (img.style.transform || '') + ' translateX(' + (-over / 2) + 'px) scale(' + (1 - over / W) + ')';
+    var W = img.offsetWidth || 1, over = deckRoom().over * show;
+    deck.style.transform = (img.style.transform || '') + ' scale(' + (1 - 2 * over / W) + ')';
     deck.style.opacity = show ? 1 : 0;
     deck.style.pointerEvents = show > 0.9 ? '' : 'none';
     img.style.opacity = show ? 0 : '';
     if (show !== deckShown) { deckShown = show; layoutCards(); }
   }
   function deckActive() { return shopOpen() && deckCards.length > 1 && deckShown > 0.9; }
-  // turn the stack by m places (1: the next photo comes forward; -1: the
-  // back photo comes round to the front)
+  // move through the photos by m places (+ forward, - back); stops at the ends
   function rotate(m, done) {
-    var n = deckCards.length;
-    if (deckBusy || n < 2 || !m) { if (done) done(); return; }
+    var to = Math.max(0, Math.min(deckCards.length - 1, front + m));
+    if (deckBusy || to === front) { if (done) done(); return; }
     deckBusy = true;
-    var W = deck.offsetWidth, out = 'translateX(' + (-W * 0.58) + 'px) scale(.9) rotate(-3deg)';
-    var before = deckCards.map(function (c, k) { return depth(k); });
-    front = ((front + m) % n + n) % n;
-    var anims = [];
-    deckCards.forEach(function (c, k) {
-      var d0 = before[k], d1 = depth(k), p0 = pose(d0), p1 = pose(d1);
-      var swings = m > 0 ? d0 < m : d1 === 0 && d0 > d1; // goes round the side
-      if (!swings) return;
-      c.style.transition = 'none';
-      var a = c.animate(m > 0 ? [
-        { transform: p0.transform, filter: p0.filter, zIndex: n + 1, opacity: 1 },
-        { transform: out, filter: p0.filter, zIndex: n + 1, opacity: 1, offset: 0.45 },
-        { transform: out, filter: p1.filter, zIndex: 0, opacity: 1, offset: 0.46 },
-        { transform: p1.transform, filter: p1.filter, zIndex: 0, opacity: 1 }
-      ] : [
-        { transform: p0.transform, filter: p0.filter, zIndex: 0, opacity: 1 },
-        { transform: out, filter: p0.filter, zIndex: 0, opacity: 1, offset: 0.45 },
-        { transform: out, filter: p1.filter, zIndex: n + 1, opacity: 1, offset: 0.46 },
-        { transform: p1.transform, filter: p1.filter, zIndex: n + 1, opacity: 1 }
-      ], { duration: 680, easing: 'cubic-bezier(.45, 0, .25, 1)', delay: m > 0 ? d0 * 70 : 0 });
-      anims.push(a);
-      a.onfinish = function () { c.style.transition = ''; a.cancel(); };
-    });
+    front = to;
     layoutCards();
-    setTimeout(function () { deckBusy = false; if (done) done(); }, 700 + (m > 0 ? (m - 1) * 70 : 0));
+    setTimeout(function () { deckBusy = false; if (done) done(); }, 520);
   }
+  deckNext.addEventListener('click', function (e) { e.stopPropagation(); if (deckActive()) rotate(1); });
   deck.addEventListener('click', function (e) {
     var c = e.target.closest('.lb-card');
     if (!c || !deckActive()) return;
     e.stopPropagation();
-    var d = depth(deckCards.indexOf(c));
+    var d = deckCards.indexOf(c) - front;
     if (d) { rotate(d); return; }
-    // the front photo: back to the big view (turning back to the main photo first)
+    // the front photo: back to the big view (sliding back to the main photo first)
     minStep = 0;
-    rotate(front ? deckCards.length - front : 0, function () { scrollTo(0); });
+    rotate(-front, function () { scrollTo(0); });
   });
   window.addEventListener('resize', function () { if (deckCards.length) layoutCards(); });
 
