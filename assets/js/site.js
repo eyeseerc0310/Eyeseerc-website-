@@ -173,14 +173,9 @@
       sizeMenu(false);
       if (e.target.closest('.lb-panel-add') && window.eyeseercCart) {
         var sid = size ? '-' + size.size.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+        // (the cart slides in over the print, which stays open behind it)
         window.eyeseercCart.add({ id: d.id + sid, title: (d.title || '') + (size ? ' \u2014 ' + size.size + ' in' : ''),
           price: unit, image: d.image, variant: d.variant || '' }, qty);
-        // tuck the viewer away and go to the cart
-        box.classList.add('instant'); box.classList.remove('open', 'shop-mode');
-        document.body.style.overflow = '';
-        setTimeout(function () { box.classList.remove('instant'); }, 50);
-        var cart = document.querySelector('.cart-link');
-        if (cart) cart.click();
       }
     };
   }
@@ -1368,9 +1363,11 @@
 
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
+  // fills in every cart list: the cart page and the slide-in cart drawer
   function renderCart() {
-    var root = document.querySelector('main:not([aria-hidden]) #cart-root');
-    if (!root) return;
+    Array.prototype.forEach.call(document.querySelectorAll('main:not([aria-hidden]) .cart-ui, .cart-drawer .cart-ui'), renderInto);
+  }
+  function renderInto(root) {
     var items = load();
     var list = root.querySelector('.cart-items');
     list.innerHTML = '';
@@ -1414,8 +1411,74 @@
       else { item.qty = qty; items.push(item); }
       save(items);
       updateIcon(true);
+      openDrawer();
     }
   };
+
+  // The slide-in cart: a slim panel from the right (slow-fast-slow), over
+  // whatever's open, so you can keep looking after adding something.
+  var drawer = null, drawerOpen = false;
+  function buildDrawer() {
+    if (drawer) return drawer;
+    drawer = document.createElement('div');
+    drawer.className = 'cart-drawer';
+    drawer.setAttribute('aria-hidden', 'true');
+    var cartPage = (document.querySelector('.cart-link') || {}).getAttribute ? document.querySelector('.cart-link').getAttribute('href') : '/cart/';
+    drawer.innerHTML =
+      '<div class="cart-drawer-backdrop"></div>' +
+      '<aside class="cart-drawer-panel" role="dialog" aria-label="Cart">' +
+        '<div class="cart-drawer-head"><span>CART</span><button type="button" class="cart-drawer-close" aria-label="Close cart">&times;</button></div>' +
+        '<div class="cart cart-ui">' +
+          '<ul class="cart-items"></ul>' +
+          '<div class="cart-summary">' +
+            '<div class="cart-subtotal"><span>SUBTOTAL</span><span class="cart-subtotal-amount"></span></div>' +
+            '<p class="cart-note">Shipping and taxes are worked out at checkout.</p>' +
+            '<button type="button" class="shopify-checkout">Check out</button>' +
+            '<p class="cart-secure">Secure checkout with Shopify</p>' +
+            '<p class="cart-soon" hidden>Checkout opens soon.</p>' +
+          '</div>' +
+          '<div class="cart-empty" hidden><p>Your cart is empty.</p></div>' +
+        '</div>' +
+        '<a class="cart-drawer-page" href="' + cartPage + '">VIEW CART</a>' +
+      '</aside>';
+    document.body.appendChild(drawer);
+    drawer.querySelector('.cart-drawer-page').addEventListener('click', function () { closeDrawer(true); });
+    return drawer;
+  }
+  var bodyOverflow = '';
+  function openDrawer() {
+    buildDrawer();
+    renderCart();
+    if (drawerOpen) return;
+    drawerOpen = true;
+    bodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    drawer.setAttribute('aria-hidden', 'false');
+    void drawer.offsetWidth;
+    drawer.classList.add('open');
+  }
+  function closeDrawer(instant) {
+    if (!drawerOpen) return;
+    drawerOpen = false;
+    document.body.style.overflow = bodyOverflow;
+    drawer.classList.toggle('instant', !!instant);
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+    if (instant) setTimeout(function () { drawer.classList.remove('instant'); }, 50);
+  }
+  // the cart icon opens the drawer too (the full cart page stays reachable
+  // from it); caught early so the page doesn't change
+  document.addEventListener('click', function (e) {
+    var icon = e.target.closest && e.target.closest('.cart-link');
+    if (!icon || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    openDrawer();
+  }, true);
+  // Escape closes the cart first (and only the cart)
+  window.addEventListener('keydown', function (e) {
+    if (drawerOpen && e.key === 'Escape') { e.stopImmediatePropagation(); e.preventDefault(); closeDrawer(); }
+  }, true);
+  document.addEventListener('pageswap:done', function () { closeDrawer(true); });
 
   document.addEventListener('click', function (e) {
     var add = e.target.closest && e.target.closest('.add-to-cart');
@@ -1427,12 +1490,11 @@
                         image: add.dataset.image, variant: add.dataset.variant || '', qty: 1 });
       save(items);
       updateIcon(true);
-      // straight to the cart (with the usual page fade)
-      var link = document.querySelector('.cart-link');
-      if (link) link.click();
+      openDrawer(); // the cart slides in; shopping carries on underneath
       return;
     }
-    var btn = e.target.closest && e.target.closest('#cart-root [data-act]');
+    if (e.target.closest && (e.target.closest('.cart-drawer-close') || e.target.classList.contains('cart-drawer-backdrop'))) { closeDrawer(); return; }
+    var btn = e.target.closest && e.target.closest('.cart-ui [data-act]');
     if (btn) {
       var list = load();
       list = list.map(function (it) {
@@ -1451,7 +1513,7 @@
     if (pay) {
       var url = checkoutUrl(load());
       if (url) { location.href = url; return; }
-      var soon = document.querySelector('main:not([aria-hidden]) .cart-soon');
+      var soon = pay.parentNode.querySelector('.cart-soon');
       if (soon) { soon.hidden = false; soon.style.animation = 'none'; void soon.offsetWidth; soon.style.animation = ''; }
     }
   });
@@ -1616,4 +1678,49 @@
   window.addEventListener('resize', function () { if (phone() !== lastPhone) { lastPhone = phone(); setup(); } });
   document.addEventListener('pageswap:done', setup);
   setup();
+})();
+
+// Soft-focus loading: each photo with a tiny blurred preview behind it
+// (class "soft") fades in sharp over the preview once it has loaded.
+// Photos that are already there (cached) show at once.
+(function () {
+  function sharpen(img) { img.classList.add('sharp'); }
+  document.addEventListener('load', function (e) {
+    var t = e.target;
+    if (t && t.tagName === 'IMG' && t.parentNode && t.parentNode.classList && t.parentNode.classList.contains('soft')) sharpen(t);
+  }, true);
+  document.addEventListener('error', function (e) {
+    var t = e.target;
+    if (t && t.tagName === 'IMG' && t.parentNode && t.parentNode.classList && t.parentNode.classList.contains('soft')) sharpen(t);
+  }, true);
+  function sweep() {
+    Array.prototype.forEach.call(document.querySelectorAll('.soft img'), function (img) {
+      if (img.complete && img.naturalWidth) { img.style.transition = 'none'; sharpen(img); void img.offsetWidth; img.style.transition = ''; }
+    });
+  }
+  sweep();
+  document.addEventListener('pageswap:done', sweep);
+})();
+
+// The logo screen (see the top of the page): it stays at least a moment so
+// the logo is seen turning, then fades once the page has loaded (or after a
+// couple of seconds at most, on a slow connection), and tells the home page
+// its entrance can begin.
+(function () {
+  var root = document.documentElement;
+  if (!root.classList.contains('splash')) return;
+  var t0 = Date.now(), done = false;
+  function finish() {
+    if (done) return; done = true;
+    var wait = Math.max(0, 1100 - (Date.now() - t0));
+    setTimeout(function () {
+      root.classList.add('splash-out');
+      setTimeout(function () {
+        root.classList.remove('splash', 'splash-out');
+        document.dispatchEvent(new Event('splashdone'));
+      }, 760);
+    }, wait);
+  }
+  if (document.readyState === 'complete') finish(); else window.addEventListener('load', finish);
+  setTimeout(finish, 2500);
 })();
