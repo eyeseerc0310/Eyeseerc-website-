@@ -330,7 +330,7 @@
     var was = front, room = deckRoom(), W = deck.offsetWidth, dir = to > was ? 1 : -1;
     var old = deckCards[was];
     var startT = fromDrag ? getComputedStyle(old).transform : pose(0, room).transform;
-    deck.classList.toggle('stepping', !fromDrag); // (after a thumb, the photos just carry on)
+    deck.classList.add('stepping'); // the same smooth move as the arrows, after a swipe too
     front = to;
     layoutCards();
     if (Math.abs(to - was) === 1 && old.animate) {
@@ -340,9 +340,10 @@
       // its pile
       var out = 'translateX(' + (-dir * W * 1.06) + 'px) scale(.93) rotate(' + (-dir * 3) + 'deg)';
       var bell = 'cubic-bezier(.37, 0, .63, 1)';
-      var dur = fromDrag ? 900 : 1100;
+      var dur = fromDrag ? 1000 : 1100;
       swing = old.animate([
-        { transform: startT, filter: 'none', easing: fromDrag ? 'cubic-bezier(.2, .6, .3, 1)' : bell },
+        // (after a swipe it's already moving, so it carries on from the thumb's speed)
+        { transform: startT, filter: 'none', easing: fromDrag ? 'cubic-bezier(.3, .35, .5, 1)' : bell },
         { transform: out, filter: 'none', offset: 0.48, easing: 'linear' },
         { transform: out, filter: end.filter, offset: 0.5, easing: bell },
         { transform: end.transform, filter: end.filter }
@@ -380,7 +381,15 @@
         c.style.filter = 'none'; c.style.zIndex = n + 1;
         return;
       }
-      ps = (dir && d === dir) ? pose(d * (1 - p), room) : pose(d, room);
+      if (dir && d === dir) {
+        // the photo being uncovered: right under the dragged one (so it's the
+        // only one that shows), and it only starts to come forward - the
+        // rest of its move plays after letting go, like the arrows
+        ps = pose(d * (1 - p * 0.3), room);
+        c.style.transform = ps.transform; c.style.filter = ps.filter; c.style.zIndex = n;
+        return;
+      }
+      ps = pose(d, room);
       c.style.transform = ps.transform; c.style.filter = ps.filter; c.style.zIndex = ps.z;
     });
   }
@@ -388,7 +397,7 @@
     deck.classList.remove('dragging');
     var W = (deck.offsetWidth || 1) * (deckK || 1), n = deckCards.length;
     var can = (dx < 0 && front < n - 1) || (dx > 0 && front > 0);
-    if (can && (Math.abs(dx) > W * 0.25 || (Math.abs(dx) > 20 && Math.abs(vx) > 0.3))) {
+    if (can && (Math.abs(dx) > W * 0.15 || (Math.abs(dx) > 16 && Math.abs(vx) > 0.2))) {
       rotate(dx < 0 ? 1 : -1, null, true);
       return;
     }
@@ -639,7 +648,7 @@
     e.preventDefault();
     scrollTo(swipe.t + (swipe.y - e.touches[0].clientY) / D_touch);
   }, { passive: false });
-  box.addEventListener('touchend', function () {
+  function touchDone() {
     if (!swipe) return;
     if (swipe.axis === 'x' && deckActive()) {
       releaseDeck(swipe.dx || 0, swipe.vx || 0);
@@ -650,7 +659,11 @@
     if (Math.abs(moved) > 0.08) scrollTo(moved > 0 ? Math.ceil(target - 0.001) : Math.floor(target + 0.001));
     else scrollTo(Math.round(swipe.t));
     swipe = null;
-  });
+  }
+  box.addEventListener('touchend', touchDone);
+  // iPhone Safari sometimes cancels a quick sideways swipe instead of ending
+  // it; finish it the same way (otherwise the photo was left stuck mid-drag)
+  box.addEventListener('touchcancel', touchDone);
   window.addEventListener('resize', function () { if (shopOpen()) { sizePanel(); shopGeo(); applyProg(); } });
 
   function open(i) {
