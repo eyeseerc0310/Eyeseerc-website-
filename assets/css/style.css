@@ -511,6 +511,14 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   transition: left .8s cubic-bezier(.65, 0, .35, 1), width .8s cubic-bezier(.65, 0, .35, 1); /* slow, fast, slow — in step with the photos */
   pointer-events: none;
 }
+/* a button for something not open yet (SHIRTS): a small COMING SOON
+   hangs underneath it */
+.gallery-filter .soon-note {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  margin-top: .2rem; margin-left: -.09em;
+  font-size: .52rem; letter-spacing: .2em; white-space: nowrap;
+  color: var(--muted); opacity: .8; pointer-events: none;
+}
 /* photos sliding off the side of the screen never make the page scroll sideways */
 .site-main { overflow-x: clip; }
 .is-filtered-out { display: none !important; }

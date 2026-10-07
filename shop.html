@@ -7,7 +7,8 @@ tight_top: true
 <h1 class="page-title">SHOP</h1>
 <div class="gallery-filter" role="group" aria-label="Show">
   <button type="button" data-filter="prints" aria-pressed="true">PRINTS</button>
-  <button type="button" data-filter="shirts" aria-pressed="false">SHIRTS</button>
+  {% comment %} data-soon: not open yet; clicking it just gives the line a shake {% endcomment %}
+  <button type="button" data-filter="shirts" aria-pressed="false" data-soon aria-disabled="true">SHIRTS<span class="soon-note">COMING SOON</span></button>
 </div>
 
 {% comment %}

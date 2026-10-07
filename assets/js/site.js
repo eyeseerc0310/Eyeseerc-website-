@@ -680,16 +680,29 @@
       if (ins.length) { ins[0].onfinish = done; ins[0].oncancel = done; } else done();
     };
   }
+  // a button that isn't open yet (COMING SOON): the line stays where it is
+  // and gives a little shake, like shaking its head
+  function shake(bar) {
+    var line = bar.querySelector('.filter-line');
+    if (!line || !line.animate || line.dataset.shaking) return;
+    line.dataset.shaking = '1';
+    var a = line.animate([
+      { transform: 'translateX(0)' }, { transform: 'translateX(9px)' }, { transform: 'translateX(-7px)' },
+      { transform: 'translateX(5px)' }, { transform: 'translateX(-3px)' }, { transform: 'translateX(0)' }
+    ], { duration: 480, easing: 'ease-in-out' });
+    a.onfinish = a.oncancel = function () { delete line.dataset.shaking; };
+  }
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('.gallery-filter button');
     if (!b || busy) return;
+    if (b.hasAttribute('data-soon')) { shake(b.closest('.gallery-filter')); return; }
     apply(b.dataset.filter, true);
   });
   function fromAddress() {
     var bar = currentBar();
     if (!bar) return;
     var want = location.hash.slice(1);
-    apply(want && bar.querySelector('button[data-filter="' + want + '"]') ? want : null, false);
+    apply(want && bar.querySelector('button[data-filter="' + want + '"]:not([data-soon])') ? want : null, false);
   }
   window.addEventListener('hashchange', fromAddress);
   window.addEventListener('resize', function () { var bar = currentBar(); if (bar) moveLine(bar, true); });
