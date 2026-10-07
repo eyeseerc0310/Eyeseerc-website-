@@ -15,7 +15,7 @@
       if (dark) root.setAttribute('data-theme', 'dark'); else root.removeAttribute('data-theme');
       label();
     }
-    try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (err) {}
+    try { localStorage.setItem('theme-choice', dark ? 'dark' : 'light'); } catch (err) {}
 
     // Slow, gentle fade: every colour on the page eases to its new value
     // together, in place. Photos never change, and nothing is lifted out of
