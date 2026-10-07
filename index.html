@@ -25,8 +25,9 @@ slides:
       {% capture img_attrs %}{% if forloop.first %}src{% else %}data-src{% endif %}="{{ s.image | relative_url }}" draggable="false"{% if forloop.first or s.pos %} style="{% if forloop.first %}transform: scale(1.07);{% endif %}{% if s.pos %} object-position: {{ s.pos }}{% endif %}"{% endif %}{% endcapture %}
       {% capture band_attrs %}{% if forloop.first %}src{% else %}data-src{% endif %}="{{ s.image | relative_url }}" draggable="false" alt=""{% if s.pos %} style="object-position: {{ s.pos }}"{% endif %}{% endcapture %}
       {% comment %} behind the header (iPad and desktop): the header works as a magnifying glass
-         over the photo (a copy of it) {% endcomment %}
-      <div class="show-band" aria-hidden="true"><div class="show-lens"><div class="show-drift"{% if forloop.first %} style="transform: scale(1.07)"{% endif %}><img {{ band_attrs }}></div></div></div>
+         over the photo (a copy of it, with its top edge stretched up above it, softly,
+         so there's never a hard edge, mirror or repeat under the glass) {% endcomment %}
+      <div class="show-band" aria-hidden="true"><div class="show-lens"><div class="show-drift"{% if forloop.first %} style="transform: scale(1.07)"{% endif %}><div class="show-edge"><img {{ band_attrs }}></div><img {{ band_attrs }}></div></div></div>
       <img class="show-photo" {{ img_attrs }} alt="{{ s.title | escape }}">
     </figure>
     {% endfor %}
