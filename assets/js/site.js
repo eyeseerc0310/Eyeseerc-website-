@@ -232,14 +232,16 @@
   }
   function deckActive() { return shopOpen() && deckCards.length > 1 && deckShown > 0.9; }
   // move through the photos by m places (+ forward, - back); stops at the ends
+  // (quick clicks each count: the slide just carries on to the newest spot)
   function rotate(m, done) {
     var to = Math.max(0, Math.min(deckCards.length - 1, front + m));
-    if (deckBusy || to === front) { if (done) done(); return; }
-    deckBusy = true;
+    if (to === front) { if (done) done(); return; }
     front = to;
     layoutCards();
-    setTimeout(function () { deckBusy = false; if (done) done(); }, 520);
+    if (done) setTimeout(done, 520);
   }
+  // a double click on the stack or its arrows mustn't select the page
+  deck.addEventListener('mousedown', function (e) { if (e.detail > 1) e.preventDefault(); });
   deckNext.addEventListener('click', function (e) { e.stopPropagation(); if (deckActive()) rotate(1); });
   deckPrev.addEventListener('click', function (e) { e.stopPropagation(); if (deckActive()) rotate(-1); });
   deck.addEventListener('click', function (e) {

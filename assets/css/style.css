@@ -583,6 +583,9 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 }
 .lightbox .lb-peek.show { display: block; }
 .lightbox { touch-action: none; overflow: hidden; } /* the swipe is handled by the page, not the browser */
+/* quick clicks on the arrows or photos never select (and tint) anything */
+.lightbox { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+.lightbox .lb-panel-desc, .lightbox .lb-panel-title { -webkit-user-select: text; user-select: text; }
 /* caption hangs below the photo so the arrows line up with the photo's middle */
 .lightbox-caption { position: absolute; top: 100%; left: 0; right: 0; text-align: center; color: #e6e6e6; font-size: .85rem; margin-top: 1rem; text-transform: capitalize; }
 .lightbox button {
@@ -782,7 +785,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 /* on the photo itself (phones): faint, so it doesn't get in the way */
 .lightbox .lb-deck .lb-deck-next.inside { border-radius: 50%; background: rgba(0, 0, 0, .18); font-size: 1.8rem; padding-bottom: 3px; opacity: .5; }
 .lightbox .lb-deck .lb-deck-next.inside:hover { opacity: .7; }
-.lightbox .lb-deck .lb-deck-next.hide { opacity: 0; pointer-events: none; }
+.lightbox .lb-deck .lb-deck-next.hide { opacity: 0; cursor: default; } /* still catches extra clicks so they never close the viewer */
 /* the box: the menu's translucent grey, blur and thin outline, no fades */
 .lightbox.shop-mode .lb-panel {
   display: block; box-sizing: border-box; min-width: 260px;
