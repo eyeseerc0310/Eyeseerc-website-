@@ -470,6 +470,8 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 /* Projects page: each piece at its own true shape, so it opens and closes
    in the photo viewer without any cropping or resizing */
 .gallery-grid.gallery-natural { align-items: start; }
+/* Projects on computers and iPads: four across (phones keep two) */
+@media (min-width: 701px) { .gallery-grid.gallery-natural { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .gallery-grid.gallery-natural .gallery-item img { aspect-ratio: auto; height: auto; object-fit: contain; }
 /* Photography page: a small numbered title just under each photo */
 .gallery-title {
