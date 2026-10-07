@@ -21,21 +21,21 @@ layout: default
   <div class="hero-text">
     <img class="hero-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="">
     <div class="bio">{{ content }}</div>
-    <nav class="hero-links" aria-label="Explore">
-      <a href="{{ '/photography/' | relative_url }}">VIEW PHOTOGRAPHY <span aria-hidden="true">→</span></a>
-      <a href="{{ '/shop/' | relative_url }}">SHOP PRINTS <span aria-hidden="true">→</span></a>
-    </nav>
   </div>
 </section>
-{% if site.data.latest and site.data.latest.size > 0 %}
-<section class="latest" aria-label="Latest work">
-  <h2 class="latest-title">LATEST</h2>
-  <div class="latest-row">
-    {% for item in site.data.latest limit: 4 %}
-    <a class="latest-item" href="{{ item.link | relative_url }}" title="{{ item.label }}">
-      <img src="{{ item.image | relative_url }}" alt="{{ item.label }}" loading="lazy" width="600" height="400">
+{% if site.data.strip and site.data.strip.size > 0 %}
+{% comment %} the photos are listed twice so the loop joins up seamlessly {% endcomment %}
+<section class="strip" aria-label="Photography">
+  <div class="strip-window">
+  <div class="strip-track">
+    {% for round in (1..2) %}
+    {% for item in site.data.strip %}
+    <a class="strip-item" href="{{ item.link | relative_url }}"{% if round == 2 %} aria-hidden="true" tabindex="-1"{% endif %}>
+      <img src="{{ item.image | relative_url }}" alt="" width="390" height="260" decoding="async">
     </a>
     {% endfor %}
+    {% endfor %}
+  </div>
   </div>
 </section>
 {% endif %}
