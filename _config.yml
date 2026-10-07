@@ -28,13 +28,13 @@ currency: "$"
 # these; the shop page shows "From" the first price.
 print_sizes:
   - size: "8 × 12"
-    price: 75
+    price: 50
   - size: "12 × 18"
-    price: 110
+    price: 75
   - size: "16 × 24"
-    price: 160
+    price: 110
   - size: "20 × 30"
-    price: 220
+    price: 160
 
 # Your Shopify store's address, e.g. "eyeseerc.myshopify.com". When this is
 # set (and each shop item has a shopify_variant number in _data/shop.yml) the
