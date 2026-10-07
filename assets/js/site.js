@@ -353,13 +353,15 @@
     if (done) setTimeout(done, single ? 840 : 720);
   }
   // Thumb dragging: the front photo follows the thumb (with a slight tilt)
-  // and the next one grows towards the front; past the ends it only gives a
-  // little. Let go far enough (or with a flick) and it moves on, otherwise
+  // and the next one grows towards the front; at the first and last photo it
+  // won't move past the end. Let go far enough (or with a flick) and it moves on, otherwise
   // it springs back.
   function dragDeck(dx) {
     dx = dx / (deckK || 1); // (phones draw the stack a little smaller: stay under the thumb)
     var n = deckCards.length, room = deckRoom(), W = deck.offsetWidth || 1;
-    if ((dx < 0 && front >= n - 1) || (dx > 0 && front <= 0)) dx *= 0.3;
+    // at the ends it doesn't move at all: the first photo can't be pulled
+    // back and the last one can't be pulled on
+    if ((dx < 0 && front >= n - 1) || (dx > 0 && front <= 0)) dx = 0;
     freezeSwings();
     deck.classList.add('dragging');
     var t = Math.max(-1, Math.min(1, -dx / W)); // > 0: heading to the next photo
