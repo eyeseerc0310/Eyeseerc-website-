@@ -89,7 +89,7 @@
       </a>
       {% endif %}
     </div>
-    <p>&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.</p>
+    <p>&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.<span class="footer-mark-wrap"><img class="footer-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392"></span></p>
   </footer>
 
   <script>window.SHOP = { store: {{ site.shopify_store | jsonify }}, currency: {{ site.currency | jsonify }} };</script>

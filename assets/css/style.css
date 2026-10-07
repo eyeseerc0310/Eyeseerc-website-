@@ -658,6 +658,11 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   color: var(--muted);
   font-size: .8rem;
 }
+/* a small copy of the spinning blue mark at the end of the copyright line
+   (the line is centred with it included) */
+.footer-mark-wrap { display: inline-block; vertical-align: middle; margin-left: .55em; perspective: 300px; }
+.footer-mark { display: block; height: 1.45em; width: auto; animation: mark-spin 5s linear infinite; backface-visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .footer-mark { animation: none; } }
 .footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: .5rem; }
 .footer-links a { text-decoration: none; }
 .footer-links a:hover { color: var(--text); }
