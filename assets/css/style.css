@@ -381,21 +381,20 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   .strip-track { animation: none; }
 }
 
-/* dark mode: a soft, blurred glow of the home photo spills onto the page
-   around it, so the photo and the page feel lit by the same light */
-.hero-photo .hero-glow {
-  /* the glow picture is the photo with a soft border of black around it
-     (already blurred), laid over the page so only its light shows */
-  left: -25%; top: -25%; width: 150%; height: 150%;
-  object-fit: cover; object-position: 49% 45%; /* cropped like the photo */
-  mix-blend-mode: screen;
+/* dark mode: a soft light glows out from around the home photo onto the
+   page, so the photo looks lit up. It's a blurred shadow of the photo's own
+   outline (so it always matches its shape, with no edges and nothing extra
+   to load), and it fades in once the photo itself is showing. */
+.hero-photo::after {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  box-shadow: 0 0 110px 18px rgba(225, 225, 225, .2);
   opacity: 0; transition: opacity 1.4s ease;
   pointer-events: none;
 }
-.strip { position: relative; z-index: 1; } /* the strip's photos sit above the glow */
 .hero-photo .hero-main { z-index: 1; }
 :root[data-theme="dark"] .hero-photo { background: transparent; }
-:root[data-theme="dark"]:not(.home-intro) .hero-photo.ready .hero-glow.loaded { opacity: .8; }
+:root[data-theme="dark"]:not(.home-intro) .hero-photo.ready::after { opacity: 1; }
+.strip { position: relative; z-index: 1; } /* the strip's photos sit above the glow */
 
 /* first visit to the home page: the photo fades in with a slight drift,
    then the mark, the bio and the photo strip follow one by one */
