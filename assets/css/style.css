@@ -719,11 +719,20 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
 /* ABOUT: small, widely spaced capitals above the icons */
 .footer-links a {
-  text-decoration: none; color: var(--text); opacity: .8;
-  font-size: .72rem; letter-spacing: .38em; margin-right: -.38em; /* (centred despite the spacing after the last letter) */
-  transition: opacity .2s ease;
+  display: inline-block; text-decoration: none; color: var(--text); opacity: .8;
+  font-size: .72rem; letter-spacing: .38em; padding-left: .38em; /* (centred despite the spacing after the last letter) */
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .25s ease, opacity .25s ease, text-shadow .25s ease;
+  will-change: transform; /* (on its own layer from the start, so hovering it can't nudge the icons) */
 }
-.footer-links a:hover, .footer-links a:focus-visible, .footer-links a.active { opacity: 1; }
+.footer-links a.active { opacity: 1; }
+/* hovering (mouse, or an iPad trackpad): it grows and glows like the menu */
+@media (any-hover: hover) {
+  .footer-links a:hover, .footer-links a:focus-visible {
+    opacity: 1; transform: scale(1.25); outline: none;
+    text-shadow: 0 0 6px rgba(var(--glow), .8), 0 0 12px rgba(var(--glow), .6);
+  }
+}
 /* Instagram / YouTube buttons */
 .social { display: flex; justify-content: center; gap: 1.1rem; margin-bottom: .9rem; }
 .social-btn { color: var(--text); opacity: .8; display: inline-flex; transition: opacity .2s ease, transform .2s ease; }
@@ -1079,9 +1088,12 @@ body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 
 /* iPad and desktop: the photo starts just under the header (at its full
    size; the bottom runs off the screen), and behind the header there's a
    strip of the same photo magnified a little, softened by the header's blur,
-   so it looks like the photo carries on up underneath it. Scrolling, the
-   strip stays behind the header like a magnifying glass while the photo
-   moves through it (--s is how far the page is scrolled, set by site.js). */
+   so it looks like the photo carries on up underneath it. It works like a
+   magnifying glass: the strip stays behind the header and shows the photo
+   magnified around a point (--lens, set by site.js) that starts in the
+   middle of the photo and, as the page scrolls, rises to the header, so
+   scrolling moves the magnified view over the part of the photo passing
+   underneath. --s is how far the page is scrolled. */
 .show-band { display: none; }
 @media (min-width: 561px) {
   .show-slide .show-photo { top: var(--hdr, 0px); }
@@ -1090,9 +1102,10 @@ body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 
     -webkit-clip-path: inset(var(--s, 0px) 0 calc(100% - var(--s, 0px) - var(--hdr, 0px)) 0);
     clip-path: inset(var(--s, 0px) 0 calc(100% - var(--s, 0px) - var(--hdr, 0px)) 0);
   }
-  /* (magnified around the photo's centre, just enough to reach the top) */
-  /* (and nudged right a little, to line up better with the photo below) */
-  .show-slide .show-band img { left: -5%; width: 110%; height: calc(100% + 2 * var(--hdr, 0px)); translate: 3% 0; }
+  /* (a copy of the photo, exactly where the photo is, magnified 1.3x and
+     nudged right a little so it reads as a lens over the photo below) */
+  .show-lens { position: absolute; inset: 0; transform: scale(1.3); transform-origin: 50% var(--lens, 50%); translate: 3% 0; }
+  .show-slide .show-band img { top: var(--hdr, 0px); }
 }
 .show-dots { display: flex; gap: .45rem; }
 .show-dot { width: 1.9rem; height: 1.4rem; padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: center; }
