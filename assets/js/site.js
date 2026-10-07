@@ -216,7 +216,7 @@
   var deckPrev = document.createElement('button');
   deckPrev.type = 'button'; deckPrev.className = 'lb-deck-next lb-deck-prev'; deckPrev.setAttribute('aria-label', 'Previous photo');
   deckPrev.innerHTML = '&#8249;';
-  var deckCards = [], front = 0, deckShown = 0, deckBusy = false;
+  var deckCards = [], front = 0, deckShown = 0, deckBusy = false, swingCard = null, swingZ = 0;
   function setupDeck(link) {
     deck.innerHTML = ''; deckCards = []; front = 0; deckShown = 0; deckBusy = false;
     deck.style.opacity = 0; deck.style.pointerEvents = 'none'; img.style.opacity = '';
@@ -264,6 +264,8 @@
       c.style.transform = ps.transform; c.style.filter = ps.filter; c.style.zIndex = ps.z;
       c.style.opacity = d === 0 ? 1 : deckShown;
     });
+    // a photo that's still swinging away keeps the layer it's meant to be on
+    if (swingCard) swingCard.style.zIndex = swingZ;
     // the arrows stay put (no chasing them): just past the furthest the
     // stack ever reaches when there's room, otherwise on the photo's edge
     // in a little circle. The left one only shows once a photo is over there.
@@ -306,9 +308,10 @@
   // middle is always covered, so only ever one photo after the other.
   // With a thumb the front photo follows the thumb; the arrows, taps and
   // keys play the same move by themselves, slow-fast-slow.
-  var deckK = 1, settleTimer, swing = null;
+  var deckK = 1, settleTimer, swing = null, swapTimer;
   // stop a swing that's still going, leaving that photo where it is now
   function freezeSwing() {
+    clearTimeout(swapTimer); swingCard = null;
     if (!swing) return;
     var c = swing.effect && swing.effect.target;
     if (c) {
@@ -332,17 +335,25 @@
     layoutCards();
     if (Math.abs(to - was) === 1 && old.animate) {
       var end = pose(was - to, room);
-      var out = 'translateX(' + (-dir * W * 0.58) + 'px) scale(.93) rotate(' + (-dir * 3) + 'deg)';
-      // out to the side (slowing to a stop there), then in behind (slow-fast-slow)
+      // out to the side until it's completely clear of the new front photo
+      // (so nothing overlaps when it goes behind), then back in behind onto
+      // its pile
+      var out = 'translateX(' + (-dir * W * 1.06) + 'px) scale(.93) rotate(' + (-dir * 3) + 'deg)';
       var bell = 'cubic-bezier(.37, 0, .63, 1)';
+      var dur = fromDrag ? 900 : 1100;
       swing = old.animate([
-        { transform: startT, filter: 'none', zIndex: n + 1, easing: fromDrag ? 'cubic-bezier(.2, .6, .3, 1)' : bell },
-        { transform: out, filter: 'none', zIndex: n + 1, offset: 0.48, easing: 'linear' },
-        { transform: out, filter: end.filter, zIndex: end.z, offset: 0.5, easing: bell },
-        { transform: end.transform, filter: end.filter, zIndex: end.z }
-      ], { duration: fromDrag ? 900 : 1100, easing: 'linear' });
+        { transform: startT, filter: 'none', easing: fromDrag ? 'cubic-bezier(.2, .6, .3, 1)' : bell },
+        { transform: out, filter: 'none', offset: 0.48, easing: 'linear' },
+        { transform: out, filter: end.filter, offset: 0.5, easing: bell },
+        { transform: end.transform, filter: end.filter }
+      ], { duration: dur, easing: 'linear' });
+      // which photo is on top is switched by the clock, not inside the
+      // animation (Safari can't animate that): the old photo stays on top
+      // while it leaves, and only goes behind once it's out in the clear
+      swingCard = old; swingZ = n + 1; old.style.zIndex = swingZ;
+      swapTimer = setTimeout(function () { swingZ = end.z; old.style.zIndex = swingZ; }, dur * 0.49);
       var me = swing;
-      swing.onfinish = function () { me.cancel(); if (swing === me) swing = null; };
+      swing.onfinish = function () { me.cancel(); if (swing === me) { swing = null; swingCard = null; } };
     }
     settleTimer = setTimeout(function () { deck.classList.remove('stepping'); }, 1120);
     if (done) setTimeout(done, 1120);
