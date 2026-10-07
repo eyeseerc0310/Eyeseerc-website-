@@ -98,7 +98,7 @@
   foot.addEventListener('click', function () {
     box.classList.add('instant'); box.classList.remove('open', 'shop-mode');
     document.body.style.overflow = '';
-    stage.style.transform = ''; closeBtn.style.transform = '';
+    stage.style.transform = '';
     setTimeout(function () { box.classList.remove('instant'); }, 50);
   });
   more.addEventListener('click', function () { scrollTo(1); });
@@ -192,18 +192,6 @@
     img.style.transform = t;
   }
   window.addEventListener('resize', sizePanel);
-  // phones (shop items): the photo gets whatever height is left once the
-  // details box, the space for the X above it and the gaps are taken, so
-  // everything fits on the screen and the photo never reaches up under the X
-  function fitPhone() {
-    if (!box.classList.contains('shop-mode') || window.innerWidth > 760) { box.style.removeProperty('--lb-reserve'); return; }
-    var t = img.style.transform; img.style.transform = '';
-    for (var i = 0; i < 3; i++) { // (the box's height depends on the photo's width, so a few times)
-      box.style.setProperty('--lb-reserve', (panel.offsetHeight + 54 + 24 + 30) + 'px');
-      sizePanel();
-    }
-    img.style.transform = t;
-  }
   // a click anywhere else in the viewer closes an open SIZE list
   box.addEventListener('click', function (e) {
     var open = panel.querySelector('.lb-size.open');
@@ -540,13 +528,9 @@
   }
   // scrolling on to the bottom of the page: everything moves up and the
   // footer (links and copyright) comes in
-  var closeBtn = box.querySelector('.lb-close');
   function applyFoot(p2) {
     var fh = foot.offsetHeight;
     stage.style.transform = p2 ? 'translateY(' + (-p2 * fh) + 'px)' : '';
-    // phones (shop items): the X travels up with the photo instead of
-    // staying put and ending up on top of it
-    closeBtn.style.transform = box.classList.contains('shop-mode') && window.innerWidth <= 760 ? stage.style.transform : '';
     foot.style.transform = 'translateY(' + ((1 - p2) * 100) + '%)';
     foot.style.opacity = p2;
     foot.style.pointerEvents = p2 > 0.6 ? '' : 'none';
@@ -680,7 +664,7 @@
   // iPhone Safari sometimes cancels a quick sideways swipe instead of ending
   // it; finish it the same way (otherwise the photo was left stuck mid-drag)
   box.addEventListener('touchcancel', touchDone);
-  window.addEventListener('resize', function () { if (shopOpen()) { sizePanel(); fitPhone(); shopGeo(); applyProg(); } });
+  window.addEventListener('resize', function () { if (shopOpen()) { sizePanel(); shopGeo(); applyProg(); } });
 
   function open(i) {
     show(i);
@@ -691,7 +675,6 @@
     document.body.style.overflow = 'hidden';
     var go = function () {
       sizePanel();
-      fitPhone();
       if (box.classList.contains('shop-mode')) {
         var siteFoot = document.querySelector('.site-footer');
         foot.innerHTML = siteFoot ? siteFoot.innerHTML : '';
@@ -739,7 +722,7 @@
         box.classList.remove('instant');
         if (anim) anim.cancel(); // reset the photo for next time, now that it's hidden
         if (trim) trim.done();
-        stage.style.transform = ''; closeBtn.style.transform = '';
+        stage.style.transform = '';
         foot.style.opacity = 0;
       }, 50);
     }
@@ -762,7 +745,7 @@
     if (!shopItem) {
       geo = null; prog = target = 0; minStep = 0;
       if (raf) { cancelAnimationFrame(raf); raf = null; }
-      img.style.transform = ''; stage.style.transform = ''; closeBtn.style.transform = '';
+      img.style.transform = ''; stage.style.transform = '';
       panel.style.transform = ''; panel.style.opacity = ''; panel.style.maskImage = ''; panel.style.webkitMaskImage = '';
       foot.style.opacity = 0; more.style.opacity = 0;
       var siteFoot2 = document.querySelector('.site-footer');
