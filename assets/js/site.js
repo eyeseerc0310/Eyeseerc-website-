@@ -594,7 +594,7 @@
     e.preventDefault();
     if (!viewerOpen() || sliding) return;
     // a trackpad pinch (Chrome sends it as a wheel with ctrl) zooms
-    if (e.ctrlKey && canZoom()) { zoomTo(zs * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY, false); return; }
+    if (e.ctrlKey && canZoom()) { mag.classList.remove('show'); zoomTo(zs * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY, false); return; }
     // zoomed in: two-finger scrolling moves around the photo instead
     if (zs > 1) { panBy(-(e.deltaX || 0), -(e.deltaY || 0), false); return; }
     // a sideways trackpad swipe on a shop item's stack turns it, once per swipe
@@ -628,7 +628,7 @@
   box.addEventListener('gesturechange', function (e) {
     if (!box.classList.contains('open')) return;
     e.preventDefault();
-    if (canZoom() && e.scale) zoomTo(gestureZ * e.scale, e.clientX, e.clientY, false);
+    if (canZoom() && e.scale) { mag.classList.remove('show'); zoomTo(gestureZ * e.scale, e.clientX, e.clientY, false); }
   });
   var swipe = null, D_touch = 110;
   box.addEventListener('touchstart', function (e) {
@@ -951,30 +951,58 @@
     var mx = (zs - 1) * r.width / 2, my = (zs - 1) * r.height / 2;
     zx = Math.max(-mx, Math.min(mx, zx)); zy = Math.max(-my, Math.min(my, zy));
   }
-  function applyZoom(animate) {
-    img.classList.toggle('zoom-anim', !!animate);
-    img.style.transform = zs > 1.001 ? 'translate(' + zx + 'px,' + zy + 'px) scale(' + zs + ')' : '';
+  var zoomAnim = null;
+  function draw(s, x, y) {
+    img.style.transform = s > 1.001 ? 'translate(' + x + 'px,' + y + 'px) scale(' + s + ')' : '';
+  }
+  // animate from where the photo is to (zs, zx, zy): the size changes
+  // evenly and the spot being zoomed on (ax, ay on screen) stays put the
+  // whole way, with any nudge to keep the photo in view blended in - so it
+  // never drifts off or bounces partway through
+  function animateZoom(s0, x0, y0, ax, ay) {
+    if (zoomAnim) cancelAnimationFrame(zoomAnim);
+    var r = zoomBox(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    var s1 = zs, x1 = zx, y1 = zy;
+    if (ax == null) { ax = cx + x0; ay = cy + y0; }
+    var ux = (ax - cx - x0) / s0, uy = (ay - cy - y0) / s0; // that spot on the unzoomed photo
+    var ex = x1 - (ax - cx - s1 * ux), ey = y1 - (ay - cy - s1 * uy); // the nudge at the end
+    var start = null, ms = 380;
+    function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+    function frame(now) {
+      if (start === null) start = now;
+      var t = Math.min(1, (now - start) / ms), e = ease(t);
+      var s = s0 * Math.pow(s1 / s0, e);
+      draw(s, ax - cx - s * ux + ex * e, ay - cy - s * uy + ey * e);
+      zoomAnim = t < 1 ? requestAnimationFrame(frame) : null;
+      if (!zoomAnim) draw(zs, zx, zy);
+    }
+    zoomAnim = requestAnimationFrame(frame);
+  }
+  function applyZoom(animate, from, ax, ay) {
+    if (animate && from) animateZoom(from[0], from[1], from[2], ax, ay);
+    else { if (zoomAnim) { cancelAnimationFrame(zoomAnim); zoomAnim = null; } draw(zs, zx, zy); }
     box.classList.toggle('zoomed', zs > 1.001);
     box.classList.toggle('zoom-max', zs >= MAXZ - 0.01);
     magIcon();
   }
   // zoom to s, keeping the screen point (px, py) where it is
   function zoomTo(s, px, py, animate) {
+    var from = [zs, zx, zy];
     var r = zoomBox(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
     s = Math.max(1, Math.min(MAXZ, s));
     var ux = (px - cx - zx) / zs, uy = (py - cy - zy) / zs; // that point on the unzoomed photo
     zx = px - cx - s * ux; zy = py - cy - s * uy; zs = s;
     if (zs <= 1.001) { zs = 1; zx = zy = 0; }
-    clampPan(r); applyZoom(animate);
+    clampPan(r); applyZoom(animate, from, px, py);
   }
   function panBy(dx, dy, animate) {
     zx += dx; zy += dy; clampPan(zoomBox()); applyZoom(animate);
   }
   function resetZoom(animate) {
     if (zs === 1 && !zx && !zy) return;
-    zs = 1; zx = zy = 0; applyZoom(animate);
+    var from = [zs, zx, zy];
+    zs = 1; zx = zy = 0; applyZoom(animate, from);
   }
-  img.addEventListener('transitionend', function () { img.classList.remove('zoom-anim'); });
 
   // fingers
   var pinch = null, pan = null, lastTap = 0, lastTapX = 0, lastTapY = 0;
@@ -995,10 +1023,10 @@
       var a = e.touches[0], b = e.touches[1];
       var mx = (a.clientX + b.clientX) / 2, my = (a.clientY + b.clientY) / 2;
       var r = zoomBox(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      var s = Math.max(0.85, Math.min(MAXZ * 1.15, pinch.s * dist(a, b) / pinch.d)); // (a little give past the limits)
+      var s = Math.max(1, Math.min(MAXZ, pinch.s * dist(a, b) / pinch.d)); // (stops exactly at the limits)
       var ux = (pinch.mx - cx - pinch.zx) / pinch.s, uy = (pinch.my - cy - pinch.zy) / pinch.s;
       zs = s; zx = mx - cx - s * ux; zy = my - cy - s * uy; // the photo follows the fingers too
-      applyZoom(false);
+      clampPan(r); applyZoom(false);
     } else if (pan && e.touches.length === 1) {
       e.preventDefault();
       var t = e.touches[0];
@@ -1010,11 +1038,10 @@
   function touchUp(e) {
     if (pinch && e.touches.length < 2) {
       pinch = null;
-      // settle back inside the limits
-      var r = zoomBox();
+      // settle inside the photo's edges (the size is already within limits)
+      var from = [zs, zx, zy];
       if (zs < 1.02) { zs = 1; zx = zy = 0; }
-      if (zs > MAXZ) { var k = MAXZ / zs; zs = MAXZ; zx *= k; zy *= k; }
-      clampPan(r); applyZoom(true);
+      clampPan(zoomBox()); applyZoom(true, from);
       if (e.touches.length === 1 && zs > 1) pan = { x: e.touches[0].clientX, y: e.touches[0].clientY, zx: zx, zy: zy, moved: true };
       return;
     }
