@@ -593,6 +593,10 @@
     if (!box.classList.contains('open')) return;
     e.preventDefault();
     if (!viewerOpen() || sliding) return;
+    // a trackpad pinch (Chrome sends it as a wheel with ctrl) zooms
+    if (e.ctrlKey && canZoom()) { zoomTo(zs * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY, false); return; }
+    // zoomed in: two-finger scrolling moves around the photo instead
+    if (zs > 1) { panBy(-(e.deltaX || 0), -(e.deltaY || 0), false); return; }
     // a sideways trackpad swipe on a shop item's stack turns it, once per swipe
     if (deckActive() && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
       if (!sideGesture) { sideGesture = { acc: 0, fired: false }; }
@@ -618,16 +622,23 @@
   }, { passive: false });
   var wheelTimer, sideGesture = null, sideTimer;
   // Safari's trackpad pinch: don't let it zoom the page while the viewer is open
-  box.addEventListener('gesturestart', function (e) { if (box.classList.contains('open')) e.preventDefault(); });
-  box.addEventListener('gesturechange', function (e) { if (box.classList.contains('open')) e.preventDefault(); });
+  // (Safari's trackpad pinch zooms the photo, never the page)
+  var gestureZ = 1;
+  box.addEventListener('gesturestart', function (e) { if (box.classList.contains('open')) { e.preventDefault(); gestureZ = zs; } });
+  box.addEventListener('gesturechange', function (e) {
+    if (!box.classList.contains('open')) return;
+    e.preventDefault();
+    if (canZoom() && e.scale) zoomTo(gestureZ * e.scale, e.clientX, e.clientY, false);
+  });
   var swipe = null, D_touch = 110;
   box.addEventListener('touchstart', function (e) {
-    if (!viewerOpen() || e.touches.length !== 1 || e.target.closest('button')) return;
+    if (!viewerOpen() || e.touches.length !== 1 || e.target.closest('button') || zs > 1) return;
     swipe = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: target, axis: null };
     D_touch = 110;
   }, { passive: true });
   box.addEventListener('touchmove', function (e) {
     if (!swipe || !viewerOpen()) return;
+    if (zs > 1 || e.touches.length > 1) { swipe = null; return; } // (zooming / moving around a zoomed photo)
     // Photography / Projects: sideways swipes still browse the photos; only
     // up / down swipes move to the footer
     if (!swipe.axis) {
@@ -697,6 +708,7 @@
   }
   function close() {
     if (sliding) return;
+    resetZoom(false);
     if (box.classList.contains('shop-mode')) {
       if (raf) { cancelAnimationFrame(raf); raf = null; }
       panel.style.opacity = 0; panel.style.pointerEvents = 'none';
@@ -869,6 +881,7 @@
   }
   function slide(dir, fromDx, fast) {
     if (sliding || links.length < 2) return;
+    if (zs > 1) resetZoom(false); // (a zoomed-in photo goes back to normal first)
     preparePeek(dir);
     var start = fromDx || 0;
     var to = -dir * distance();
@@ -883,12 +896,13 @@
   }
 
   box.addEventListener('touchstart', function (e) {
-    if (sliding || e.touches.length !== 1 || e.target.closest('button') || box.classList.contains('shop-mode')) return;
+    if (sliding || e.touches.length !== 1 || e.target.closest('button') || box.classList.contains('shop-mode') || zs > 1) return;
     var t = e.touches[0];
     drag = { x: t.clientX, y: t.clientY, dx: 0, axis: null, lastX: t.clientX, lastT: Date.now(), v: 0 };
   }, { passive: true });
   box.addEventListener('touchmove', function (e) {
     if (!drag) return;
+    if (e.touches.length > 1 || zs > 1) { if (drag.dx) springBack(drag.dx); drag = null; return; } // a pinch
     var t = e.touches[0];
     var dx = t.clientX - drag.x, dy = t.clientY - drag.y;
     if (!drag.axis) {
@@ -918,6 +932,144 @@
   }
   box.addEventListener('touchend', endDrag);
   box.addEventListener('touchcancel', endDrag);
+
+  // ---- Zooming in (Photography and Projects; not shop items) ----
+  // Fingers: pinch to zoom (up to 4x) around the fingers, drag with one
+  // finger to look around, double-tap to zoom in / back out. Mouse or
+  // trackpad: a little magnifying glass follows the pointer over the photo;
+  // click zooms in a step on that spot, right-click zooms back out a step,
+  // and dragging or two-finger scrolling moves around. Changing photo or
+  // closing puts it back to normal.
+  var zs = 1, zx = 0, zy = 0, MAXZ = 4;
+  function canZoom() { return box.classList.contains('open') && !box.classList.contains('shop-mode') && !sliding && target < 0.05; }
+  function zoomBox() { // the photo's own box, without any zoom
+    var t = img.style.transform; img.style.transform = '';
+    var r = img.getBoundingClientRect(); img.style.transform = t;
+    return r;
+  }
+  function clampPan(r) {
+    var mx = (zs - 1) * r.width / 2, my = (zs - 1) * r.height / 2;
+    zx = Math.max(-mx, Math.min(mx, zx)); zy = Math.max(-my, Math.min(my, zy));
+  }
+  function applyZoom(animate) {
+    img.classList.toggle('zoom-anim', !!animate);
+    img.style.transform = zs > 1.001 ? 'translate(' + zx + 'px,' + zy + 'px) scale(' + zs + ')' : '';
+    box.classList.toggle('zoomed', zs > 1.001);
+    box.classList.toggle('zoom-max', zs >= MAXZ - 0.01);
+    magIcon();
+  }
+  // zoom to s, keeping the screen point (px, py) where it is
+  function zoomTo(s, px, py, animate) {
+    var r = zoomBox(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    s = Math.max(1, Math.min(MAXZ, s));
+    var ux = (px - cx - zx) / zs, uy = (py - cy - zy) / zs; // that point on the unzoomed photo
+    zx = px - cx - s * ux; zy = py - cy - s * uy; zs = s;
+    if (zs <= 1.001) { zs = 1; zx = zy = 0; }
+    clampPan(r); applyZoom(animate);
+  }
+  function panBy(dx, dy, animate) {
+    zx += dx; zy += dy; clampPan(zoomBox()); applyZoom(animate);
+  }
+  function resetZoom(animate) {
+    if (zs === 1 && !zx && !zy) return;
+    zs = 1; zx = zy = 0; applyZoom(animate);
+  }
+  img.addEventListener('transitionend', function () { img.classList.remove('zoom-anim'); });
+
+  // fingers
+  var pinch = null, pan = null, lastTap = 0, lastTapX = 0, lastTapY = 0;
+  function dist(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
+  box.addEventListener('touchstart', function (e) {
+    if (!canZoom() || e.target.closest('button')) return;
+    if (e.touches.length === 2) {
+      var a = e.touches[0], b = e.touches[1];
+      pinch = { d: dist(a, b), s: zs, mx: (a.clientX + b.clientX) / 2, my: (a.clientY + b.clientY) / 2, zx: zx, zy: zy };
+      pan = null;
+    } else if (e.touches.length === 1 && zs > 1) {
+      pan = { x: e.touches[0].clientX, y: e.touches[0].clientY, zx: zx, zy: zy, moved: false };
+    }
+  }, { passive: true });
+  box.addEventListener('touchmove', function (e) {
+    if (pinch && e.touches.length === 2) {
+      e.preventDefault();
+      var a = e.touches[0], b = e.touches[1];
+      var mx = (a.clientX + b.clientX) / 2, my = (a.clientY + b.clientY) / 2;
+      var r = zoomBox(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var s = Math.max(0.85, Math.min(MAXZ * 1.15, pinch.s * dist(a, b) / pinch.d)); // (a little give past the limits)
+      var ux = (pinch.mx - cx - pinch.zx) / pinch.s, uy = (pinch.my - cy - pinch.zy) / pinch.s;
+      zs = s; zx = mx - cx - s * ux; zy = my - cy - s * uy; // the photo follows the fingers too
+      applyZoom(false);
+    } else if (pan && e.touches.length === 1) {
+      e.preventDefault();
+      var t = e.touches[0];
+      if (Math.abs(t.clientX - pan.x) + Math.abs(t.clientY - pan.y) > 4) pan.moved = true;
+      zx = pan.zx + t.clientX - pan.x; zy = pan.zy + t.clientY - pan.y;
+      clampPan(zoomBox()); applyZoom(false);
+    }
+  }, { passive: false });
+  function touchUp(e) {
+    if (pinch && e.touches.length < 2) {
+      pinch = null;
+      // settle back inside the limits
+      var r = zoomBox();
+      if (zs < 1.02) { zs = 1; zx = zy = 0; }
+      if (zs > MAXZ) { var k = MAXZ / zs; zs = MAXZ; zx *= k; zy *= k; }
+      clampPan(r); applyZoom(true);
+      if (e.touches.length === 1 && zs > 1) pan = { x: e.touches[0].clientX, y: e.touches[0].clientY, zx: zx, zy: zy, moved: true };
+      return;
+    }
+    if (pan && !e.touches.length) { var moved = pan.moved; pan = null; if (moved) return; }
+    // double-tap on the photo: zoom in there, or back out
+    if (!canZoom() || e.touches.length || !e.changedTouches.length || e.target !== img) return;
+    var c = e.changedTouches[0], now = Date.now();
+    if (now - lastTap < 320 && Math.abs(c.clientX - lastTapX) < 30 && Math.abs(c.clientY - lastTapY) < 30) {
+      if (zs > 1) resetZoom(true); else zoomTo(2.5, c.clientX, c.clientY, true);
+      lastTap = 0;
+    } else { lastTap = now; lastTapX = c.clientX; lastTapY = c.clientY; }
+  }
+  box.addEventListener('touchend', touchUp);
+  box.addEventListener('touchcancel', function () { pinch = null; pan = null; if (zs < 1.02) resetZoom(true); });
+
+  // mouse / trackpad
+  var mag = document.createElement('div');
+  mag.className = 'lb-mag';
+  mag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/><path class="mag-plus" d="M10.5 7.8v5.4M7.8 10.5h5.4"/></svg>';
+  box.appendChild(mag);
+  function magIcon() { mag.classList.toggle('max', zs >= MAXZ - 0.01); }
+  var mdrag = null;
+  img.addEventListener('pointermove', function (e) {
+    if (e.pointerType === 'touch') return;
+    var on = canZoom();
+    mag.classList.toggle('show', on && !mdrag);
+    if (on) mag.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)';
+  });
+  img.addEventListener('pointerleave', function () { mag.classList.remove('show'); });
+  img.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'touch' || e.button !== 0 || !canZoom()) return;
+    e.preventDefault();
+    mdrag = { x: e.clientX, y: e.clientY, zx: zx, zy: zy, moved: false };
+  });
+  window.addEventListener('pointermove', function (e) {
+    if (!mdrag) return;
+    if (Math.abs(e.clientX - mdrag.x) + Math.abs(e.clientY - mdrag.y) > 4) mdrag.moved = true;
+    if (mdrag.moved && zs > 1) {
+      box.classList.add('zoom-dragging'); mag.classList.remove('show');
+      zx = mdrag.zx + e.clientX - mdrag.x; zy = mdrag.zy + e.clientY - mdrag.y;
+      clampPan(zoomBox()); applyZoom(false);
+    }
+  });
+  window.addEventListener('pointerup', function (e) {
+    if (!mdrag) return;
+    var d = mdrag; mdrag = null; box.classList.remove('zoom-dragging');
+    if (d.moved || !canZoom()) return;
+    zoomTo(zs * 2, e.clientX, e.clientY, true); // click: a step closer, on that spot
+  });
+  // right-click: a step back out (and no menu)
+  img.addEventListener('contextmenu', function (e) {
+    if (!box.classList.contains('open') || box.classList.contains('shop-mode')) return;
+    e.preventDefault();
+    if (zs > 1) zoomTo(zs / 2, e.clientX, e.clientY, true);
+  });
 })();
 
 // Two-way switches: COLOR / B&W on the Photography page and PRINTS / SHIRTS

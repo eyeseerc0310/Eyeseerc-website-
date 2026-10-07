@@ -588,6 +588,25 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 }
 .lightbox .lb-peek.show { display: block; }
 .lightbox { touch-action: none; overflow: hidden; } /* the swipe is handled by the page, not the browser */
+/* zooming in (Photography / Projects): a smooth step for clicks / taps */
+.lightbox img.zoom-anim { transition: transform .38s cubic-bezier(.2, .7, .2, 1); }
+.lightbox.zoomed .lb-prev, .lightbox.zoomed .lb-next, .lightbox.zoomed .lightbox-caption { opacity: 0 !important; pointer-events: none; }
+/* the little magnifying glass that follows a mouse / trackpad over the photo */
+.lb-mag {
+  position: fixed; left: 0; top: 0; z-index: 6; width: 38px; height: 38px; margin: -19px 0 0 -19px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; color: #fff;
+  background: rgba(0, 0, 0, .38); border: 1px solid rgba(255, 255, 255, .35);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  pointer-events: none; opacity: 0; transition: opacity .2s ease;
+}
+.lb-mag svg { width: 20px; height: 20px; }
+.lb-mag.show { opacity: 1; }
+.lb-mag.max .mag-plus { display: none; } /* as close as it goes */
+@media (hover: hover) and (pointer: fine) {
+  .lightbox:not(.shop-mode) .lb-figure > img { cursor: none; }
+}
+.lightbox.zoom-dragging, .lightbox.zoom-dragging * { cursor: grabbing !important; }
 /* quick clicks on the arrows or photos never select (and tint) anything */
 .lightbox { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 /* caption hangs below the photo so the arrows line up with the photo's middle */
