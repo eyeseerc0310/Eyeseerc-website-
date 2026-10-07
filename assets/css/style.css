@@ -784,9 +784,11 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   max-width: none; max-height: none; object-fit: cover;
   /* a dark edge all round each photo so the layers stand apart */
   box-shadow: 0 0 18px 2px rgba(0, 0, 0, .65), 0 24px 60px rgba(0, 0, 0, .45);
-  transition: transform .5s cubic-bezier(.4, 0, .2, 1), filter .5s ease, opacity .35s ease;
+  transition: transform .72s cubic-bezier(.22, .8, .24, 1), filter .6s ease, opacity .35s ease;
   cursor: pointer; -webkit-user-select: none; user-select: none;
 }
+/* while a thumb is dragging the stack, the photos follow it exactly */
+.lightbox.shop-mode .lb-figure .lb-deck.dragging img.lb-card { transition: none; }
 /* the arrow to the next photo, to the right of the stack */
 .lightbox .lb-deck .lb-deck-next {
   position: absolute; top: 50%; width: 36px; height: 36px; margin-top: -18px; padding: 0;
