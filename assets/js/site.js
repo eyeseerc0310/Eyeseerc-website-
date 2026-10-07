@@ -229,7 +229,7 @@
   var deckCards = [], front = 0, deckShown = 0, deckBusy = false, swingCard = null, swingZ = 0;
   function setupDeck(link) {
     deck.innerHTML = ''; deckCards = []; front = 0; deckShown = 0; deckBusy = false;
-    deck.style.opacity = 0; deck.style.pointerEvents = 'none'; img.style.opacity = '';
+    deck.style.opacity = 0; deck.style.pointerEvents = 'none'; img.style.opacity = ''; img.style.pointerEvents = '';
     var extra = link && link.dataset.more ? link.dataset.more.split('|').filter(Boolean).slice(0, 4) : [];
     if (!extra.length) return;
     [link.href].concat(extra).forEach(function (src) {
@@ -306,6 +306,9 @@
     deck.style.opacity = show ? 1 : 0;
     deck.style.pointerEvents = show > 0.9 ? 'auto' : 'none';
     img.style.opacity = show ? 0 : '';
+    // the hidden photo underneath is bigger than the (scaled) stack on phones:
+    // it mustn't catch taps meant for the empty space around the stack
+    img.style.pointerEvents = show ? 'none' : '';
     if (show !== deckShown) { deckShown = show; layoutCards(); }
   }
   function deckActive() { return shopOpen() && deckCards.length > 1 && deckShown > 0.9; }
@@ -731,7 +734,7 @@
     caption.classList.remove('is-changing'); box.classList.remove('changing');
     // the stack goes; the main photo itself shrinks back into its tile
     if (deckCards.length) {
-      deck.style.opacity = 0; deck.style.pointerEvents = 'none'; img.style.opacity = '';
+      deck.style.opacity = 0; deck.style.pointerEvents = 'none'; img.style.opacity = ''; img.style.pointerEvents = '';
       if (img.src !== deckCards[0].src) img.src = deckCards[0].src;
     }
     var anim = flip(thumbRect(), true);
@@ -790,7 +793,8 @@
   box.querySelector('.lb-prev').addEventListener('click', function () { slide(-1); });
   box.querySelector('.lb-next').addEventListener('click', function () { slide(1); });
   box.addEventListener('click', function (e) {
-    if (e.target !== box && e.target !== stage) return;
+    // a tap on the empty space (not the photo, the stack, the details box or a button) closes it
+    if (e.target !== box && e.target !== stage && e.target !== figure && e.target !== deck) return;
     // a click while a shop item's stack is still fading in (aimed at an
     // arrow or a photo) doesn't close the viewer
     if (deckCards.length && target >= 1 && !deckActive()) return;
@@ -1485,13 +1489,13 @@
     drawer.setAttribute('aria-hidden', 'true');
     if (instant) setTimeout(function () { drawer.classList.remove('instant'); }, 50);
   }
-  // the cart icon opens the drawer too (the full cart page stays reachable
-  // from it); caught early so the page doesn't change
+  // the cart icon always goes to the cart page (with the usual page fade);
+  // on the cart page itself it does nothing
   document.addEventListener('click', function (e) {
     var icon = e.target.closest && e.target.closest('.cart-link');
-    if (!icon || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
-    e.preventDefault(); e.stopImmediatePropagation();
-    openDrawer();
+    if (!icon) return;
+    if (document.querySelector('main:not([aria-hidden]) #cart-root')) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+    closeDrawer(true);
   }, true);
   // Escape closes the cart first (and only the cart)
   window.addEventListener('keydown', function (e) {
