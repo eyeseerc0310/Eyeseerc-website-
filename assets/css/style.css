@@ -384,14 +384,18 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 /* dark mode: a soft, blurred glow of the home photo spills onto the page
    around it, so the photo and the page feel lit by the same light */
 .hero-photo .hero-glow {
-  inset: -10%; width: 125%; height: 120%;
-  filter: blur(56px) brightness(1.5) saturate(1.3);
-  opacity: 0; transition: opacity .6s ease;
+  /* the glow picture is the photo with a soft border of black around it
+     (already blurred), laid over the page so only its light shows */
+  left: -25%; top: -25%; width: 150%; height: 150%;
+  object-fit: fill;
+  mix-blend-mode: screen;
+  opacity: 0; transition: opacity 1.4s ease;
   pointer-events: none;
 }
+.strip { position: relative; z-index: 1; } /* the strip's photos sit above the glow */
 .hero-photo .hero-main { z-index: 1; }
 :root[data-theme="dark"] .hero-photo { background: transparent; }
-:root[data-theme="dark"] .hero-photo .hero-glow { opacity: .55; }
+:root[data-theme="dark"] .hero-photo .hero-glow.loaded { opacity: .8; }
 
 /* first visit to the home page: the photo fades in with a slight drift,
    then the mark, the bio and the photo strip follow one by one */
