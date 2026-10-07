@@ -350,6 +350,17 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 .bio p { margin: 0 0 1.1rem; }
 .bio strong { font-weight: 500; }
 
+/* computers and iPads (photo beside the bio): the home page fits the screen
+   exactly, header at the top and the links at the bottom, with nothing to
+   scroll. The bio's spacing and the mark shrink on shorter screens so it fits
+   (a very short window still scrolls rather than cutting the bio off). */
+@media (min-width: 761px) {
+  .site-main.is-home { min-height: 0; }
+  .site-main.is-home .hero-photo { min-height: 0; }
+  .site-main.is-home .hero-text { padding-block: clamp(.75rem, 3vh, 5rem); }
+  .site-main.is-home .hero-mark { width: min(clamp(98px, 10.4vw, 150px), 14vh); margin-bottom: min(1.6rem, 2.5vh); }
+}
+
 /* phones and narrow tablets: photo across the top half, bio underneath */
 @media (max-width: 760px) {
   .hero { grid-template-columns: 1fr; }
