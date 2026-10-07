@@ -13,6 +13,9 @@
 #             empty ("") and clicking the photo opens it big instead.
 #  description: a few words about the item, shown in the box under the
 #             photo when it's opened (a placeholder is used if left out)
+#  more_photos: up to 4 more photos of the item (close-ups, framed, on a
+#             wall...). Once the description is showing they sit stacked
+#             behind the main photo; tap or swipe to bring each to the front.
 #  sold_out:  true  (optional — shows "Sold out" instead of the price)
 #  shopify_variant: the item's variant ID number from Shopify (optional —
 #             needed for the cart's CHECK OUT button to go to Shopify)
@@ -25,6 +28,11 @@
   title: "Forest"
   description: "Placeholder description. Size, paper and edition details for this piece will go here."
   image: /photos/shop/print-forest.jpg
+  more_photos:  # placeholders for now: close-ups of the print
+    - /photos/shop/more/forest-1.jpg
+    - /photos/shop/more/forest-2.jpg
+    - /photos/shop/more/forest-3.jpg
+    - /photos/shop/more/forest-4.jpg
   shape: landscape
   price: 75
   link: ""
@@ -33,6 +41,11 @@
   title: "Salmon"
   description: "Placeholder description. Size, paper and edition details for this piece will go here."
   image: /photos/shop/print-salmon.jpg
+  more_photos:  # placeholders for now: close-ups of the print
+    - /photos/shop/more/salmon-1.jpg
+    - /photos/shop/more/salmon-2.jpg
+    - /photos/shop/more/salmon-3.jpg
+    - /photos/shop/more/salmon-4.jpg
   shape: portrait
   price: 75
   link: ""
@@ -41,6 +54,11 @@
   title: "Motion"
   description: "Placeholder description. Size, paper and edition details for this piece will go here."
   image: /photos/shop/print-motion.jpg
+  more_photos:  # placeholders for now: close-ups of the print
+    - /photos/shop/more/motion-1.jpg
+    - /photos/shop/more/motion-2.jpg
+    - /photos/shop/more/motion-3.jpg
+    - /photos/shop/more/motion-4.jpg
   shape: landscape
   price: 75
   link: ""

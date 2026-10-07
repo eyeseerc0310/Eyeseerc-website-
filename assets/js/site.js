@@ -146,6 +146,107 @@
   }
   window.addEventListener('resize', sizePanel);
 
+  // ---- Shop items: more photos stacked behind the main one ----
+  // Once the details are showing, the item's other photos (up to 4) fade in
+  // as a stack peeking out to the right of the main photo. Tap one, swipe
+  // sideways or use the arrow keys and the stack turns: the front photo
+  // swings out to the left and tucks in at the back while the next comes
+  // forward (or the back one comes round to the front). Tapping the front
+  // photo brings the big view back, as before.
+  var figure = box.querySelector('.lb-figure');
+  var deck = document.createElement('div');
+  deck.className = 'lb-deck';
+  figure.insertBefore(deck, panel);
+  var deckCards = [], front = 0, deckShown = 0, deckBusy = false;
+  function setupDeck(link) {
+    deck.innerHTML = ''; deckCards = []; front = 0; deckShown = 0; deckBusy = false;
+    deck.style.opacity = 0; deck.style.pointerEvents = 'none'; img.style.opacity = '';
+    var extra = link && link.dataset.more ? link.dataset.more.split('|').filter(Boolean).slice(0, 4) : [];
+    if (!extra.length) return;
+    [link.href].concat(extra).forEach(function (src) {
+      var c = document.createElement('img');
+      c.className = 'lb-card'; c.alt = ''; c.draggable = false; c.src = src;
+      deck.appendChild(c); deckCards.push(c);
+    });
+  }
+  function depth(k) { return (k - front + deckCards.length) % deckCards.length; }
+  // how a card at a given depth sits: smaller and further right the deeper it is
+  function pose(d) {
+    var W = deck.offsetWidth || 1, n = deckCards.length;
+    var avail = geo ? window.innerWidth - geo.F.right - 8 : 60;
+    var stepX = Math.max(10, Math.min(26, avail / Math.max(1, n - 1)));
+    var sc = 1 - d * 0.045;
+    return { transform: 'translateX(' + (d * stepX + (1 - sc) * W / 2) + 'px) scale(' + sc + ')',
+             filter: d ? 'brightness(' + (1 - d * 0.12) + ')' : 'none', z: n - d, stepX: stepX };
+  }
+  function layoutCards() {
+    deckCards.forEach(function (c, k) {
+      var d = depth(k), ps = pose(d);
+      c.style.transform = ps.transform; c.style.filter = ps.filter; c.style.zIndex = ps.z;
+      c.style.opacity = d === 0 ? 1 : deckShown;
+    });
+  }
+  // keeps the stack lined up with the (hidden) main photo as it moves; on
+  // narrow screens the front photo shrinks a little so the stack fits
+  function placeDeck(p) {
+    if (!deckCards.length) return;
+    var show = Math.max(0, Math.min(1, (p - 0.7) / 0.3));
+    deck.style.left = img.offsetLeft + 'px'; deck.style.top = img.offsetTop + 'px';
+    deck.style.width = img.offsetWidth + 'px'; deck.style.height = img.offsetHeight + 'px';
+    var W = img.offsetWidth || 1, n = deckCards.length;
+    var avail = geo ? window.innerWidth - geo.F.right - 8 : 60;
+    var over = Math.max(0, (n - 1) * pose(1).stepX - avail) * show;
+    deck.style.transform = (img.style.transform || '') + ' translateX(' + (-over / 2) + 'px) scale(' + (1 - over / W) + ')';
+    deck.style.opacity = show ? 1 : 0;
+    deck.style.pointerEvents = show > 0.9 ? '' : 'none';
+    img.style.opacity = show ? 0 : '';
+    if (show !== deckShown) { deckShown = show; layoutCards(); }
+  }
+  function deckActive() { return shopOpen() && deckCards.length > 1 && deckShown > 0.9; }
+  // turn the stack by m places (1: the next photo comes forward; -1: the
+  // back photo comes round to the front)
+  function rotate(m, done) {
+    var n = deckCards.length;
+    if (deckBusy || n < 2 || !m) { if (done) done(); return; }
+    deckBusy = true;
+    var W = deck.offsetWidth, out = 'translateX(' + (-W * 0.58) + 'px) scale(.9) rotate(-3deg)';
+    var before = deckCards.map(function (c, k) { return depth(k); });
+    front = ((front + m) % n + n) % n;
+    var anims = [];
+    deckCards.forEach(function (c, k) {
+      var d0 = before[k], d1 = depth(k), p0 = pose(d0), p1 = pose(d1);
+      var swings = m > 0 ? d0 < m : d1 === 0 && d0 > d1; // goes round the side
+      if (!swings) return;
+      c.style.transition = 'none';
+      var a = c.animate(m > 0 ? [
+        { transform: p0.transform, filter: p0.filter, zIndex: n + 1, opacity: 1 },
+        { transform: out, filter: p0.filter, zIndex: n + 1, opacity: 1, offset: 0.45 },
+        { transform: out, filter: p1.filter, zIndex: 0, opacity: 1, offset: 0.46 },
+        { transform: p1.transform, filter: p1.filter, zIndex: 0, opacity: 1 }
+      ] : [
+        { transform: p0.transform, filter: p0.filter, zIndex: 0, opacity: 1 },
+        { transform: out, filter: p0.filter, zIndex: 0, opacity: 1, offset: 0.45 },
+        { transform: out, filter: p1.filter, zIndex: n + 1, opacity: 1, offset: 0.46 },
+        { transform: p1.transform, filter: p1.filter, zIndex: n + 1, opacity: 1 }
+      ], { duration: 680, easing: 'cubic-bezier(.45, 0, .25, 1)', delay: m > 0 ? d0 * 70 : 0 });
+      anims.push(a);
+      a.onfinish = function () { c.style.transition = ''; a.cancel(); };
+    });
+    layoutCards();
+    setTimeout(function () { deckBusy = false; if (done) done(); }, 700 + (m > 0 ? (m - 1) * 70 : 0));
+  }
+  deck.addEventListener('click', function (e) {
+    var c = e.target.closest('.lb-card');
+    if (!c || !deckActive()) return;
+    e.stopPropagation();
+    var d = depth(deckCards.indexOf(c));
+    if (d) { rotate(d); return; }
+    // the front photo: back to the big view (turning back to the main photo first)
+    minStep = 0;
+    rotate(front ? deckCards.length - front : 0, function () { scrollTo(0); });
+  });
+  window.addEventListener('resize', function () { if (deckCards.length) layoutCards(); });
+
   function show(i) {
     index = (i + links.length) % links.length;
     img.src = links[index].href;
@@ -278,6 +379,7 @@
     // the little arrow fades away as soon as you start scrolling
     more.style.opacity = Math.max(0, 1 - p * 3.5);
     more.style.pointerEvents = p > 0.2 ? 'none' : '';
+    placeDeck(p);
   }
   function step() {
     prog += (target - prog) * 0.2;
@@ -313,6 +415,15 @@
     if (!box.classList.contains('open')) return;
     e.preventDefault();
     if (!viewerOpen() || sliding) return;
+    // a sideways trackpad swipe on a shop item's stack turns it, once per swipe
+    if (deckActive() && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      if (!sideGesture) { sideGesture = { acc: 0, fired: false }; }
+      sideGesture.acc += e.deltaX;
+      if (!sideGesture.fired && Math.abs(sideGesture.acc) > 30) { sideGesture.fired = true; rotate(sideGesture.acc > 0 ? 1 : -1); }
+      clearTimeout(sideTimer);
+      sideTimer = setTimeout(function () { sideGesture = null; }, 220);
+      return;
+    }
     var d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
     if (!d) return;
     var dir = d > 0 ? 1 : -1;
@@ -327,7 +438,7 @@
     clearTimeout(wheelTimer);
     wheelTimer = setTimeout(function () { if (gesture) scrollTo(gesture.stop); }, 90);
   }, { passive: false });
-  var wheelTimer;
+  var wheelTimer, sideGesture = null, sideTimer;
   // Safari's trackpad pinch: don't let it zoom the page while the viewer is open
   box.addEventListener('gesturestart', function (e) { if (box.classList.contains('open')) e.preventDefault(); });
   box.addEventListener('gesturechange', function (e) { if (box.classList.contains('open')) e.preventDefault(); });
@@ -346,12 +457,17 @@
       if (ax < 6 && ay < 6) return;
       swipe.axis = ay > ax ? 'y' : 'x';
     }
+    if (swipe.axis === 'x' && deckActive()) { e.preventDefault(); swipe.dx = e.touches[0].clientX - swipe.x; return; }
     if (swipe.axis !== 'y' && !box.classList.contains('shop-mode')) { swipe = null; return; }
     e.preventDefault();
     scrollTo(swipe.t + (swipe.y - e.touches[0].clientY) / D_touch);
   }, { passive: false });
   box.addEventListener('touchend', function () {
     if (!swipe) return;
+    if (swipe.axis === 'x' && deckActive()) {
+      if (Math.abs(swipe.dx || 0) > 40) rotate(swipe.dx < 0 ? 1 : -1);
+      swipe = null; return;
+    }
     // let go and it finishes on its own: past a small nudge it goes all the way
     var moved = target - swipe.t;
     if (Math.abs(moved) > 0.08) scrollTo(moved > 0 ? Math.ceil(target - 0.001) : Math.floor(target + 0.001));
@@ -401,6 +517,8 @@
     }
     peekDir = 0; peek.classList.remove('show');
     caption.classList.remove('is-changing'); box.classList.remove('changing');
+    // the stack goes; the main photo itself shrinks back into its tile
+    if (deckCards.length) { deck.style.opacity = 0; deck.style.pointerEvents = 'none'; img.style.opacity = ''; }
     var anim = flip(thumbRect(), true);
     var trim = anim ? headerLift(true) : null;
     box.classList.remove('open');
@@ -444,8 +562,10 @@
     if (shopItem) {
       links = [link]; // shop items open on their own: no browsing
       buildPanel(link);
+      setupDeck(link);
     } else {
       panel.innerHTML = ''; panel.style.width = ''; img.style.transform = ''; geo = null;
+      setupDeck(null);
       links = Array.prototype.filter.call(document.querySelectorAll('main:not([aria-hidden]) [data-lightbox]'),
         function (l) { return !l.closest('.is-filtered-out'); });
     }
@@ -462,7 +582,11 @@
     if (viewerOpen()) {
       if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); scrollTo(Math.floor(target + 0.001) + 1); }
       if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); scrollTo(Math.ceil(target - 0.001) - 1); }
-      if (box.classList.contains('shop-mode')) return;
+      if (box.classList.contains('shop-mode')) {
+        if (deckActive() && e.key === 'ArrowRight') rotate(1);
+        if (deckActive() && e.key === 'ArrowLeft') rotate(-1);
+        return;
+      }
     }
     if (e.key === 'ArrowLeft') slide(-1);
     if (e.key === 'ArrowRight') slide(1);
