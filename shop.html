@@ -34,6 +34,9 @@ tight_top: true
     {% if link contains "://" %}{% assign external = true %}{% endif %}
     {% assign kind = item.category | default: "prints" | downcase %}
     {% assign item_id = kind | append: "-" | append: item.title | slugify %}
+    {% comment %} prints come in the sizes set in _config.yml (print_sizes) {% endcomment %}
+    {% assign sized = false %}
+    {% if kind == "prints" and site.print_sizes and site.print_sizes.size > 0 %}{% assign sized = true %}{% assign first_size = site.print_sizes | first %}{% endif %}
     {% assign item_desc = item.description | default: "Placeholder description. Size, paper and edition details for this piece will go here." %}
     <figure class="shop-item{% if kind != "prints" %} is-filtered-out{% endif %}" data-kind="{{ kind }}">
       <div class="shop-frame">
@@ -45,16 +48,21 @@ tight_top: true
         {% comment %} no product link: clicking opens the photo big, like the other pages {% endcomment %}
         <a class="shop-photo shop-{{ shape }}" href="{{ item.image | relative_url }}" data-lightbox data-caption="{{ item.title | default: 'Print' | escape }}"
            data-shop data-id="{{ item_id }}" data-title="{{ item.title | default: 'Print' | escape }}" data-price="{{ item.price }}"
-           data-desc="{{ item_desc | escape }}" data-variant="{{ item.shopify_variant }}" data-image="{{ item.image | relative_url }}"{% if item.sold_out %} data-sold-out{% endif %}
+           data-desc="{{ item_desc | escape }}"{% if sized %} data-sizes{% endif %} data-variant="{{ item.shopify_variant }}" data-image="{{ item.image | relative_url }}"{% if item.sold_out %} data-sold-out{% endif %}
            {% if item.more_photos %}data-more="{% for m in item.more_photos limit: 4 %}{{ m | relative_url }}{% unless forloop.last %}|{% endunless %}{% endfor %}"{% endif %}>
           <img src="{{ item.image | relative_url }}" alt="{{ item.title | default: 'Print' | escape }}" loading="lazy">
         </a>
         {% endif %}
       </div>
       <figcaption class="shop-price">
-        {% if item.sold_out %}Sold out{% elsif item.price %}{{ site.currency }}{{ item.price }}{% endif %}
+        {% if item.sold_out %}Sold out{% elsif sized %}From {{ site.currency }}{{ first_size.price }}{% elsif item.price %}{{ site.currency }}{{ item.price }}{% endif %}
       </figcaption>
-      {% unless item.sold_out %}{% if item.price %}
+      {% unless item.sold_out %}{% if sized %}
+      {% comment %} from the page: the smallest size (other sizes are picked in the details box) {% endcomment %}
+      <button type="button" class="add-to-cart"
+        data-id="{{ item_id }}-{{ first_size.size | slugify }}" data-title="{{ item.title | escape }} — {{ first_size.size }} in" data-price="{{ first_size.price }}"
+        data-image="{{ item.image | relative_url }}" data-variant="{{ item.shopify_variant }}">ADD TO CART</button>
+      {% elsif item.price %}
       <button type="button" class="add-to-cart"
         data-id="{{ item_id }}" data-title="{{ item.title | escape }}" data-price="{{ item.price }}"
         data-image="{{ item.image | relative_url }}" data-variant="{{ item.shopify_variant }}">ADD TO CART</button>

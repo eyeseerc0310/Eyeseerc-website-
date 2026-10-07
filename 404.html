@@ -2,9 +2,16 @@
 layout: default
 title: "PAGE NOT FOUND"
 permalink: /404.html
+noindex: true
 ---
 <div class="not-found">
-  <h1 class="page-title">404</h1>
-  <p>This page doesn't exist (yet).</p>
-  <a class="button" href="{{ '/' | relative_url }}">Back to home</a>
+  <div class="not-found-mark"><img src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392"></div>
+  <p class="not-found-code">404</p>
+  <h1 class="page-title">NOTHING HERE</h1>
+  <p class="not-found-text">This page doesn't exist, or hasn't been made yet.</p>
+  <nav class="not-found-links" aria-label="Back into the site">
+    <a href="{{ '/' | relative_url }}">HOME</a>
+    <a href="{{ '/photography/' | relative_url }}">PHOTOGRAPHY</a>
+    <a href="{{ '/shop/' | relative_url }}">SHOP</a>
+  </nav>
 </div>

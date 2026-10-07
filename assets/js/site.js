@@ -108,26 +108,73 @@
   // the photo with a description, how many to add, the price for that many
   // and ADD TO CART.
   function money(n) { return ((window.SHOP && window.SHOP.currency) || '$') + (Math.round(n * 100) / 100).toFixed(n % 1 ? 2 : 0); }
+  // Prints also get a SIZE drop-down along the bottom of the box (the sizes
+  // and their prices are set in _config.yml); the price follows the size.
   function buildPanel(link) {
     var d = link.dataset, unit = parseFloat(d.price) || 0, qty = 1;
+    var sizes = link.hasAttribute('data-sizes') && window.SHOP && window.SHOP.sizes || [];
+    var size = sizes[0] || null;
+    if (size) unit = parseFloat(size.price) || unit;
     panel.innerHTML =
       '<div class="lb-panel-title"></div><p class="lb-panel-desc"></p>' +
       '<div class="lb-panel-row">' +
         '<div class="lb-qty"><button type="button" data-q="-1" aria-label="One fewer">\u2212</button><span>1</span><button type="button" data-q="1" aria-label="One more">+</button></div>' +
         '<div class="lb-panel-price"></div>' +
         '<button type="button" class="lb-panel-add">ADD TO CART</button>' +
-      '</div>';
+      '</div>' +
+      (sizes.length ?
+        '<div class="lb-size">' +
+          '<button type="button" class="lb-size-btn" aria-haspopup="listbox" aria-expanded="false">' +
+            '<span>SIZE</span><span class="lb-size-val"></span>' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>' +
+          '</button>' +
+          '<div class="lb-size-list" role="listbox"></div>' +
+        '</div>' : '');
     panel.querySelector('.lb-panel-title').textContent = d.title || '';
     panel.querySelector('.lb-panel-desc').textContent = d.desc || '';
     var qtyEl = panel.querySelector('.lb-qty span'), priceEl = panel.querySelector('.lb-panel-price');
-    function update() { qtyEl.textContent = qty; priceEl.textContent = link.hasAttribute('data-sold-out') ? 'Sold out' : money(unit * qty); }
+    var sizeBox = panel.querySelector('.lb-size');
+    if (sizeBox) {
+      var list = sizeBox.querySelector('.lb-size-list');
+      sizes.forEach(function (sz, i) {
+        var o = document.createElement('button');
+        o.type = 'button'; o.className = 'lb-size-opt'; o.setAttribute('role', 'option'); o.dataset.i = i;
+        o.innerHTML = '<span></span><span></span>';
+        o.firstChild.textContent = sz.size + ' in'; o.lastChild.textContent = money(parseFloat(sz.price) || 0);
+        list.appendChild(o);
+      });
+    }
+    function update() {
+      qtyEl.textContent = qty;
+      priceEl.textContent = link.hasAttribute('data-sold-out') ? 'Sold out' : money(unit * qty);
+      if (sizeBox) {
+        sizeBox.querySelector('.lb-size-val').textContent = size.size + ' IN';
+        Array.prototype.forEach.call(sizeBox.querySelectorAll('.lb-size-opt'), function (o) {
+          o.setAttribute('aria-selected', sizes[o.dataset.i] === size ? 'true' : 'false');
+        });
+      }
+    }
+    function sizeMenu(open) {
+      if (!sizeBox) return;
+      sizeBox.classList.toggle('open', open);
+      sizeBox.querySelector('.lb-size-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
     update();
-    if (link.hasAttribute('data-sold-out')) { panel.querySelector('.lb-panel-add').hidden = true; panel.querySelector('.lb-qty').hidden = true; }
+    if (link.hasAttribute('data-sold-out')) {
+      panel.querySelector('.lb-panel-add').hidden = true; panel.querySelector('.lb-qty').hidden = true;
+      if (sizeBox) sizeBox.hidden = true;
+    }
     panel.onclick = function (e) {
       var q = e.target.closest('[data-q]');
       if (q) { qty = Math.max(1, Math.min(99, qty + parseInt(q.dataset.q, 10))); update(); return; }
+      if (e.target.closest('.lb-size-btn')) { sizeMenu(!sizeBox.classList.contains('open')); return; }
+      var opt = e.target.closest('.lb-size-opt');
+      if (opt) { size = sizes[opt.dataset.i]; unit = parseFloat(size.price) || 0; update(); sizeMenu(false); return; }
+      sizeMenu(false);
       if (e.target.closest('.lb-panel-add') && window.eyeseercCart) {
-        window.eyeseercCart.add({ id: d.id, title: d.title, price: unit, image: d.image, variant: d.variant || '' }, qty);
+        var sid = size ? '-' + size.size.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+        window.eyeseercCart.add({ id: d.id + sid, title: (d.title || '') + (size ? ' \u2014 ' + size.size + ' in' : ''),
+          price: unit, image: d.image, variant: d.variant || '' }, qty);
         // tuck the viewer away and go to the cart
         box.classList.add('instant'); box.classList.remove('open', 'shop-mode');
         document.body.style.overflow = '';
@@ -145,6 +192,11 @@
     img.style.transform = t;
   }
   window.addEventListener('resize', sizePanel);
+  // a click anywhere else in the viewer closes an open SIZE list
+  box.addEventListener('click', function (e) {
+    var open = panel.querySelector('.lb-size.open');
+    if (open && !open.contains(e.target)) { open.classList.remove('open'); open.querySelector('.lb-size-btn').setAttribute('aria-expanded', 'false'); }
+  }, true);
 
   // ---- Shop items: more photos stacked behind the main one ----
   // Once the details are showing, the item's other photos (up to 4) fade in

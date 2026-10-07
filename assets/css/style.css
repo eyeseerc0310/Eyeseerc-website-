@@ -672,8 +672,17 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .social-btn svg { width: 22px; height: 22px; display: block; }
 
 /* ---------- 404 page ---------- */
-.not-found { text-align: center; padding: 3rem 0 4rem; }
-.not-found p { color: var(--muted); margin: -.5rem 0 1.5rem; letter-spacing: .04em; }
+/* 404: the spinning blue mark, NOTHING HERE and links back into the site */
+.not-found { text-align: center; padding: clamp(2rem, 6vh, 4rem) 0 4rem; }
+.not-found-mark { display: inline-block; perspective: 600px; margin-bottom: 1.6rem; }
+.not-found-mark img { display: block; width: clamp(110px, 14vw, 160px); height: auto; animation: mark-spin 5s linear infinite; backface-visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .not-found-mark img { animation: none; } }
+.not-found-code { margin: 0; font-size: .75rem; letter-spacing: .5em; margin-right: -.5em; color: var(--muted); }
+.not-found .page-title { margin-top: .4rem; }
+.not-found p.not-found-text { color: var(--muted); margin: -.5rem 0 2rem; letter-spacing: .04em; }
+.not-found-links { display: flex; justify-content: center; flex-wrap: wrap; gap: .8rem 2.2rem; }
+.not-found-links a { font-size: .8rem; letter-spacing: .2em; text-decoration: none; color: var(--muted); padding-bottom: .3rem; border-bottom: 1px solid transparent; transition: color .2s ease, border-color .2s ease; }
+.not-found-links a:hover { color: var(--text); border-color: currentColor; }
 
 /* ---------- Cart ---------- */
 /* cart icon to the left of the menu icon; it fades in once something is in the cart */
@@ -764,7 +773,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .lightbox.shop-mode .lb-stage { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .lightbox.shop-mode .lb-figure { display: flex; flex-direction: column; align-items: center; }
 .lightbox.shop-mode .lb-figure img {
-  max-width: calc(100vw - 3rem); max-height: calc(100vh - 15rem); max-height: calc(100svh - 15rem);
+  max-width: calc(100vw - 3rem); max-height: calc(100vh - 18rem); max-height: calc(100svh - 18rem);
 }
 /* the item's other photos, stacked behind the main one (placed by the script) */
 .lb-deck { position: absolute; z-index: 2; left: 0; top: 0; opacity: 0; pointer-events: none; } /* above the (hidden) main photo */
@@ -819,6 +828,34 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   border: 1px solid var(--menu-line); color: var(--text);
 }
 .lightbox .lb-panel button.lb-panel-add:hover { background: rgba(var(--glow), .35); }
+/* SIZE: a long button like ADD TO CART along the bottom of the box; it opens
+   a list of the sizes (with their prices) that rises up over the box */
+.lb-size { position: relative; margin-top: .85rem; }
+.lightbox .lb-panel button.lb-size-btn {
+  width: 100%; display: flex; align-items: center; gap: .75rem;
+  font-size: .74rem; letter-spacing: .18em; padding: .6rem .9rem;
+  border: 1px solid var(--menu-line); color: var(--text);
+}
+.lightbox .lb-panel button.lb-size-btn:hover { background: rgba(var(--glow), .35); }
+.lb-size-btn .lb-size-val { margin-left: auto; }
+.lb-size-btn svg { width: 15px; height: 15px; flex: none; transition: transform .3s ease; }
+.lb-size.open .lb-size-btn svg { transform: rotate(180deg); }
+.lb-size-list {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); z-index: 5;
+  background: var(--menu-bg); border: 1px solid var(--menu-line);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+  opacity: 0; transform: translateY(6px); pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease;
+}
+.lb-size.open .lb-size-list { opacity: 1; transform: none; pointer-events: auto; }
+.lightbox .lb-panel button.lb-size-opt {
+  width: 100%; display: flex; justify-content: space-between; align-items: center;
+  padding: .7rem .9rem; font-size: .74rem; letter-spacing: .16em; text-transform: uppercase;
+}
+.lightbox .lb-panel button.lb-size-opt + .lb-size-opt { border-top: 1px solid var(--menu-line); }
+.lightbox .lb-panel button.lb-size-opt:hover { background: rgba(var(--glow), .35); }
+.lightbox .lb-panel button.lb-size-opt[aria-selected="true"] { color: var(--text); font-weight: 500; }
 @media (max-width: 760px) {
   .lightbox.shop-mode .lb-stage { display: flex; }
   .lightbox.shop-mode .lb-figure { display: flex; }
