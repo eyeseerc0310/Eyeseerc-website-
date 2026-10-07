@@ -17,7 +17,10 @@
     // opening the site on the home page: play its entrance (not when coming
     // back to it from another page)
     document.documentElement.classList.add('home-intro');
-    setTimeout(function () { document.documentElement.classList.remove('home-intro'); }, 3200);{% endif %}
+    // (ended once everything has loaded and the last fade has had time to finish)
+    addEventListener('load', function () {
+      setTimeout(function () { document.documentElement.classList.remove('home-intro'); }, 1800);
+    });{% endif %}
   </script>
 </head>
 <body>

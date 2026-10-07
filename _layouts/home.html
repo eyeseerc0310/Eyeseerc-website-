@@ -15,10 +15,11 @@ layout: default
     {% endfor %}
     {% comment %} dark mode: a soft glow of the photo spills onto the page around it.
       images/me-glow.jpg is a small, already-blurred copy of the photo, so it
-      shows up soft straight away; it fades in once it has loaded. {% endcomment %}
+      shows up soft straight away. It only fades in once the photo itself is
+      showing (and after the opening fade), so it's never seen on its own. {% endcomment %}
     <img class="hero-glow" src="{{ '/images/me-glow.jpg' | relative_url }}" alt="" aria-hidden="true"
          onload="this.classList.add('loaded')" onerror="this.remove()">
-    <img class="hero-main" src="{{ me_photo | relative_url }}" alt="Portrait of {{ site.title }}"
+    <img class="hero-main" src="{{ me_photo | relative_url }}" alt="Portrait of {{ site.title }}" onload="this.parentNode.classList.add('ready')"
          onerror="this.onerror=null;this.src='{{ '/images/profile-placeholder.svg' | relative_url }}';">
   </div>
   <div class="hero-text">

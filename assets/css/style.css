@@ -328,7 +328,8 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   overflow: clip; /* keeps the dark-mode glow inside the page area */
 }
 .hero {
-  flex: 1;
+  flex: 1 0 auto; /* fills the space, never squashes below the bio */
+  overflow: clip; /* the dark-mode glow stays beside the photo, not under the strip */
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: stretch;
@@ -352,7 +353,7 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 .bio strong { font-weight: 500; }
 
 /* a long strip of small photos above the footer, gliding slowly right to
-   left and looping forever; both ends fade out. Hovering pauses it. */
+   left and looping forever; both ends fade out. */
 .strip { border-top: 1px solid var(--line); }
 .strip-window {
   overflow: hidden;
@@ -364,7 +365,6 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   display: flex; width: max-content;
   animation: strip-glide 110s linear infinite;
 }
-.strip:hover .strip-track { animation-play-state: paused; }
 @keyframes strip-glide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .strip-item { display: block; flex: none; margin-right: clamp(.75rem, 1.6vw, 1.4rem); transition: transform .35s ease; }
 .strip-item img {
@@ -387,7 +387,7 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   /* the glow picture is the photo with a soft border of black around it
      (already blurred), laid over the page so only its light shows */
   left: -25%; top: -25%; width: 150%; height: 150%;
-  object-fit: fill;
+  object-fit: cover; object-position: 49% 45%; /* cropped like the photo */
   mix-blend-mode: screen;
   opacity: 0; transition: opacity 1.4s ease;
   pointer-events: none;
@@ -395,14 +395,16 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 .strip { position: relative; z-index: 1; } /* the strip's photos sit above the glow */
 .hero-photo .hero-main { z-index: 1; }
 :root[data-theme="dark"] .hero-photo { background: transparent; }
-:root[data-theme="dark"] .hero-photo .hero-glow.loaded { opacity: .8; }
+:root[data-theme="dark"]:not(.home-intro) .hero-photo.ready .hero-glow.loaded { opacity: .8; }
 
 /* first visit to the home page: the photo fades in with a slight drift,
    then the mark, the bio and the photo strip follow one by one */
 @keyframes home-photo-in { from { opacity: 0; transform: scale(1.045); } to { opacity: 1; transform: none; } }
 @keyframes home-rise-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .home-intro .is-home .hero-photo { background: transparent; }
-.home-intro .is-home .hero-main { animation: home-photo-in 1.6s cubic-bezier(.2, .7, .2, 1) both; }
+/* (the photo's fade waits until the photo has actually downloaded) */
+.home-intro .is-home .hero-photo:not(.ready) .hero-main { opacity: 0; }
+.home-intro .is-home .hero-photo.ready .hero-main { animation: home-photo-in 1.6s cubic-bezier(.2, .7, .2, 1) both; }
 .home-intro .is-home .hero-mark { animation: home-rise-in .9s ease-out .45s both; }
 .home-intro .is-home .bio { animation: home-rise-in .9s ease-out .65s both; }
 .home-intro .is-home .strip { animation: home-rise-in .9s ease-out .9s both; }
