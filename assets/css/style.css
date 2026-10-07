@@ -348,6 +348,13 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 }
 /* the blue mark above the bio */
 .hero-mark { display: block; width: clamp(98px, 10.4vw, 150px); height: auto; margin: 0 auto 1.6rem; } /* centred over the text */
+/* it turns slowly like a spinning sign: each half turn goes from edge-on,
+   round to facing you, and on to edge-on again; at that moment (when it's
+   just a thin line) the next half turn starts, so it's never seen backwards */
+.hero-mark-wrap { perspective: 700px; }
+.hero-mark { animation: mark-spin 5s linear infinite; backface-visibility: hidden; }
+@keyframes mark-spin { from { transform: rotateY(-90deg); } to { transform: rotateY(90deg); } }
+@media (prefers-reduced-motion: reduce) { .hero-mark { animation: none; } }
 .bio { font-size: 1.05rem; }
 .bio p { margin: 0 0 1.1rem; }
 .bio strong { font-weight: 500; }
@@ -404,7 +411,7 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 /* (the photo's fade waits until the photo has actually downloaded) */
 .home-intro .is-home .hero-photo:not(.ready) .hero-main { opacity: 0; }
 .home-intro .is-home .hero-photo.ready .hero-main { animation: home-photo-in 1.6s cubic-bezier(.2, .7, .2, 1) both; }
-.home-intro .is-home .hero-mark { animation: home-rise-in .9s ease-out .45s both; }
+.home-intro .is-home .hero-mark-wrap { animation: home-rise-in .9s ease-out .45s both; }
 .home-intro .is-home .bio { animation: home-rise-in .9s ease-out .65s both; }
 .home-intro .is-home .strip { animation: home-rise-in .9s ease-out .9s both; }
 @media (prefers-reduced-motion: reduce) {
