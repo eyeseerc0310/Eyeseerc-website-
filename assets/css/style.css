@@ -907,8 +907,10 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 }
 .lb-panel-title { font-family: var(--display); font-size: 1rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text); }
 .lb-panel-desc { margin: .35rem 0 .9rem; font-size: .85rem; line-height: 1.55; }
+/* quantity | price | ADD TO CART: the button fills the rest of the row, so
+   its right edge always lines up with the SIZE button's under it */
 .lb-panel-row {
-  display: flex; align-items: center; justify-content: space-between; gap: .8rem;
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: center; gap: .8rem;
   padding-top: .75rem; border-top: 1px solid var(--menu-line);
 }
 .lightbox .lb-panel button {
@@ -921,8 +923,8 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 /* the price keeps the same width whatever the size, so nothing shifts */
 .lb-panel-price { font-size: .95rem; letter-spacing: .1em; color: var(--text); min-width: 4.2em; text-align: center; font-variant-numeric: tabular-nums; }
 .lightbox .lb-panel button.lb-panel-add {
-  white-space: nowrap; /* always on one line */
-  font-size: .74rem; letter-spacing: .16em; padding: .55rem .8rem;
+  width: 100%; white-space: nowrap; overflow: hidden; text-align: center; /* always one line, never past the edge */
+  font-size: .74rem; letter-spacing: .14em; padding: .55rem .4rem .55rem .54rem;
   border: 1px solid var(--menu-line); color: var(--text);
 }
 .lightbox .lb-panel button.lb-panel-add:hover { background: rgba(var(--glow), .35); }
@@ -962,7 +964,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   .lb-panel-row { gap: .45rem; }
   .lb-qty { gap: .45rem; }
   .lb-panel-price { min-width: 3.4em; letter-spacing: .06em; }
-  .lightbox .lb-panel button.lb-panel-add { padding: .5rem .55rem; font-size: .66rem; letter-spacing: .1em; }
+  .lightbox .lb-panel button.lb-panel-add { padding: .5rem .3rem .5rem .4rem; font-size: .66rem; letter-spacing: .1em; }
 }
 
 /* the photo sits in front of the details box when they meet */
