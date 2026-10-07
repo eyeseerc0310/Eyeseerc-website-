@@ -1755,8 +1755,8 @@
   var root = null, slides = [], dots = [], title = null, cur = 0, timer = 0, busy = false;
 
   function load(s) {
-    var im = s.querySelector('img');
-    if (!im.getAttribute('src') && im.dataset.src) im.src = im.dataset.src;
+    var both = s.querySelectorAll('img'), im = s.querySelector('.show-photo');
+    Array.prototype.forEach.call(both, function (el) { if (!el.getAttribute('src') && el.dataset.src) el.src = el.dataset.src; });
     if (!im.decode) return Promise.resolve();
     return Promise.race([im.decode().catch(function () {}), new Promise(function (r) { setTimeout(r, 5000); })]);
   }
@@ -1830,7 +1830,7 @@
     // (the first photo's drift starts once the logo screen has gone)
     function start() {
       if (!document.contains(root)) return;
-      slides[0].querySelector('img').style.transform = '';
+      Array.prototype.forEach.call(slides[0].querySelectorAll('img'), function (im) { im.style.transform = ''; });
       schedule();
     }
     if (document.documentElement.classList.contains('splash')) {

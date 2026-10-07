@@ -22,7 +22,10 @@ slides:
   <div class="show-slides">
     {% for s in page.slides %}
     <figure class="show-slide{% if forloop.first %} on{% endif %}" data-title="{{ s.title | escape }}" data-link="{{ s.link | relative_url }}">
-      <img {% if forloop.first %}src{% else %}data-src{% endif %}="{{ s.image | relative_url }}" alt="{{ s.title | escape }}" draggable="false"{% if forloop.first or s.pos %} style="{% if forloop.first %}transform: scale(1.07);{% endif %}{% if s.pos %} object-position: {{ s.pos }}{% endif %}"{% endif %}>
+      {% capture img_attrs %}{% if forloop.first %}src{% else %}data-src{% endif %}="{{ s.image | relative_url }}" draggable="false"{% if forloop.first or s.pos %} style="{% if forloop.first %}transform: scale(1.07);{% endif %}{% if s.pos %} object-position: {{ s.pos }}{% endif %}"{% endif %}{% endcapture %}
+      {% comment %} behind the header (iPad and desktop): the same photo, magnified a little {% endcomment %}
+      <div class="show-band" aria-hidden="true"><img {{ img_attrs }} alt=""></div>
+      <img class="show-photo" {{ img_attrs }} alt="{{ s.title | escape }}">
     </figure>
     {% endfor %}
   </div>
