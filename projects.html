@@ -8,6 +8,7 @@ description: "Projects by {{ site.title }}"
 <h1 class="page-title">PROJECTS</h1>
 <div class="gallery-filter" role="group" aria-label="Show">
   <button type="button" data-filter="digital" aria-pressed="true">DIGITAL</button>
-  <button type="button" data-filter="physical" aria-pressed="false">PHYSICAL</button>
+  {% comment %} data-soon: not open yet; clicking it just gives the line a shake {% endcomment %}
+  <button type="button" data-filter="physical" aria-pressed="false" data-soon aria-disabled="true">PHYSICAL<span class="soon-note">COMING SOON</span></button>
 </div>
 {% include gallery.html folder="projects" style="grid" shape="natural" show_kind="digital" digital_caption="???" %}
