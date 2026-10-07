@@ -8,10 +8,12 @@ After any change, the site updates itself in about 1–2 minutes.
 
 ---
 
-## ✏️ Edit your info (Home page)
+## ✏️ Edit your info (About page)
 
-1. Open **`index.md`** → click the ✏️ pencil icon.
+1. Open **`about.md`** → click the ✏️ pencil icon.
 2. Replace the sample text with your own words. Click **Commit changes**.
+
+The photos on the home page (and their order) are listed at the top of **`index.html`**.
 
 Your name, tagline, email and Instagram are in **`_config.yml`** (same steps).
 
