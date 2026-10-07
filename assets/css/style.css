@@ -398,6 +398,9 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 :root[data-theme="dark"] .hero-photo { background: transparent; }
 :root[data-theme="dark"]:not(.home-intro) .hero-photo.ready::after { opacity: 1; }
 .strip { position: relative; z-index: 1; } /* the strip's photos sit above the glow */
+/* the moving photos can't be selected (or dragged) by quick clicks */
+.strip { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.strip img { -webkit-user-drag: none; }
 
 /* first visit to the home page: the photo fades in with a slight drift,
    then the bio and the photo strip follow one by one */
