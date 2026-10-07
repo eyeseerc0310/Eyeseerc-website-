@@ -598,6 +598,8 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
 }
 .lightbox.open button:hover { opacity: 1; }
 .lightbox .lb-close { position: absolute; z-index: 1; top: .5rem; right: 1rem; }
+/* phones and iPads: no X (tapping around the photo closes it) */
+.touch .lightbox .lb-close { display: none; }
 .lightbox .lb-prev, .lightbox .lb-next { flex: none; width: 3.5rem; position: relative; z-index: 1; }
 /* phones: the photo uses (almost) the full width, and the arrows move down
    to sit either side of the photo's name underneath it */

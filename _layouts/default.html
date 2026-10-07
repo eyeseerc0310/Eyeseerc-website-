@@ -16,7 +16,9 @@
     // (the site opens in dark mode unless this visitor has switched to light)
     var savedTheme = null;
     try { savedTheme = localStorage.getItem('theme-choice'); } catch (e) {}
-    if (savedTheme !== 'light') document.documentElement.setAttribute('data-theme', 'dark');{% if page.layout == "home" %}
+    if (savedTheme !== 'light') document.documentElement.setAttribute('data-theme', 'dark');
+    // phones and iPads (touch screens): no close X in the photo viewer
+    if (navigator.maxTouchPoints > 0) document.documentElement.classList.add('touch');{% if page.layout == "home" %}
     // opening the site on the home page: play its entrance (not when coming
     // back to it from another page)
     document.documentElement.classList.add('home-intro');
