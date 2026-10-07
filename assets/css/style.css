@@ -597,7 +597,9 @@ html.theme-fading body *, html.theme-fading body *::before, html.theme-fading bo
   font-size: 2.5rem; line-height: 1; cursor: pointer; padding: 1rem;
 }
 .lightbox.open button:hover { opacity: 1; }
-.lightbox .lb-close { position: absolute; z-index: 1; top: .5rem; right: 1rem; }
+/* the X sits up in the top right corner, clear of the photo (and of a
+   phone's notch / status bar) */
+.lightbox .lb-close { position: absolute; z-index: 3; top: calc(env(safe-area-inset-top, 0px) + .05rem); right: calc(env(safe-area-inset-right, 0px) + .3rem); }
 .lightbox .lb-prev, .lightbox .lb-next { flex: none; width: 3.5rem; position: relative; z-index: 1; }
 /* phones: the photo uses (almost) the full width, and the arrows move down
    to sit either side of the photo's name underneath it */
