@@ -715,9 +715,14 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .footer-mark-wrap { display: inline-block; vertical-align: middle; margin-left: .55em; perspective: 300px; }
 .footer-mark { display: block; height: 1.45em; width: auto; animation: mark-spin 5s linear infinite; backface-visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .footer-mark { animation: none; } }
-.footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: .5rem; }
-.footer-links a { text-decoration: none; }
-.footer-links a:hover { color: var(--text); }
+.footer-links { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+/* ABOUT: small, widely spaced capitals above the icons */
+.footer-links a {
+  text-decoration: none; color: var(--text); opacity: .8;
+  font-size: .72rem; letter-spacing: .38em; margin-right: -.38em; /* (centred despite the spacing after the last letter) */
+  transition: opacity .2s ease;
+}
+.footer-links a:hover, .footer-links a:focus-visible, .footer-links a.active { opacity: 1; }
 /* Instagram / YouTube buttons */
 .social { display: flex; justify-content: center; gap: 1.1rem; margin-bottom: .9rem; }
 .social-btn { color: var(--text); opacity: .8; display: inline-flex; transition: opacity .2s ease, transform .2s ease; }
@@ -1011,20 +1016,14 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 /* in a shop item, the photo can be tapped to bring it back up big */
 .lightbox.shop-mode .lb-figure img { cursor: zoom-in; }
 
-/* ---------- Home 2 (preview): one photo fills the whole screen ---------- */
-/* The photos sit behind everything; the header floats over them with a soft
-   dark shade at the top so it stays readable, and there's no footer. */
-.site-main.full-show { flex: 1 0 auto; max-width: none; width: 100%; padding: 0; margin: 0; }
-body:has(.show) { overflow: hidden; }
-body:has(.show) .site-footer { display: none; }
-body:has(.show) .site-header { border-bottom-color: transparent; }
-body:has(.show) .site-header::before {
-  background: linear-gradient(to bottom, rgba(0, 0, 0, .5), rgba(0, 0, 0, 0));
-  -webkit-backdrop-filter: none; backdrop-filter: none;
-}
-body:has(.show) .site-header > :not(.site-nav) { color: #f4f3f0; }
-.show { position: fixed; inset: 0; z-index: 0; background: #0b0b0b; color: #f4f3f0; overflow: hidden; }
-.show-slides { position: absolute; inset: 0; touch-action: none; -webkit-user-select: none; user-select: none; }
+/* ---------- Home: one photo fills the whole screen ---------- */
+/* The photos fill the screen, running up behind the header (a see-through
+   version of the usual bar, light or dark with the theme); scrolling down
+   brings up the footer. --hdr is the header's height, measured by site.js. */
+.site-main.full-show { flex: 1 0 auto; max-width: none; width: 100%; padding: 0; margin: calc(-1 * var(--hdr, 0px)) 0 0; }
+body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 55%, transparent); }
+.show { position: relative; height: 100vh; height: 100svh; background: #0b0b0b; color: #f4f3f0; overflow: hidden; }
+.show-slides { position: absolute; inset: 0; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
 .show-slide { position: absolute; inset: 0; margin: 0; opacity: 0; z-index: 0; }
 /* the new photo fades in over the old one (slow-fast-slow), so the screen never dips to black */
 .show-slide.on { opacity: 1; z-index: 2; transition: opacity 1.6s cubic-bezier(.45, 0, .55, 1); }
@@ -1033,9 +1032,16 @@ body:has(.show) .site-header > :not(.site-nav) { color: #f4f3f0; }
   width: 100%; height: 100%; max-width: none; object-fit: cover;
   transform: scale(1.07); -webkit-user-drag: none;
 }
-/* each photo drifts very slowly closer while it's showing */
-.show-slide.on img { transform: scale(1); transition: transform 9s cubic-bezier(.3, 0, .4, 1); }
-@media (prefers-reduced-motion: reduce) { .show-slide img, .show-slide.on img { transform: none; transition: none; } }
+/* each photo drifts very slowly closer while it's showing, and keeps on
+   drifting while the next one fades in over it */
+.show-slide.on img, .show-slide.was img { transform: scale(1); transition: transform 9s cubic-bezier(.3, 0, .4, 1); }
+@media (prefers-reduced-motion: reduce) { .show-slide img, .show-slide.on img, .show-slide.was img { transform: none; transition: none; } }
+/* opening the site here: after the logo, the first photo fades up from
+   black and the title and lines rise in */
+.home-intro .full-show .show-slides { animation: show-in 1.8s cubic-bezier(.45, 0, .55, 1) both; }
+.home-intro .full-show .show-bar { animation: home-rise-in .9s ease-out .9s both; }
+.splash .full-show *, .splash .full-show *::before, .splash .full-show *::after { animation-play-state: paused !important; }
+@keyframes show-in { from { opacity: 0; } }
 
 .show-prev, .show-next {
   position: absolute; top: 50%; z-index: 3; margin-top: -2rem;

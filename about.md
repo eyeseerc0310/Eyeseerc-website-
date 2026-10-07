@@ -1,6 +1,7 @@
 ---
 layout: home
-title: Home
+title: ABOUT
+permalink: /about/
 ---
 
 <!--

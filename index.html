@@ -1,7 +1,7 @@
 ---
 layout: default
-title: "HOME 2"
-permalink: /home-2/
+title: Home
+permalink: /
 full_show: true
 description: "Photography by {{ site.title }}"
 # The photos shown full screen, in order. "link" is where the title at the
@@ -17,12 +17,12 @@ slides:
   - { image: /photos/photography/color/10-motion-blur.jpg, title: "Motion blur", link: "/photography/?open=10-motion-blur.jpg" }
   - { image: /photos/photography/color/04-hands.jpg, title: "Hands", link: "/photography/?open=04-hands.jpg" }
 ---
-{% comment %} Preview of a new home page: one photo fills the whole screen and slowly crossfades to the next. {% endcomment %}
+{% comment %} The home page: one photo fills the whole screen and slowly crossfades to the next. {% endcomment %}
 <section class="show" aria-label="Photography" aria-roledescription="slideshow">
   <div class="show-slides">
     {% for s in page.slides %}
     <figure class="show-slide{% if forloop.first %} on{% endif %}" data-title="{{ s.title | escape }}" data-link="{{ s.link | relative_url }}">
-      <img {% if forloop.first %}src{% else %}data-src{% endif %}="{{ s.image | relative_url }}" alt="{{ s.title | escape }}" draggable="false"{% if s.pos %} style="object-position: {{ s.pos }}"{% endif %}>
+      <img {% if forloop.first %}src{% else %}data-src{% endif %}="{{ s.image | relative_url }}" alt="{{ s.title | escape }}" draggable="false"{% if forloop.first or s.pos %} style="{% if forloop.first %}transform: scale(1.07);{% endif %}{% if s.pos %} object-position: {{ s.pos }}{% endif %}"{% endif %}>
     </figure>
     {% endfor %}
   </div>

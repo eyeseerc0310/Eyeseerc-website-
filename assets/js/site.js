@@ -1748,7 +1748,7 @@
   setTimeout(finish, 2500);
 })();
 
-// Home 2 (preview): full-screen photos that crossfade on their own every few
+// Home: full-screen photos that crossfade on their own every few
 // seconds. Swipe, the arrows, the arrow keys or the lines at the bottom move it by hand.
 (function () {
   var TIME = 6000, FADE = 1600;
@@ -1780,11 +1780,11 @@
     load(next).then(function () {
       if (!document.contains(root)) return;
       slides.forEach(function (s) { if (s !== next && s !== prev) s.classList.remove('was'); });
-      // the old photo stays exactly as it is (mid-drift) under the new one
-      var pim = prev.querySelector('img');
-      pim.style.transition = 'none'; pim.style.transform = getComputedStyle(pim).transform;
-      prev.classList.remove('on'); prev.classList.add('was');
-      next.classList.remove('was'); next.querySelector('img').style.cssText = ''; void next.offsetWidth;
+      // the old photo carries on drifting under the new one as it fades in
+      // (it isn't stopped and re-measured: Safari reported its end size,
+      // so it jumped smaller just as the change began)
+      prev.classList.add('was'); prev.classList.remove('on');
+      next.classList.remove('was'); void next.offsetWidth;
       next.classList.add('on');
       cur = n;
       title.classList.add('out');
@@ -1792,7 +1792,7 @@
         title.textContent = next.dataset.title; title.href = next.dataset.link;
         title.classList.remove('out');
       }, 450);
-      setTimeout(function () { if (!prev.classList.contains('on')) { prev.classList.remove('was'); pim.style.cssText = ''; } }, FADE + 50);
+      setTimeout(function () { if (!prev.classList.contains('on')) prev.classList.remove('was'); }, FADE + 50);
       setTimeout(function () { busy = false; }, 500);
       schedule();
       load(slides[(n + 1) % slides.length]); // get the one after ready too
@@ -1822,8 +1822,24 @@
     area.addEventListener('touchend', end);
     area.addEventListener('touchcancel', end);
     load(slides[1]);
-    schedule();
+    // (the first photo's drift starts once the logo screen has gone)
+    function start() {
+      if (!document.contains(root)) return;
+      slides[0].querySelector('img').style.transform = '';
+      schedule();
+    }
+    if (document.documentElement.classList.contains('splash')) {
+      root.classList.add('paused');
+      document.addEventListener('splashdone', start, { once: true });
+    } else start();
   }
+  // the photos run up behind the see-through header: the page is pulled up by its height
+  var header = document.querySelector('.site-header');
+  function measure() { if (header) document.documentElement.style.setProperty('--hdr', header.getBoundingClientRect().height + 'px'); }
+  measure();
+  window.addEventListener('resize', measure);
+  window.addEventListener('load', measure);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
   document.addEventListener('keydown', function (e) {
     if (!root || !document.contains(root) || e.metaKey || e.ctrlKey || e.altKey) return;
     if (document.querySelector('.lightbox.open, .cart-drawer.open, .site-nav.open')) return;
