@@ -852,7 +852,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .lb-panel-title { font-family: var(--display); font-size: 1rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text); }
 .lb-panel-desc { margin: .35rem 0 .9rem; font-size: .85rem; line-height: 1.55; }
 .lb-panel-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  display: flex; align-items: center; justify-content: space-between; gap: .8rem;
   padding-top: .75rem; border-top: 1px solid var(--menu-line);
 }
 .lightbox .lb-panel button {
@@ -862,9 +862,11 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .lb-qty { display: flex; align-items: center; gap: .7rem; font-size: .95rem; }
 .lightbox .lb-qty button { font-size: 1.15rem; padding: .1rem .2rem; }
 .lb-qty span { min-width: 1.3em; text-align: center; color: var(--text); }
-.lb-panel-price { font-size: .95rem; letter-spacing: .1em; color: var(--text); }
+/* the price keeps the same width whatever the size, so nothing shifts */
+.lb-panel-price { font-size: .95rem; letter-spacing: .1em; color: var(--text); min-width: 4.2em; text-align: center; font-variant-numeric: tabular-nums; }
 .lightbox .lb-panel button.lb-panel-add {
-  font-size: .74rem; letter-spacing: .18em; padding: .55rem .9rem;
+  white-space: nowrap; /* always on one line */
+  font-size: .74rem; letter-spacing: .16em; padding: .55rem .8rem;
   border: 1px solid var(--menu-line); color: var(--text);
 }
 .lightbox .lb-panel button.lb-panel-add:hover { background: rgba(var(--glow), .35); }
@@ -901,8 +903,10 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   .lightbox.shop-mode .lb-figure { display: flex; }
   .lightbox.shop-mode .lb-figure img { grid-column: auto; max-width: calc(100vw - 1.5rem); max-height: calc(100svh - 18.5rem); }
   .lightbox.shop-mode .lb-panel { margin-top: 1.5rem; min-width: 0; padding: .95rem 1rem .9rem; }
-  .lb-panel-row { gap: .6rem; }
-  .lightbox .lb-panel button.lb-panel-add { padding: .5rem .65rem; font-size: .68rem; letter-spacing: .14em; }
+  .lb-panel-row { gap: .45rem; }
+  .lb-qty { gap: .45rem; }
+  .lb-panel-price { min-width: 3.4em; letter-spacing: .06em; }
+  .lightbox .lb-panel button.lb-panel-add { padding: .5rem .55rem; font-size: .66rem; letter-spacing: .1em; }
 }
 
 /* the photo sits in front of the details box when they meet */
