@@ -1,0 +1,38 @@
+---
+layout: default
+title: "HOME 2"
+permalink: /home-2/
+full_show: true
+description: "Photography by {{ site.title }}"
+# The photos shown full screen, in order. "link" is where the title at the
+# bottom goes; "pos" (optional) picks which part of the photo stays in view
+# when the screen is a different shape from the photo (e.g. "30% 50%").
+slides:
+  - { image: /photos/photography/color/01-forest.jpg, title: "Forest", link: "/photography/?open=01-forest.jpg" }
+  - { image: /photos/photography/black-and-white/01-cadets.jpg, title: "Cadets", link: "/photography/?open=01-cadets.jpg#bw" }
+  - { image: /photos/photography/color/09-umbrella-crowd.jpg, title: "Umbrella crowd", link: "/photography/?open=09-umbrella-crowd.jpg" }
+  - { image: /photos/photography/black-and-white/02-barn.jpg, title: "Barn", link: "/photography/?open=02-barn.jpg#bw" }
+  - { image: /photos/photography/color/05-dragon.jpg, title: "Dragon", link: "/photography/?open=05-dragon.jpg" }
+  - { image: /photos/photography/black-and-white/05-salmon.jpg, title: "Salmon", link: "/photography/?open=05-salmon.jpg#bw" }
+  - { image: /photos/photography/color/10-motion-blur.jpg, title: "Motion blur", link: "/photography/?open=10-motion-blur.jpg" }
+  - { image: /photos/photography/color/04-hands.jpg, title: "Hands", link: "/photography/?open=04-hands.jpg" }
+---
+{% comment %} Preview of a new home page: one photo fills the whole screen and slowly crossfades to the next. {% endcomment %}
+<section class="show" aria-label="Photography" aria-roledescription="slideshow">
+  <div class="show-slides">
+    {% for s in page.slides %}
+    <figure class="show-slide{% if forloop.first %} on{% endif %}" data-title="{{ s.title | escape }}" data-link="{{ s.link | relative_url }}">
+      <img {% if forloop.first %}src{% else %}data-src{% endif %}="{{ s.image | relative_url }}" alt="{{ s.title | escape }}" draggable="false"{% if s.pos %} style="object-position: {{ s.pos }}"{% endif %}>
+    </figure>
+    {% endfor %}
+  </div>
+  <button class="show-prev" type="button" aria-label="Previous photo"><svg viewBox="0 0 24 48" aria-hidden="true"><path d="M18 4 6 24l12 20"/></svg></button>
+  <button class="show-next" type="button" aria-label="Next photo"><svg viewBox="0 0 24 48" aria-hidden="true"><path d="M6 4l12 20L6 44"/></svg></button>
+  <div class="show-bar">
+    {% assign first = page.slides | first %}
+    <a class="show-title" href="{{ first.link | relative_url }}">{{ first.title }}</a>
+    <div class="show-dots">
+      {% for s in page.slides %}<button class="show-dot{% if forloop.first %} now{% endif %}" type="button" aria-label="Photo {{ forloop.index }}"><i></i></button>{% endfor %}
+    </div>
+  </div>
+</section>

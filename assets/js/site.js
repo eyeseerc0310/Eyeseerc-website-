@@ -1747,3 +1747,93 @@
   if (document.readyState === 'complete') finish(); else window.addEventListener('load', finish);
   setTimeout(finish, 2500);
 })();
+
+// Home 2 (preview): full-screen photos that crossfade on their own every few
+// seconds. Swipe, the arrows, the arrow keys or the lines at the bottom move it by hand.
+(function () {
+  var TIME = 6000, FADE = 1600;
+  var root = null, slides = [], dots = [], title = null, cur = 0, timer = 0, busy = false;
+
+  function load(s) {
+    var im = s.querySelector('img');
+    if (!im.getAttribute('src') && im.dataset.src) im.src = im.dataset.src;
+    if (!im.decode) return Promise.resolve();
+    return Promise.race([im.decode().catch(function () {}), new Promise(function (r) { setTimeout(r, 5000); })]);
+  }
+  function restartDot() {
+    dots.forEach(function (d, i) { d.classList.toggle('done', i < cur); d.classList.remove('now'); });
+    void root.offsetWidth; // so the fill starts again from empty
+    dots[cur].classList.add('now');
+  }
+  function schedule() {
+    clearTimeout(timer);
+    root.classList.remove('paused');
+    restartDot();
+    timer = setTimeout(function () { go(cur + 1); }, TIME);
+  }
+  function go(n) {
+    if (!root || !document.contains(root)) { stop(); return; }
+    n = (n + slides.length) % slides.length;
+    if (n === cur || busy) return;
+    busy = true; clearTimeout(timer);
+    var next = slides[n], prev = slides[cur];
+    load(next).then(function () {
+      if (!document.contains(root)) return;
+      slides.forEach(function (s) { if (s !== next && s !== prev) s.classList.remove('was'); });
+      // the old photo stays exactly as it is (mid-drift) under the new one
+      var pim = prev.querySelector('img');
+      pim.style.transition = 'none'; pim.style.transform = getComputedStyle(pim).transform;
+      prev.classList.remove('on'); prev.classList.add('was');
+      next.classList.remove('was'); next.querySelector('img').style.cssText = ''; void next.offsetWidth;
+      next.classList.add('on');
+      cur = n;
+      title.classList.add('out');
+      setTimeout(function () {
+        title.textContent = next.dataset.title; title.href = next.dataset.link;
+        title.classList.remove('out');
+      }, 450);
+      setTimeout(function () { if (!prev.classList.contains('on')) { prev.classList.remove('was'); pim.style.cssText = ''; } }, FADE + 50);
+      setTimeout(function () { busy = false; }, 500);
+      schedule();
+      load(slides[(n + 1) % slides.length]); // get the one after ready too
+    });
+  }
+  function stop() { clearTimeout(timer); root = null; }
+
+  function setup() {
+    var el = document.querySelector('main:not([aria-hidden]) .show');
+    if (!el || el === root) return;
+    root = el; cur = 0; busy = false;
+    root.style.setProperty('--show-time', TIME + 'ms');
+    slides = Array.prototype.slice.call(root.querySelectorAll('.show-slide'));
+    dots = Array.prototype.slice.call(root.querySelectorAll('.show-dot'));
+    title = root.querySelector('.show-title');
+    root.querySelector('.show-prev').addEventListener('click', function () { go(cur - 1); });
+    root.querySelector('.show-next').addEventListener('click', function () { go(cur + 1); });
+    dots.forEach(function (d, i) { d.addEventListener('click', function () { go(i); }); });
+    var x0 = null, y0 = 0;
+    var area = root.querySelector('.show-slides');
+    area.addEventListener('touchstart', function (e) { if (e.touches.length === 1) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } else x0 = null; }, { passive: true });
+    function end(e) {
+      if (x0 === null) return;
+      var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go(cur + (dx < 0 ? 1 : -1));
+    }
+    area.addEventListener('touchend', end);
+    area.addEventListener('touchcancel', end);
+    load(slides[1]);
+    schedule();
+  }
+  document.addEventListener('keydown', function (e) {
+    if (!root || !document.contains(root) || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (document.querySelector('.lightbox.open, .cart-drawer.open, .site-nav.open')) return;
+    if (e.key === 'ArrowRight') go(cur + 1); else if (e.key === 'ArrowLeft') go(cur - 1);
+  });
+  // a hidden tab doesn't run the clock down
+  document.addEventListener('visibilitychange', function () {
+    if (!root || !document.contains(root)) return;
+    if (document.hidden) { clearTimeout(timer); root.classList.add('paused'); } else schedule();
+  });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+  document.addEventListener('pageswap:done', setup);
+})();
