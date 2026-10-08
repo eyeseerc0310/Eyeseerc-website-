@@ -688,8 +688,10 @@ html.theme-fading body *:not(.show *), html.theme-fading body *:not(.show *)::be
 .shop-landscape { width: 100%; aspect-ratio: 3 / 2; }
 .shop-portrait { width: 66.667%; aspect-ratio: 2 / 3; }
 .shop-square { width: 100%; aspect-ratio: 1; }
-.shop-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease, opacity .3s; }
-a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
+.shop-photo img { width: 100%; height: 100%; object-fit: cover; }
+/* hovering a print: the whole print (edges and shadow too) grows a little */
+a.shop-photo[href] { position: relative; transition: transform .5s cubic-bezier(.45, 0, .55, 1); }
+a.shop-photo[href]:hover { transform: scale(1.04); z-index: 1; }
 .shop-price {
   margin-top: .9rem;
   text-align: center;
