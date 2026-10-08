@@ -36,6 +36,16 @@ print_sizes:
   - size: "20 × 30"
     price: 160
 
+# Paper choices for prints (the PAPER drop-down in the details box, under
+# SIZE). The price is added to the print's; the first one is the default.
+print_papers:
+  - name: "Matte"
+    price: 0
+  - name: "Lustre"
+    price: 0
+  - name: "Fine art"
+    price: 20
+
 # Your Shopify store's address, e.g. "eyeseerc.myshopify.com". When this is
 # set (and each shop item has a shopify_variant number in _data/shop.yml) the
 # cart's CHECK OUT button sends buyers to Shopify's checkout. Until then the

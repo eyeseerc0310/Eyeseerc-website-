@@ -37,6 +37,7 @@ tight_top: true
     {% comment %} prints come in the sizes set in _config.yml (print_sizes) {% endcomment %}
     {% assign sized = false %}
     {% if kind == "prints" and site.print_sizes and site.print_sizes.size > 0 %}{% assign sized = true %}{% assign first_size = site.print_sizes | first %}{% endif %}
+    {% assign first_paper = site.print_papers | first %}
     {% assign soft = site.data.blur[item.image] %}
     {% assign item_desc = item.description | default: "Placeholder description. Size, paper and edition details for this piece will go here." %}
     <figure class="shop-item{% if kind != "prints" %} is-filtered-out{% endif %}" data-kind="{{ kind }}">
@@ -61,7 +62,7 @@ tight_top: true
       {% unless item.sold_out %}{% if sized %}
       {% comment %} from the page: the smallest size (other sizes are picked in the details box) {% endcomment %}
       <button type="button" class="add-to-cart"
-        data-id="{{ item_id }}-{{ first_size.size | slugify }}" data-title="{{ item.title | escape }} — {{ first_size.size }} in" data-price="{{ first_size.price }}"
+        data-id="{{ item_id }}-{{ first_size.size | slugify }}{% if first_paper %}-{{ first_paper.name | slugify }}{% endif %}" data-title="{{ item.title | escape }} — {{ first_size.size }} in{% if first_paper %}, {{ first_paper.name | downcase }} paper{% endif %}" data-price="{{ first_size.price | plus: first_paper.price }}"
         data-image="{{ item.image | relative_url }}" data-variant="{{ item.shopify_variant }}">ADD TO CART</button>
       {% elsif item.price %}
       <button type="button" class="add-to-cart"

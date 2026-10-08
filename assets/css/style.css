@@ -870,7 +870,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 .lightbox.shop-mode .lb-stage { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .lightbox.shop-mode .lb-figure { display: flex; flex-direction: column; align-items: center; }
 .lightbox.shop-mode .lb-figure img {
-  max-width: calc(100vw - 3rem); max-height: calc(100vh - 18rem); max-height: calc(100svh - 18rem);
+  max-width: calc(100vw - 3rem); max-height: calc(100vh - 21rem); max-height: calc(100svh - 21rem);
 }
 /* the item's other photos, stacked behind the main one (placed by the script) */
 .lb-deck { position: absolute; z-index: 2; left: 0; top: 0; opacity: 0; pointer-events: none; } /* above the (hidden) main photo */
@@ -936,6 +936,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 /* SIZE: a long button like ADD TO CART along the bottom of the box; it opens
    a list of the sizes (with their prices) that rises up over the box */
 .lb-size { position: relative; margin-top: .85rem; }
+.lb-size + .lb-size { margin-top: .55rem; } /* PAPER, just under SIZE */
 .lightbox .lb-panel button.lb-size-btn {
   width: 100%; display: flex; align-items: center; gap: .75rem;
   font-size: .74rem; letter-spacing: .18em; padding: .6rem .9rem;
@@ -964,7 +965,7 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
 @media (max-width: 760px) {
   .lightbox.shop-mode .lb-stage { display: flex; }
   .lightbox.shop-mode .lb-figure { display: flex; }
-  .lightbox.shop-mode .lb-figure img { grid-column: auto; max-width: calc(100vw - 1.5rem); max-height: calc(100svh - 18.5rem); }
+  .lightbox.shop-mode .lb-figure img { grid-column: auto; max-width: calc(100vw - 1.5rem); max-height: calc(100svh - 21.5rem); }
   .lightbox.shop-mode .lb-panel { margin-top: 1.5rem; min-width: 0; padding: .95rem 1rem .9rem; }
   .lb-panel-row { gap: .45rem; }
   .lb-qty { gap: .45rem; }
