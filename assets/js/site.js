@@ -1947,7 +1947,26 @@
     var colorIn = root.querySelector('.paint-current input'), colorDot = root.querySelector('.paint-current span');
     var sizeIn = root.querySelector('.paint-size'), alphaIn = root.querySelector('.paint-alpha');
     var solidBtn = root.querySelector('.paint-solid');
-    var st = { tool: 'brush', color: colorIn.value, size: +sizeIn.value, alpha: +alphaIn.value / 100, solid: false };
+    var st = { tool: 'brush', brush: 'round', color: colorIn.value, size: +sizeIn.value, alpha: +alphaIn.value / 100, solid: false };
+
+    // BRUSHES: clicking the brush tool opens a list of brushes beside it
+    var BRUSHES = [['round', 'Round'], ['marker', 'Marker'], ['pencil', 'Pencil'], ['spray', 'Spray'], ['calligraphy', 'Calligraphy'], ['highlighter', 'Highlighter']];
+    var bmenu = document.createElement('div');
+    bmenu.className = 'paint-brushes'; bmenu.setAttribute('role', 'menu'); bmenu.hidden = true;
+    bmenu.innerHTML = BRUSHES.map(function (b) {
+      return '<button type="button" role="menuitemradio" data-brush="' + b[0] + '"><i class="pb-' + b[0] + '"></i><span>' + b[1].toUpperCase() + '</span></button>';
+    }).join('');
+    root.querySelector('.paint-left').appendChild(bmenu);
+    var brushBtn = root.querySelector('[data-tool="brush"]');
+    function brushMenu(open) {
+      bmenu.hidden = !open;
+      brushBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        bmenu.style.top = brushBtn.offsetTop + 'px';
+        Array.prototype.forEach.call(bmenu.children, function (b) { b.setAttribute('aria-checked', b.dataset.brush === st.brush ? 'true' : 'false'); });
+      }
+    }
+    document.addEventListener('pointerdown', function (e) { if (!bmenu.hidden && !bmenu.contains(e.target) && !brushBtn.contains(e.target)) brushMenu(false); }, true);
     var W = 0, H = 0, R = 1, undo = [], redo = [], LIMIT = 12;
 
     // the swatches
@@ -2000,10 +2019,46 @@
     var down = null, pts = [];
     function pos(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
     function strokeStyle(c) { c.lineCap = 'round'; c.lineJoin = 'round'; c.lineWidth = st.size; c.strokeStyle = st.tool === 'eraser' ? '#fff' : st.color; c.fillStyle = c.strokeStyle; }
+    function kind() { return st.tool === 'eraser' ? 'round' : st.brush; }
+    // a grainy fill in the current colour, for the pencil
+    function grain() {
+      var g = document.createElement('canvas'); g.width = g.height = 48;
+      var gx = g.getContext('2d'), c = parseInt(st.color.slice(1), 16), im = gx.createImageData(48, 48);
+      for (var i = 0; i < im.data.length; i += 4) {
+        im.data[i] = c >> 16 & 255; im.data[i + 1] = c >> 8 & 255; im.data[i + 2] = c & 255;
+        im.data[i + 3] = Math.random() < 0.72 ? 120 + Math.random() * 135 : 0;
+      }
+      gx.putImageData(im, 0, 0);
+      return octx.createPattern(g, 'repeat');
+    }
+    function brushStyle(c) {
+      strokeStyle(c);
+      var k = kind();
+      if (k === 'marker') { c.lineCap = 'square'; c.lineJoin = 'miter'; }
+      else if (k === 'highlighter') { c.lineCap = 'butt'; c.lineWidth = Math.max(10, st.size * 2.2); }
+      else if (k === 'pencil') { c.lineWidth = Math.max(1, st.size * 0.4); c.strokeStyle = c.fillStyle = grain(); }
+    }
+    // spray: a scatter of fine dots round the point; calligraphy: an angled flat nib
+    function spray(p) {
+      var r = Math.max(5, st.size * 1.6), n = Math.round(r * 0.9);
+      octx.fillStyle = st.color;
+      for (var i = 0; i < n; i++) {
+        var a = Math.random() * Math.PI * 2, d = r * Math.sqrt(Math.random());
+        octx.fillRect(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, 1.2, 1.2);
+      }
+    }
+    function nib(a, b) {
+      var w = Math.max(1.5, st.size / 2), vx = w * Math.SQRT1_2, vy = -w * Math.SQRT1_2;
+      octx.fillStyle = st.color; octx.beginPath();
+      octx.moveTo(a.x - vx, a.y - vy); octx.lineTo(a.x + vx, a.y + vy); octx.lineTo(b.x + vx, b.y + vy); octx.lineTo(b.x - vx, b.y - vy);
+      octx.closePath(); octx.fill();
+    }
+    function incremental() { var k = kind(); return k === 'spray' || k === 'calligraphy'; }
+    var sprayTimer = 0;
     function drawPath(c) {
       // smooth: through the midpoints of the points, curving at each point
       c.beginPath();
-      if (pts.length === 1) { c.arc(pts[0].x, pts[0].y, st.size / 2, 0, Math.PI * 2); c.fill(); return; }
+      if (pts.length === 1) { c.arc(pts[0].x, pts[0].y, c.lineWidth / 2, 0, Math.PI * 2); c.fill(); return; }
       c.moveTo(pts[0].x, pts[0].y);
       for (var i = 1; i < pts.length - 1; i++) {
         var mx = (pts[i].x + pts[i + 1].x) / 2, my = (pts[i].y + pts[i + 1].y) / 2;
@@ -2031,8 +2086,10 @@
     }
     function commit() {
       // lay the see-through layer onto the picture at the chosen opacity
+      // (the highlighter: see-through and tinting what's under it)
       ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = st.tool === 'eraser' ? 1 : st.alpha;
+      if (st.tool === 'brush' && st.brush === 'highlighter') { ctx.globalAlpha = Math.min(st.alpha, 0.45); ctx.globalCompositeOperation = 'multiply'; }
       ctx.drawImage(ov, 0, 0); ctx.restore();
       octx.clearRect(0, 0, W, H);
     }
@@ -2084,23 +2141,36 @@
       ov.setPointerCapture(e.pointerId);
       down = { id: e.pointerId, start: p };
       pts = [p];
-      octx.clearRect(0, 0, W, H); strokeStyle(octx);
-      if (st.tool === 'brush' || st.tool === 'eraser') drawPath(octx);
+      octx.clearRect(0, 0, W, H);
+      if (st.tool === 'brush' || st.tool === 'eraser') {
+        brushStyle(octx);
+        if (incremental()) {
+          if (kind() === 'spray') { spray(p); sprayTimer = setInterval(function () { spray(pts[pts.length - 1]); }, 35); }
+          else nib(p, p);
+        } else drawPath(octx);
+      } else strokeStyle(octx);
     });
     ov.addEventListener('pointermove', function (e) {
       var p = pos(e);
       if (!down) { if (e.pointerType === 'mouse') ring(p); return; }
       if (e.pointerId !== down.id) return;
       var evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-      if (st.tool === 'brush' || st.tool === 'eraser') {
+      if ((st.tool === 'brush' || st.tool === 'eraser') && incremental()) {
+        evs.forEach(function (ev) {
+          var q = pos(ev), l = pts[pts.length - 1];
+          if (kind() === 'spray') spray(q); else nib(l, q);
+          pts.push(q);
+        });
+      } else if (st.tool === 'brush' || st.tool === 'eraser') {
         evs.forEach(function (ev) { var q = pos(ev), l = pts[pts.length - 1]; if (Math.hypot(q.x - l.x, q.y - l.y) > 0.8) pts.push(q); });
-        octx.clearRect(0, 0, W, H); strokeStyle(octx); drawPath(octx);
+        octx.clearRect(0, 0, W, H); brushStyle(octx); drawPath(octx);
       } else {
         octx.clearRect(0, 0, W, H); strokeStyle(octx); shape(octx, down.start, p, e.shiftKey);
       }
     });
     function end(e) {
       if (!down || e.pointerId !== down.id) return;
+      clearInterval(sprayTimer);
       down = null; commit();
       if (e.pointerType === 'mouse') ring(pos(e));
     }
@@ -2110,7 +2180,10 @@
 
     // the toolbar
     root.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-tool]'); if (t) { setTool(t.dataset.tool); return; }
+      var br = e.target.closest('[data-brush]');
+      if (br) { st.brush = br.dataset.brush; brushMenu(false); setTool('brush'); return; }
+      var t = e.target.closest('button[data-tool]'); // (the picture itself carries data-tool too, for its cursor)
+      if (t) { var reopen = t.dataset.tool === 'brush' && bmenu.hidden; setTool(t.dataset.tool); brushMenu(reopen); return; }
       var s = e.target.closest('[data-color]'); if (s) { setColor(s.dataset.color); if (st.tool === 'eraser' || st.tool === 'picker') setTool('brush'); return; }
       if (e.target.closest('.paint-solid')) { st.solid = !st.solid; solidBtn.setAttribute('aria-pressed', st.solid ? 'true' : 'false'); return; }
       var a = e.target.closest('[data-act]'); if (!a) return;
@@ -2153,6 +2226,7 @@
         if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) doRedo(); else doUndo(); return; }
         if (mod && k === 'y') { e.preventDefault(); doRedo(); return; }
         if (mod || e.altKey || /input|textarea/i.test((e.target.tagName || '')) && e.target.type !== 'range') return;
+        if (k === 'escape') { brushMenu(false); return; }
         var map = { b: 'brush', e: 'eraser', l: 'line', r: 'rect', o: 'ellipse', f: 'fill', i: 'picker' };
         if (map[k]) setTool(map[k]);
         else if (k === '[') setSize(st.size - (st.size > 10 ? 4 : 1));
@@ -2166,6 +2240,8 @@
   document.addEventListener('click', function (e) {
     var m = e.target.closest && e.target.closest('.footer-mark-wrap');
     if (!m || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    // already on the drawing page: BABBA!!!
+    if (document.querySelector('main:not([aria-hidden]) .paint')) { e.preventDefault(); e.stopImmediatePropagation(); babba(); return; }
     clearTimeout(clickTimer);
     clicks++;
     if (clicks >= 5) { clicks = 0; return; } // the 5th click goes through to the page
@@ -2173,6 +2249,27 @@
     m.classList.remove('bump'); void m.offsetWidth; m.classList.add('bump');
     clickTimer = setTimeout(function () { clicks = 0; }, 1500);
   }, true);
+  // the cat pops up for 5 seconds, then zooms off to the left
+  var babbaOn = false;
+  function babba() {
+    if (babbaOn) return;
+    babbaOn = true;
+    var mark = document.querySelector('.footer-mark');
+    var src = mark ? mark.getAttribute('src').replace(/home-mark\.png.*$/, 'babba.jpg') : '/images/babba.jpg';
+    var el = document.createElement('div');
+    el.className = 'babba'; el.setAttribute('aria-live', 'polite');
+    el.innerHTML = '<figure><img alt="Babba the cat" draggable="false"><figcaption>BABBA!!!</figcaption></figure>';
+    var im = el.querySelector('img');
+    var go = function () {
+      document.body.appendChild(el);
+      void el.offsetWidth; el.classList.add('in');
+      setTimeout(function () { el.classList.add('out'); }, 5000);
+      setTimeout(function () { el.remove(); babbaOn = false; }, 5700);
+    };
+    im.onload = go; im.onerror = function () { babbaOn = false; };
+    im.src = src;
+  }
+
   function setup() {
     var root = document.querySelector('main:not([aria-hidden]) .paint');
     if (root) init(root); else app = null;
