@@ -1294,6 +1294,25 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .paint .paint-brushes .paint-solid { position: relative; margin-top: 5px; }
 .paint-brushes .paint-solid::before { content: ""; position: absolute; left: .5rem; right: .5rem; top: -4px; height: 1px; background: var(--menu-line); }
 .paint-brushes .paint-solid[aria-checked="true"] i.ps-fill { background: currentColor !important; } /* (filled in when it's on) */
+/* ADJUST: a panel of sliders beside the tools */
+.paint-adjust {
+  position: absolute; left: calc(100% + 10px); z-index: 6; width: 236px; max-height: 100%; overflow: auto; padding: .6rem .7rem .55rem;
+  background: var(--menu-bg); border: 1px solid var(--menu-line); color: var(--menu-link);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+  animation: pb-in .25s cubic-bezier(.45, 0, .55, 1); overscroll-behavior: contain;
+}
+.paint-adjust[hidden] { display: none; }
+.pa-title { font-size: .62rem; letter-spacing: .22em; margin-bottom: .45rem; }
+.pa-title span { letter-spacing: .08em; opacity: .6; font-size: .58rem; margin-left: .3rem; text-transform: none; }
+.pa-list { display: flex; flex-direction: column; gap: .32rem; }
+.pa-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .1rem .3rem; font-size: .54rem; letter-spacing: .15em; cursor: default; }
+.pa-row output { font-variant-numeric: tabular-nums; font-size: .6rem; letter-spacing: 0; min-width: 2.2em; text-align: right; }
+.pa-row input[type="range"] { grid-column: 1 / -1; width: 100%; height: 16px; margin: 0; accent-color: var(--menu-link); }
+.pa-acts { display: flex; gap: 4px; margin-top: .55rem; }
+.paint .pa-acts button { flex: 1; width: auto; height: 28px; font-size: .56rem; letter-spacing: .14em; color: var(--menu-link); border-color: var(--menu-line); }
+.paint .pa-acts button[data-adj-act="done"] { background: var(--menu-link); color: var(--bg); border-color: var(--menu-link); }
+.paint .paint-adjust-btn[aria-expanded="true"] { color: var(--bg); background: var(--text); border-color: var(--text); }
+@media (max-width: 560px) { .paint-adjust { left: calc(100% + 6px); width: 196px; padding: .5rem .55rem; } .pa-list { gap: .2rem; } }
 /* the X that closes a selection, on its top left corner */
 .paint .paint-selx {
   position: absolute; z-index: 3; width: 22px; height: 22px; border-radius: 50%;
@@ -1390,7 +1409,7 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 /* phones: one tool per row, slimmer; the second colour tucked on the first */
 @media (max-width: 560px) {
   .paint-left .paint-group { gap: 3px; }
-  .paint-left button { width: 34px !important; height: 29px !important; }
+  .paint-left button { width: 34px !important; height: 28px !important; }
   .paint-pair { width: 36px; height: 40px; }
   .paint-pair .paint-current { width: 32px; height: 32px; }
   .paint-second { width: 18px; height: 18px; right: -2px; }
