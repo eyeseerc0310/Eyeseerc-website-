@@ -1142,17 +1142,13 @@ body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 
 a.footer-mark-wrap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a little faster, to show it does something */
 .paint {
-  /* the tools in a column down the left, the (tall, narrower) picture beside them */
+  /* the drawing tools down the left, the picture in the middle, colour and
+     actions down the right: everything in view at once, no scrolling */
   display: flex; justify-content: center; align-items: stretch; gap: 1.4rem;
   height: calc(100vh - var(--hdr, 90px) - 2.5rem); height: calc(100svh - var(--hdr, 90px) - 2.5rem); min-height: 520px;
   margin-top: .25rem;
 }
-.paint-bar {
-  display: flex; flex-direction: column; align-items: stretch; gap: .9rem;
-  flex: none; width: 84px; overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
-  padding-bottom: .5rem;
-}
-.paint-bar::-webkit-scrollbar { display: none; }
+.paint-bar { display: flex; flex-direction: column; align-items: stretch; gap: 1.1rem; flex: none; width: 84px; }
 .paint-group { display: grid; grid-template-columns: repeat(2, 38px); gap: 6px; justify-content: space-between; }
 .paint button, .paint-open {
   display: inline-flex; align-items: center; justify-content: center;
@@ -1169,6 +1165,7 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .paint-open input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .paint-open { position: relative; }
 .paint button.paint-save { grid-column: 1 / -1; width: 100%; font-size: .68rem; letter-spacing: .22em; padding-left: .22em; color: var(--text); border-color: var(--line); }
+.paint .paint-save svg { display: none; }
 .paint button.paint-save:hover { background: rgba(var(--glow), .15); }
 /* colour: the current colour (tap it for any colour) over a grid of swatches */
 .paint-colors { display: flex; flex-direction: column; align-items: center; gap: .55rem; }
@@ -1187,7 +1184,7 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 /* the picture */
 .paint-stage {
   /* wide (8:5), as tall as the space allows (and never past the edge of the screen) */
-  position: relative; flex: 0 1 auto; height: 100%; aspect-ratio: 8 / 5; min-width: 0; max-width: calc(100% - 84px - 1.4rem);
+  position: relative; flex: 0 1 auto; height: 100%; aspect-ratio: 8 / 5; min-width: 0; max-width: calc(100% - 2 * 84px - 2.8rem);
   background: #fff; border: 1px solid var(--line); overflow: hidden;
   touch-action: none; -webkit-user-select: none; user-select: none;
   box-shadow: var(--photo-shadow);
@@ -1196,9 +1193,26 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .paint-over { cursor: crosshair; }
 .paint-stage[data-tool="brush"] .paint-over, .paint-stage[data-tool="eraser"] .paint-over { cursor: none; }
 @media (hover: none) { .paint-stage[data-tool] .paint-over { cursor: default; } }
+/* phones: two slim columns, one tool per row, so the picture keeps its width */
 @media (max-width: 560px) {
-  .paint { gap: .8rem; }
+  .paint { gap: .55rem; }
+  .paint-bar { width: 36px; gap: .6rem; }
+  .paint-group { grid-template-columns: 36px; gap: 5px; }
+  .paint button, .paint-open { width: 36px; height: 36px; }
   .paint-stage { flex: 1 1 auto; aspect-ratio: auto; max-width: none; }
+  .paint-current { width: 34px; height: 34px; }
+  .paint-swatches { grid-template-columns: repeat(2, 16px); gap: 4px; }
+  .paint .paint-swatches button { width: 16px; height: 16px; }
+  /* size and opacity: standing up */
+  .paint-sliders { gap: .45rem; }
+  .paint-sliders label { display: flex; flex-direction: column; align-items: center; gap: .3rem; font-size: .46rem; letter-spacing: .08em; }
+  .paint-sliders label span { order: 3; }
+  .paint-sliders label output { order: 1; font-size: .58rem; }
+  .paint-sliders input[type="range"] { order: 2; width: 62px; height: 20px; margin: 21px 0; transform: rotate(-90deg); }
+  .paint .paint-swatches button:nth-child(n+9) { display: none; } /* (the colour circle has every other colour) */
+  .paint button.paint-save { width: 36px; padding: 0; }
+  .paint .paint-save svg { display: block; }
+  .paint .paint-save span { display: none; }
 }
 /* the footer mark: each of the 5 clicks it takes gives it a little bump */
 @keyframes mark-bump { 40% { transform: scale(1.35); } }
