@@ -2021,6 +2021,13 @@
       renderLayers();
     }
     layers.push(makeLayer('Background', true)); active = layers[0]; mount();
+    // (every layer can be deleted; drawing on the empty, see-through picture
+    // then makes a new one, numbered from 1 again)
+    function need() {
+      if (active) return active;
+      layers.push(makeLayer('Layer ' + (++count), false)); active = layers[0]; mount();
+      return active;
+    }
 
     function applyView() {
       world.style.transform = 'translate(' + view.x + 'px,' + view.y + 'px) scale(' + view.k + ')';
@@ -2112,7 +2119,7 @@
     function capture(e) { return e.L ? { L: e.L, data: snapOf(e.L), bg: e.L.bg } : { list: layers.slice(), active: active, vis: layers.map(function (L) { return L.visible; }) }; }
     function apply(e) {
       if (e.L) { if (e.bg != null) e.L.bg = e.bg; e.L.ctx.save(); e.L.ctx.setTransform(1, 0, 0, 1, 0, 0); e.L.ctx.putImageData(e.data, 0, 0); e.L.ctx.restore(); renderLayers(); }
-      else { layers = e.list.slice(); layers.forEach(function (L, i) { L.visible = e.vis[i]; }); active = layers.indexOf(e.active) >= 0 ? e.active : layers[layers.length - 1]; mount(); }
+      else { layers = e.list.slice(); layers.forEach(function (L, i) { L.visible = e.vis[i]; }); active = layers.indexOf(e.active) >= 0 ? e.active : layers[layers.length - 1] || null; mount(); }
     }
     function doUndo() { if (adj) adjustDone(); if (textBox) commitText(); if (sel && sel.float) commitSelection(); if (!undo.length) return; var e = undo.pop(); redo.push(capture(e)); apply(e); buttons(); autosave(); }
     function doRedo() { if (!redo.length) return; var e = redo.pop(); undo.push(capture(e)); apply(e); buttons(); autosave(); }
@@ -2617,7 +2624,7 @@
       }
       drawSel(); autosave();
     }
-    function selectAll() { if (textBox) commitText(); commitSelection(); sel = { x: 0, y: 0, w: W, h: H, float: null }; selbar.hidden = false; drawSel(); }
+    function selectAll() { if (textBox) commitText(); commitSelection(); need(); sel = { x: 0, y: 0, w: W, h: H, float: null }; selbar.hidden = false; drawSel(); }
     function selAction(a) {
       if (!sel) return;
       if (a === 'done') { commitSelection(); return; }
@@ -2671,12 +2678,13 @@
           '<button type="button" class="pl-name" data-layer="' + i + '" title="Tap again to rename">' + L.name.replace(/[<&]/g, function (ch) { return ch === '<' ? '&lt;' : '&amp;'; }) + '</button>' +
           '<span class="pl-grip" aria-label="Drag to reorder" title="Drag to reorder"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="1.3"/><circle cx="15" cy="7" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="17" r="1.3"/><circle cx="15" cy="17" r="1.3"/></svg></span></div>';
       }).join('');
+      if (!layers.length) rows = '<div class="pl-empty">No layers. Draw, or tap + to add one.</div>';
       panel.innerHTML = '<div class="pl-title">LAYERS</div><div class="pl-list">' + rows + '</div>' +
         '<div class="pl-acts">' +
           '<button type="button" data-layer-act="add" title="New layer" aria-label="New layer"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>' +
-          '<button type="button" data-layer-act="up" title="Move up" aria-label="Move layer up"' + (layers.indexOf(active) === layers.length - 1 || active.bg ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>' +
-          '<button type="button" data-layer-act="down" title="Move down" aria-label="Move layer down"' + (layers.indexOf(active) <= (layers[0].bg ? 1 : 0) ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>' +
-          '<button type="button" data-layer-act="delete" title="' + (active.bg ? 'Make the background see-through' : 'Delete layer') + '" aria-label="Delete layer"><svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 12h8l1-12"/></svg></button>' +
+          '<button type="button" data-layer-act="up" title="Move up" aria-label="Move layer up"' + (!active || layers.indexOf(active) === layers.length - 1 || active.bg ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>' +
+          '<button type="button" data-layer-act="down" title="Move down" aria-label="Move layer down"' + (!active || layers.indexOf(active) <= (layers[0].bg ? 1 : 0) ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>' +
+          '<button type="button" data-layer-act="delete" title="Delete layer" aria-label="Delete layer"' + (active ? '' : ' disabled') + '><svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 12h8l1-12"/></svg></button>' +
         '</div>';
     }
     function layerPanel(open) {
@@ -2781,21 +2789,17 @@
         if (layers.length >= 10) return;
         rememberLayers();
         var L = makeLayer('Layer ' + (++count), false); layers.splice(i + 1, 0, L); active = L;
-      } else if (a === 'delete' && active.bg) {
-        // deleting the white Background makes it see-through (it stays,
-        // at the bottom, as an empty layer)
-        remember(); active.ctx.clearRect(0, 0, W, H); active.bg = false;
-        renderLayers(); layerPanel(true); return;
       } else if (a === 'delete') {
-        // any other layer can go, even the only one: an empty, see-through
-        // layer takes its place, so there's always something to draw on
+        // any layer can go, the Background and the last one too (then the
+        // picture is see-through, and new layers count from 1 again)
+        if (!active) return;
         rememberLayers();
         layers.splice(i, 1);
-        if (!layers.length) layers.push(makeLayer('Layer ' + (++count), false));
-        active = layers[Math.max(0, i - 1)];
-      } else if (a === 'up' && i < layers.length - 1 && !active.bg) {
+        active = layers[Math.max(0, i - 1)] || null;
+        if (!layers.length) count = 0;
+      } else if (a === 'up' && active && i < layers.length - 1 && !active.bg) {
         rememberLayers(); layers.splice(i, 1); layers.splice(i + 1, 0, active);
-      } else if (a === 'down' && i > (layers[0].bg ? 1 : 0)) {
+      } else if (a === 'down' && active && i > (layers[0].bg ? 1 : 0)) {
         rememberLayers(); layers.splice(i, 1); layers.splice(i - 1, 0, active);
       } else return;
       mount(); layerPanel(true);
@@ -2815,6 +2819,7 @@
     left.appendChild(adjBox);
     function adjustOpen() {
       if (adj) { adjustDone(); return; }
+      if (!active) return;
       if (textBox) commitText(); openMenu(null); layerPanel(false); anchor();
       var cv = active.cv, src = active.ctx.getImageData(0, 0, cv.width, cv.height);
       adj = { L: active, src: src, out: new ImageData(new Uint8ClampedArray(src.data), cv.width, cv.height), mask: sel ? selPixels() : null, v: {}, blur: null, wide: null, queued: false };
@@ -2944,6 +2949,7 @@
     }
     function begin(e) {
       var p = pos(e), t = st.tool, cq = cornerAt(p, e.pointerType !== 'mouse');
+      if (t !== 'picker') need();
       if (cq) {
         lift();
         // the opposite corner stays put
@@ -3221,6 +3227,7 @@
       else if (a.dataset.act === 'redo') doRedo();
       else if (a.dataset.act === 'clear') {
         if (sel) commitSelection();
+        if (!active) return;
         remember(); active.ctx.clearRect(0, 0, W, H);
         if (active.bg) { active.ctx.fillStyle = '#fff'; active.ctx.fillRect(0, 0, W, H); }
       }
@@ -3277,7 +3284,7 @@
     });
     function plopFill(p, color) {
       if (p.x < 0 || p.y < 0 || p.x > W || p.y > H) return;
-      if (adj) adjustDone(); if (textBox) commitText(); anchor();
+      if (adj) adjustDone(); if (textBox) commitText(); need(); anchor();
       var L = active, before = document.createElement('canvas'); before.width = L.cv.width; before.height = L.cv.height;
       before.getContext('2d').drawImage(L.cv, 0, 0);
       remember();
@@ -3376,7 +3383,7 @@
         g.onerror = done;
         g.onsuccess = function () {
           var d = g.result;
-          if (!d || !d.layers || !d.layers.length || undo.length || !restoring) { done(); return; }
+          if (!d || !d.layers || undo.length || !restoring) { done(); return; }
           Promise.all(d.layers.map(function (l) { return createImageBitmap(l.blob); })).then(function (ims) {
             if (undo.length || !restoring) { done(); return; } // (they've started drawing already)
             layers = d.layers.map(function (l, i) {
@@ -3384,8 +3391,8 @@
               L.ctx.drawImage(ims[i], 0, 0, ims[i].width / d.R, ims[i].height / d.R);
               return L;
             });
-            active = layers[Math.max(0, Math.min(layers.length - 1, d.active | 0))];
-            count = Math.max(count, d.count | 0);
+            active = layers[Math.max(0, Math.min(layers.length - 1, d.active | 0))] || null;
+            count = layers.length ? Math.max(count, d.count | 0) : 0;
             mount(); done();
           }, done);
         };
