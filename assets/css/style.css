@@ -144,15 +144,6 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 }
 .theme-toggle:hover, .theme-toggle:focus-visible { transform: scale(1.1); outline: none; }
 .theme-toggle svg { width: 17px; height: 17px; display: block; }
-/* the light / dark switch and, beside it, the paint button (made to match) */
-.header-tools { display: flex; align-items: center; gap: .85rem; }
-.paint-link {
-  width: 17px; height: 17px; display: flex; align-items: center; justify-content: center;
-  color: var(--text); -webkit-tap-highlight-color: transparent;
-  transition: transform .25s ease, opacity .25s ease, color 1.5s ease;
-}
-.paint-link:hover, .paint-link:focus-visible { transform: scale(1.1); outline: none; }
-.paint-link svg { width: 17px; height: 17px; display: block; }
 .theme-toggle .icon-sun { display: none; }
 :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
 :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
@@ -274,7 +265,7 @@ html.theme-fading body *:not(.show *), html.theme-fading body *:not(.show *)::be
      the right, the two buttons the same distance from their edges */
   .site-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
   .header-actions { display: contents; }
-  .header-tools { grid-column: 1; grid-row: 1; justify-self: start; }
+  .theme-toggle { grid-column: 1; grid-row: 1; justify-self: start; }
   .brand { grid-column: 2; grid-row: 1; justify-self: center; }
   .nav-toggle { grid-column: 3; grid-row: 1; justify-self: end; }
 }
@@ -284,10 +275,10 @@ html.theme-fading body *:not(.show *), html.theme-fading body *:not(.show *)::be
 @media (min-width: 761px) {
   .site-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding-top: 1.85rem; padding-bottom: 1.85rem; }
   .header-actions { display: contents; }
-  .header-tools { grid-column: 1; grid-row: 1; justify-self: start; gap: 1.1rem; }
+  .theme-toggle { grid-column: 1; grid-row: 1; justify-self: start; }
   .brand { grid-column: 2; grid-row: 1; justify-self: center; font-size: 2.6rem; }
   .nav-toggle { grid-column: 3; grid-row: 1; justify-self: end; }
-  .theme-toggle, .theme-toggle svg, .paint-link, .paint-link svg { width: 22px; height: 22px; }
+  .theme-toggle, .theme-toggle svg { width: 22px; height: 22px; }
   .nav-toggle .bars { width: 28px; height: 18px; }
   .nav-toggle .bars span { height: 1.7px; }
   .nav-toggle .bars span:nth-child(2) { top: 8px; }
@@ -1499,31 +1490,12 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 /* the feather brush's sample: a soft cloud */
 .pb-feather { height: 12px !important; border-radius: 50%; background: radial-gradient(ellipse at center, currentColor 0%, transparent 70%); opacity: .9; }
 
-/* ---------- Projects: the paint button (trying out 4 places) ---------- */
-.pj-paint { position: relative; display: inline-flex; align-items: center; justify-content: center; color: var(--text); text-decoration: none; -webkit-tap-highlight-color: transparent; transition: transform .25s ease, opacity .25s ease; }
-.pj-paint svg { width: 22px; height: 22px; display: block; }
-.pj-paint:hover, .pj-paint:focus-visible { transform: scale(1.1); outline: none; }
-.pick-no {
-  position: absolute; left: calc(100% + 5px); top: 50%; translate: 0 -50%;
-  min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
-  background: #e36aa6; color: #fff; font: 600 .62rem/17px var(--body, sans-serif); letter-spacing: 0; text-align: center;
+/* ---------- Projects: the paint button, floating in the bottom right corner ---------- */
+.pj-paint {
+  position: fixed; right: clamp(1rem, 3vw, 2.2rem); bottom: clamp(1rem, 3vw, 2.2rem); z-index: 40;
+  display: flex; padding: 9px; border-radius: 50%; color: var(--text); -webkit-tap-highlight-color: transparent;
+  background: color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35); transition: transform .25s ease, opacity .25s ease;
 }
-/* 1: just after the page title */
-.pj-title { position: relative; display: inline-block; }
-.pj-paint-1 { position: absolute; left: calc(100% + .7em); top: 50%; translate: 0 -50%; }
-.pj-paint-1 svg { width: 20px; height: 20px; }
-/* 2: the right end of the photos-per-row line */
-.grid-size .pj-paint-2 { margin-left: auto; margin-right: 1.6rem; opacity: .85; }
-.grid-size .pj-paint-2 svg { width: 18px; height: 18px; }
-/* 3: floating in the bottom right corner */
-.pj-paint-3 { position: fixed; right: clamp(1rem, 3vw, 2.2rem); bottom: clamp(1rem, 3vw, 2.2rem); z-index: 40; padding: 9px; border-radius: 50%; background: color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
-.pj-paint-3 svg { width: 26px; height: 26px; }
-.pj-paint-3 .pick-no { left: auto; right: calc(100% + 6px); }
-/* 4: at the end of the page, with a word under it */
-.pj-end { display: flex; justify-content: center; margin: 3rem 0 1rem; }
-.pj-paint-4 { flex-direction: column; gap: .55rem; }
-.pj-paint-4 svg { width: 30px; height: 30px; }
-.pj-label { font-family: var(--display); font-size: .7rem; letter-spacing: .3em; padding-left: .3em; color: var(--muted); }
-.pj-paint-4 .pick-no { top: 15px; }
-[data-into-grid-size] { display: none; }
-.grid-size [data-into-grid-size] { display: inline-flex; }
+.pj-paint svg { width: 26px; height: 26px; display: block; }
+.pj-paint:hover, .pj-paint:focus-visible { transform: scale(1.1); outline: none; }

@@ -1749,8 +1749,6 @@
         bar.appendChild(b);
       });
       filter.insertAdjacentElement('afterend', bar);
-      // (anything marked for it sits at the right end of this line)
-      var extra = filter.parentNode.querySelector('[data-into-grid-size]'); if (extra) bar.appendChild(extra);
       bar.addEventListener('click', function (e) {
         var b = e.target.closest('button'); if (!b) return;
         var n = +b.dataset.cols;
@@ -1931,7 +1929,7 @@
   document.addEventListener('pageswap:done', setup);
 })();
 
-// Paint: the drawing page (the paintbrush button beside the light / dark switch).
+// Paint: the drawing page (the paintbrush button on the Projects page).
 // Tools down the left: brush (with a list of brushes), eraser, smudge, blur,
 // line, shapes (a list), fill, gradient, text (a list of fonts), select &
 // move, cutout, magic wand, colour picker, hand and light & dark; mirror.
