@@ -1185,14 +1185,47 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .paint-stage {
   /* wide (8:5), as tall as the space allows (and never past the edge of the screen) */
   position: relative; flex: 0 1 auto; height: 100%; aspect-ratio: 8 / 5; min-width: 0; max-width: calc(100% - 2 * 84px - 2.8rem);
-  background: #fff; border: 1px solid var(--line); overflow: hidden;
+  /* (a soft grey round the picture when it's zoomed out) */
+  background: color-mix(in srgb, var(--text) 9%, var(--bg)); border: 1px solid var(--line); overflow: hidden;
   touch-action: none; -webkit-user-select: none; user-select: none;
   box-shadow: var(--photo-shadow);
+  cursor: crosshair;
 }
-.paint-stage canvas { position: absolute; left: 0; top: 0; display: block; }
-.paint-over { cursor: crosshair; }
-.paint-stage[data-tool="brush"] .paint-over, .paint-stage[data-tool="eraser"] .paint-over { cursor: none; }
-@media (hover: none) { .paint-stage[data-tool] .paint-over { cursor: default; } }
+/* the picture: its layers stacked, zoomed and moved as one */
+.paint-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; background: #fff; pointer-events: none; box-shadow: 0 2px 14px rgba(0, 0, 0, .25); }
+.paint-world canvas { position: absolute; left: 0; top: 0; display: block; }
+.paint-layers { position: absolute; inset: 0; }
+.paint-guide { position: absolute; left: 50%; top: 0; bottom: 0; width: 0; border-left: 1px dashed rgba(47, 127, 214, .7); }
+.paint-guide[hidden] { display: none; }
+.paint-stage[data-tool="brush"], .paint-stage[data-tool="eraser"], .paint-stage[data-tool="smudge"], .paint-stage[data-tool="blur"] { cursor: none; }
+.paint-stage[data-tool="hand"], .paint-stage.space { cursor: grab; }
+.paint-stage.panning { cursor: grabbing; }
+.paint-stage[data-tool="text"] { cursor: text; }
+@media (hover: none) { .paint-stage[data-tool] { cursor: default; } }
+/* zoom: − 100% + in the corner */
+.paint-zoom {
+  position: absolute; right: 8px; bottom: 8px; z-index: 3; display: flex; align-items: center;
+  background: var(--menu-bg); border: 1px solid var(--menu-line); border-radius: 3px;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.paint .paint-zoom button { width: 30px; height: 28px; font-size: 1rem; color: var(--menu-link); border: 0; border-radius: 0; }
+.paint .paint-zoom button.paint-zoom-val { width: auto; min-width: 3.4rem; padding: 0 .4rem; font-size: .62rem; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
+.paint .paint-zoom button:hover { color: var(--text); background: rgba(var(--glow), .15); }
+/* what you can do with a selection */
+.paint-selbar {
+  position: absolute; left: 50%; top: 8px; z-index: 3; transform: translateX(-50%);
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; padding: 3px; max-width: calc(100% - 16px);
+  background: var(--menu-bg); border: 1px solid var(--menu-line); border-radius: 3px;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.paint-selbar[hidden] { display: none; }
+.paint .paint-selbar button { width: auto; height: 28px; padding: 0 .6rem; font-size: .6rem; letter-spacing: .16em; color: var(--menu-link); }
+.paint .paint-selbar button:hover { color: var(--text); background: rgba(var(--glow), .15); }
+/* typing on the picture */
+.paint-text {
+  position: absolute; z-index: 2; min-width: 1ch; padding: 0; margin: 0; outline: 1px dashed rgba(47, 127, 214, .8); outline-offset: 2px;
+  white-space: pre; line-height: 1.2; cursor: text; -webkit-user-select: text; user-select: text; caret-color: currentColor;
+}
 /* phones: two slim columns, one tool per row, so the picture keeps its width */
 @media (max-width: 560px) {
   .paint { gap: .55rem; }
@@ -1274,4 +1307,75 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .babba figcaption {
   margin-top: 1rem; font-family: var(--display); font-size: clamp(2.2rem, 7vw, 4rem); font-weight: 500;
   letter-spacing: .14em; color: #fff; text-shadow: 0 4px 18px rgba(0, 0, 0, .6);
+}
+
+/* ---- Draw: the second colour, recent colours, layers, shape and font lists ---- */
+.paint-pair { position: relative; width: 52px; height: 46px; flex: none; }
+.paint-pair .paint-current { position: absolute; left: 0; top: 0; z-index: 1; }
+.paint-second { position: absolute; right: 0; bottom: 0; width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(128, 128, 128, .7); overflow: hidden; cursor: pointer; }
+.paint-second input { position: absolute; inset: -8px; width: calc(100% + 16px); height: calc(100% + 16px); opacity: 0; cursor: pointer; }
+.paint-second span { position: absolute; inset: 2px; border-radius: 50%; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
+.paint .paint-swap { position: absolute; right: -6px; top: -4px; width: 22px; height: 22px; }
+.paint .paint-swap svg { width: 14px; height: 14px; }
+.paint-recent { display: grid; grid-template-columns: repeat(4, 18px); gap: 4px; min-height: 18px; }
+.paint .paint-recent button { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(128, 128, 128, .45); }
+.paint .paint-recent button.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--text); }
+.paint button.paint-layers-btn { grid-column: 1 / -1; width: 100%; gap: .45rem; font-size: .62rem; letter-spacing: .2em; color: var(--muted); border-color: var(--line); }
+.paint button.paint-layers-btn svg { width: 16px; height: 16px; }
+.paint button.paint-layers-btn[aria-expanded="true"] { color: var(--text); background: rgba(var(--glow), .15); }
+.paint-right { position: relative; }
+.paint-layerpanel {
+  position: absolute; right: calc(100% + 10px); z-index: 5; width: 200px; padding: .45rem;
+  background: var(--menu-bg); border: 1px solid var(--menu-line);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+  animation: pl-in .25s cubic-bezier(.45, 0, .55, 1);
+}
+.paint-layerpanel[hidden] { display: none; }
+@keyframes pl-in { from { opacity: 0; transform: translateX(6px); } }
+.pl-title { font-size: .58rem; letter-spacing: .24em; color: var(--muted); padding: .15rem .3rem .45rem; }
+.pl-list { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; }
+.pl-row { display: flex; align-items: center; gap: 2px; border-radius: 3px; }
+.pl-row.on { background: rgba(var(--glow), .18); }
+.paint .pl-row button { height: 32px; color: var(--menu-link); border: 0; }
+.paint .pl-row .pl-eye { width: 32px; flex: none; }
+.paint .pl-row .pl-eye svg { width: 16px; height: 16px; }
+.paint .pl-row .pl-name { flex: 1; width: auto; justify-content: flex-start; padding: 0 .4rem; font-size: .66rem; letter-spacing: .12em; }
+.paint .pl-row.on .pl-name { color: var(--text); }
+.pl-acts { display: flex; justify-content: space-between; margin-top: .45rem; padding-top: .45rem; border-top: 1px solid var(--menu-line); }
+.paint .pl-acts button { width: 36px; height: 30px; color: var(--menu-link); }
+.paint .pl-acts button svg { width: 16px; height: 16px; }
+/* samples in the shape and font lists */
+.paint-brushes i[class^="ps-"] { width: 22px; height: 16px; border: 1.6px solid currentColor; background: none; box-sizing: border-box; }
+.ps-rounded { border-radius: 5px; }
+.ps-ellipse { border-radius: 50%; }
+.ps-triangle { border: 0 !important; background: currentColor !important; clip-path: polygon(50% 0, 100% 100%, 0 100%); opacity: .85; }
+.ps-star { border: 0 !important; background: currentColor !important; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); opacity: .85; }
+.ps-arrow { border: 0 !important; height: 2px !important; background: currentColor !important; position: relative; }
+.ps-arrow::after { content: ""; position: absolute; right: -1px; top: -4px; border: 5px solid transparent; border-left: 7px solid currentColor; border-right: 0; }
+.paint-brushes i.pf { width: auto; height: auto; font-style: normal; font-size: .95rem; letter-spacing: 0; min-width: 28px; }
+/* tools with a list: a tiny corner mark */
+.paint [data-tool="shape"], .paint [data-tool="text"] { position: relative; }
+.paint [data-tool="shape"]::after, .paint [data-tool="text"]::after {
+  content: ""; position: absolute; right: 3px; bottom: 3px;
+  border: 3px solid transparent; border-right-color: currentColor; border-bottom-color: currentColor; opacity: .7;
+}
+.paint .paint-mirror[aria-pressed="true"] svg path:not(:first-child) { fill: currentColor; }
+/* phones: one tool per row, slimmer; the second colour tucked on the first */
+@media (max-width: 560px) {
+  .paint-left .paint-group { gap: 3px; }
+  .paint-left button { width: 34px !important; height: 33px !important; }
+  .paint-pair { width: 36px; height: 40px; }
+  .paint-pair .paint-current { width: 32px; height: 32px; }
+  .paint-second { width: 18px; height: 18px; right: -2px; }
+  .paint .paint-swap, .paint-recent { display: none; }
+  .paint .paint-swatches button:nth-child(n+7) { display: none; }
+  .paint-sliders input[type="range"] { width: 54px; margin: 17px 0; }
+  .paint button.paint-layers-btn { width: 36px; padding: 0; }
+  .paint-right .paint-group[aria-label="Actions"] { gap: 3px; }
+  .paint-right .paint-group[aria-label="Actions"] > * { height: 33px; }
+  .paint button.paint-layers-btn span { display: none; }
+  .paint-layerpanel { right: calc(100% + 6px); width: 180px; }
+  .paint-zoom { right: 4px; bottom: 4px; }
+  .paint .paint-zoom button { width: 26px; height: 26px; }
+  .paint .paint-zoom button.paint-zoom-val { min-width: 2.8rem; font-size: .56rem; }
 }
