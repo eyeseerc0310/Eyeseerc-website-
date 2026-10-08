@@ -747,6 +747,9 @@
     };
     if (img.decode) img.decode().then(go, go); else go();
   }
+  // going to another page (VIEW CART in the cart, the cart icon...) while
+  // a photo is open: it closes (back into its tile) as the new page loads
+  document.addEventListener('pageswap:start', function () { if (box.classList.contains('open')) close(); });
   function close() {
     if (sliding) return;
     resetZoom(false);
@@ -1310,6 +1313,8 @@
   function go(url, push, scrollY) {
     if (busy) return;
     busy = true;
+    // (anything open over the page, like the photo viewer, closes as it goes)
+    document.dispatchEvent(new Event('pageswap:start'));
     var fromY = document.body.scrollTop; // where this page was, for the back button
     var menuClosed = closeMenu();
     fetch(url.href, { credentials: 'same-origin' }).then(function (r) {
