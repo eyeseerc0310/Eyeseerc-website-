@@ -1330,7 +1330,6 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
   font-size: .66rem; letter-spacing: .2em; color: var(--menu-link); text-align: left;
 }
 .paint .paint-savemenu button:hover { color: var(--text); background: rgba(var(--glow), .15); }
-.paint-savemenu small { font-size: .56rem; letter-spacing: .06em; opacity: .65; }
 @media (max-width: 560px) { .paint-savemenu { right: calc(100% + 6px); width: 170px; } }
 /* the X that closes a selection, on its top left corner */
 .paint .paint-selx {
