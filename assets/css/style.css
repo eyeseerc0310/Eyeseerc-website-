@@ -250,6 +250,15 @@ html.theme-fading body *:not(.show *), html.theme-fading body *:not(.show *)::be
   transform: scale(1.25);
   outline: none;
 }
+/* a thin line under each item as it's hovered (it draws in from the right) */
+.site-nav a::after {
+  content: "";
+  position: absolute; left: 0; right: .12em; bottom: .3rem; height: 1px;
+  background: linear-gradient(to right, transparent, currentColor 30%, currentColor 70%, transparent);
+  transform: scaleX(0); transform-origin: right center;
+  transition: transform .35s cubic-bezier(.45, 0, .55, 1);
+}
+.site-nav a:hover::after, .site-nav a:focus-visible::after { transform: scaleX(1); }
 /* the page you're on: a thin line under it that fades out at both ends */
 .site-nav a.active { color: var(--text); }
 .site-nav a.active::before {
@@ -1489,3 +1498,32 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 }
 /* the feather brush's sample: a soft cloud */
 .pb-feather { height: 12px !important; border-radius: 50%; background: radial-gradient(ellipse at center, currentColor 0%, transparent 70%); opacity: .9; }
+
+/* ---------- Projects: the paint button (trying out 4 places) ---------- */
+.pj-paint { position: relative; display: inline-flex; align-items: center; justify-content: center; color: var(--text); text-decoration: none; -webkit-tap-highlight-color: transparent; transition: transform .25s ease, opacity .25s ease; }
+.pj-paint svg { width: 22px; height: 22px; display: block; }
+.pj-paint:hover, .pj-paint:focus-visible { transform: scale(1.1); outline: none; }
+.pick-no {
+  position: absolute; left: calc(100% + 5px); top: 50%; translate: 0 -50%;
+  min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
+  background: #e36aa6; color: #fff; font: 600 .62rem/17px var(--body, sans-serif); letter-spacing: 0; text-align: center;
+}
+/* 1: just after the page title */
+.pj-title { position: relative; display: inline-block; }
+.pj-paint-1 { position: absolute; left: calc(100% + .7em); top: 50%; translate: 0 -50%; }
+.pj-paint-1 svg { width: 20px; height: 20px; }
+/* 2: the right end of the photos-per-row line */
+.grid-size .pj-paint-2 { margin-left: auto; margin-right: 1.6rem; opacity: .85; }
+.grid-size .pj-paint-2 svg { width: 18px; height: 18px; }
+/* 3: floating in the bottom right corner */
+.pj-paint-3 { position: fixed; right: clamp(1rem, 3vw, 2.2rem); bottom: clamp(1rem, 3vw, 2.2rem); z-index: 40; padding: 9px; border-radius: 50%; background: color-mix(in srgb, var(--bg) 70%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.pj-paint-3 svg { width: 26px; height: 26px; }
+.pj-paint-3 .pick-no { left: auto; right: calc(100% + 6px); }
+/* 4: at the end of the page, with a word under it */
+.pj-end { display: flex; justify-content: center; margin: 3rem 0 1rem; }
+.pj-paint-4 { flex-direction: column; gap: .55rem; }
+.pj-paint-4 svg { width: 30px; height: 30px; }
+.pj-label { font-family: var(--display); font-size: .7rem; letter-spacing: .3em; padding-left: .3em; color: var(--muted); }
+.pj-paint-4 .pick-no { top: 15px; }
+[data-into-grid-size] { display: none; }
+.grid-size [data-into-grid-size] { display: inline-flex; }
