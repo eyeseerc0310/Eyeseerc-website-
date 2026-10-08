@@ -113,8 +113,18 @@
   function buildPanel(link) {
     var d = link.dataset, unit = parseFloat(d.price) || 0, qty = 1;
     var sizes = link.hasAttribute('data-sizes') && window.SHOP && window.SHOP.sizes || [];
-    var size = sizes[0] || null;
-    if (size) unit = parseFloat(size.price) || unit;
+    // prints also come on a choice of papers (PAPER, under SIZE)
+    var papers = sizes.length && window.SHOP && window.SHOP.papers || [];
+    var lists = { size: sizes, paper: papers }, pick = { size: sizes[0] || null, paper: papers[0] || null };
+    function menu(key, label) {
+      return '<div class="lb-size" data-pick="' + key + '">' +
+        '<button type="button" class="lb-size-btn" aria-haspopup="listbox" aria-expanded="false">' +
+          '<span>' + label + '</span><span class="lb-size-val"></span>' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>' +
+        '</button>' +
+        '<div class="lb-size-list" role="listbox"></div>' +
+      '</div>';
+    }
     panel.innerHTML =
       '<div class="lb-panel-title"></div><p class="lb-panel-desc"></p>' +
       '<div class="lb-panel-row">' +
@@ -122,60 +132,62 @@
         '<div class="lb-panel-price"></div>' +
         '<button type="button" class="lb-panel-add"><span>ADD TO CART</span></button>' +
       '</div>' +
-      (sizes.length ?
-        '<div class="lb-size">' +
-          '<button type="button" class="lb-size-btn" aria-haspopup="listbox" aria-expanded="false">' +
-            '<span>SIZE</span><span class="lb-size-val"></span>' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>' +
-          '</button>' +
-          '<div class="lb-size-list" role="listbox"></div>' +
-        '</div>' : '');
+      (sizes.length ? menu('size', 'SIZE') : '') +
+      (papers.length ? menu('paper', 'PAPER') : '');
     panel.querySelector('.lb-panel-title').textContent = d.title || '';
     panel.querySelector('.lb-panel-desc').textContent = d.desc || '';
     var qtyEl = panel.querySelector('.lb-qty span'), priceEl = panel.querySelector('.lb-panel-price');
-    var sizeBox = panel.querySelector('.lb-size');
-    if (sizeBox) {
-      var list = sizeBox.querySelector('.lb-size-list');
-      sizes.forEach(function (sz, i) {
-        var o = document.createElement('button');
-        o.type = 'button'; o.className = 'lb-size-opt'; o.setAttribute('role', 'option'); o.dataset.i = i;
-        o.innerHTML = '<span></span><span></span>';
-        o.firstChild.textContent = sz.size + ' in'; o.lastChild.textContent = money(parseFloat(sz.price) || 0);
-        list.appendChild(o);
+    var boxes = Array.prototype.slice.call(panel.querySelectorAll('.lb-size'));
+    boxes.forEach(function (b) {
+      var key = b.dataset.pick, list = b.querySelector('.lb-size-list');
+      lists[key].forEach(function (o, i) {
+        var el = document.createElement('button');
+        el.type = 'button'; el.className = 'lb-size-opt'; el.setAttribute('role', 'option'); el.dataset.i = i;
+        el.innerHTML = '<span></span><span></span>';
+        var add = parseFloat(o.price) || 0;
+        el.firstChild.textContent = key === 'size' ? o.size + ' in' : o.name;
+        el.lastChild.textContent = key === 'size' ? money(add) : (add ? '+' + money(add) : '');
+        list.appendChild(el);
       });
-    }
+    });
     function update() {
+      if (pick.size) unit = (parseFloat(pick.size.price) || 0) + (pick.paper ? parseFloat(pick.paper.price) || 0 : 0);
       qtyEl.textContent = qty;
       priceEl.textContent = link.hasAttribute('data-sold-out') ? 'Sold out' : money(unit * qty);
-      if (sizeBox) {
-        sizeBox.querySelector('.lb-size-val').textContent = size.size + ' IN';
-        Array.prototype.forEach.call(sizeBox.querySelectorAll('.lb-size-opt'), function (o) {
-          o.setAttribute('aria-selected', sizes[o.dataset.i] === size ? 'true' : 'false');
+      boxes.forEach(function (b) {
+        var key = b.dataset.pick;
+        b.querySelector('.lb-size-val').textContent = key === 'size' ? pick.size.size + ' IN' : pick.paper.name.toUpperCase();
+        Array.prototype.forEach.call(b.querySelectorAll('.lb-size-opt'), function (o) {
+          o.setAttribute('aria-selected', lists[key][o.dataset.i] === pick[key] ? 'true' : 'false');
         });
-      }
+      });
     }
-    function sizeMenu(open) {
-      if (!sizeBox) return;
-      sizeBox.classList.toggle('open', open);
-      sizeBox.querySelector('.lb-size-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
+    function sizeMenu(b, open) {
+      boxes.forEach(function (x) {
+        var on = x === b && open;
+        x.classList.toggle('open', on);
+        x.querySelector('.lb-size-btn').setAttribute('aria-expanded', on ? 'true' : 'false');
+      });
     }
     update();
     if (link.hasAttribute('data-sold-out')) {
       panel.querySelector('.lb-panel-add').hidden = true; panel.querySelector('.lb-qty').hidden = true;
-      if (sizeBox) sizeBox.hidden = true;
+      boxes.forEach(function (b) { b.hidden = true; });
     }
     panel.onclick = function (e) {
       var q = e.target.closest('[data-q]');
       if (q) { qty = Math.max(1, Math.min(99, qty + parseInt(q.dataset.q, 10))); update(); return; }
-      if (e.target.closest('.lb-size-btn')) { sizeMenu(!sizeBox.classList.contains('open')); return; }
+      var btn = e.target.closest('.lb-size-btn');
+      if (btn) { sizeMenu(btn.parentNode, !btn.parentNode.classList.contains('open')); return; }
       var opt = e.target.closest('.lb-size-opt');
-      if (opt) { size = sizes[opt.dataset.i]; unit = parseFloat(size.price) || 0; update(); sizeMenu(false); return; }
-      sizeMenu(false);
+      if (opt) { var key = opt.closest('.lb-size').dataset.pick; pick[key] = lists[key][opt.dataset.i]; update(); sizeMenu(null, false); return; }
+      sizeMenu(null, false);
       if (e.target.closest('.lb-panel-add') && window.eyeseercCart) {
-        var sid = size ? '-' + size.size.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+        var slug = function (t) { return '-' + String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
+        var sid = (pick.size ? slug(pick.size.size) : '') + (pick.paper ? slug(pick.paper.name) : '');
+        var title = (d.title || '') + (pick.size ? ' \u2014 ' + pick.size.size + ' in' : '') + (pick.paper ? ', ' + pick.paper.name.toLowerCase() + ' paper' : '');
         // (the cart slides in over the print, which stays open behind it)
-        window.eyeseercCart.add({ id: d.id + sid, title: (d.title || '') + (size ? ' \u2014 ' + size.size + ' in' : ''),
-          price: unit, image: d.image, variant: d.variant || '' }, qty);
+        window.eyeseercCart.add({ id: d.id + sid, title: title, price: unit, image: d.image, variant: d.variant || '' }, qty);
       }
     };
   }
@@ -204,8 +216,9 @@
   window.addEventListener('resize', sizePanel);
   // a click anywhere else in the viewer closes an open SIZE list
   box.addEventListener('click', function (e) {
-    var open = panel.querySelector('.lb-size.open');
-    if (open && !open.contains(e.target)) { open.classList.remove('open'); open.querySelector('.lb-size-btn').setAttribute('aria-expanded', 'false'); }
+    Array.prototype.forEach.call(panel.querySelectorAll('.lb-size.open'), function (open) {
+      if (!open.contains(e.target)) { open.classList.remove('open'); open.querySelector('.lb-size-btn').setAttribute('aria-expanded', 'false'); }
+    });
   }, true);
 
   // ---- Shop items: more photos stacked behind the main one ----
