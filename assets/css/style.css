@@ -966,7 +966,8 @@ a.shop-photo[href]:hover img { transform: scale(1.03); opacity: .92; }
   .lightbox.shop-mode .lb-stage { display: flex; }
   .lightbox.shop-mode .lb-figure { display: flex; }
   .lightbox.shop-mode .lb-figure img { grid-column: auto; max-width: calc(100vw - 1.5rem); max-height: calc(100svh - 21.5rem); }
-  .lightbox.shop-mode .lb-panel { margin-top: 1.5rem; min-width: 0; padding: .95rem 1rem .9rem; }
+  /* (never narrower than this, even under a tall, narrow photo, so ADD TO CART always fits) */
+  .lightbox.shop-mode .lb-panel { margin-top: 1.5rem; min-width: min(300px, calc(100vw - 1.5rem)); padding: .95rem 1rem .9rem; }
   .lb-panel-row { gap: .45rem; }
   .lb-qty { gap: .45rem; }
   .lb-panel-price { min-width: 3.4em; letter-spacing: .06em; }
