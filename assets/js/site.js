@@ -1929,7 +1929,7 @@
   document.addEventListener('pageswap:done', setup);
 })();
 
-// Paint: the hidden drawing page (5 clicks on the footer's spinning mark).
+// Paint: the drawing page (the paintbrush button beside the light / dark switch).
 // Tools down the left: brush (with a list of brushes), eraser, smudge, blur,
 // line, shapes (a list), fill, gradient, text (a list of fonts), select &
 // move, cutout, magic wand, colour picker, hand and light & dark; mirror.
@@ -3425,21 +3425,22 @@
       keyup: function (e) { if (e.key === ' ') letGoOfSpace(); else if (e.key === 'Alt') stage.classList.remove('picking'); }
     };
   }
-  // the footer's spinning mark opens it, but only on the 5th click in a row
+  // the footer's spinning mark: 5 clicks in a row and BABBA!!! pops up
   // (each click gives the mark a little bump; a pause starts the count again)
   var clicks = 0, clickTimer = 0;
   document.addEventListener('click', function (e) {
     var m = e.target.closest && e.target.closest('.footer-mark-wrap');
     if (!m || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    // already on the drawing page: BABBA!!!
-    if (document.querySelector('main:not([aria-hidden]) .paint')) { e.preventDefault(); e.stopImmediatePropagation(); babba(); return; }
-    clearTimeout(clickTimer);
-    clicks++;
-    if (clicks >= 5) { clicks = 0; return; } // the 5th click goes through to the page
     e.preventDefault(); e.stopImmediatePropagation();
+    clearTimeout(clickTimer);
     m.classList.remove('bump'); void m.offsetWidth; m.classList.add('bump');
+    if (++clicks >= 5) { clicks = 0; babba(); return; }
     clickTimer = setTimeout(function () { clicks = 0; }, 1500);
   }, true);
+  document.addEventListener('keydown', function (e) {
+    var m = (e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('.footer-mark-wrap');
+    if (m) { e.preventDefault(); m.click(); }
+  });
   // the cat pops up for 5 seconds, then zooms off to the left
   var babbaOn = false;
   function babba() {
