@@ -1142,15 +1142,21 @@ body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 
 a.footer-mark-wrap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a little faster, to show it does something */
 .paint {
-  display: flex; flex-direction: column; gap: .7rem;
-  height: calc(100vh - var(--hdr, 90px) - 3rem); height: calc(100svh - var(--hdr, 90px) - 3rem); min-height: 420px;
-  margin-top: .5rem;
+  /* the tools in a column down the left, the (tall, narrower) picture beside them */
+  display: flex; justify-content: center; align-items: stretch; gap: 1.4rem;
+  height: calc(100vh - var(--hdr, 90px) - 2.5rem); height: calc(100svh - var(--hdr, 90px) - 2.5rem); min-height: 520px;
+  margin-top: .25rem;
 }
-.paint-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .55rem 1.1rem; }
-.paint-group { display: flex; align-items: center; gap: .3rem; }
+.paint-bar {
+  display: flex; flex-direction: column; align-items: stretch; gap: .9rem;
+  flex: none; width: 84px; overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+  padding-bottom: .5rem;
+}
+.paint-bar::-webkit-scrollbar { display: none; }
+.paint-group { display: grid; grid-template-columns: repeat(2, 38px); gap: 6px; justify-content: space-between; }
 .paint button, .paint-open {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px; padding: 0; border: 1px solid transparent; border-radius: 3px;
+  width: 38px; height: 38px; padding: 0; border: 1px solid transparent; border-radius: 3px;
   background: none; color: var(--muted); cursor: pointer; font: inherit;
   -webkit-tap-highlight-color: transparent;
   transition: color .2s ease, background .2s ease, border-color .2s ease;
@@ -1162,22 +1168,26 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .paint .paint-solid[aria-pressed="true"] svg .fillme { fill: currentColor; }
 .paint-open input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .paint-open { position: relative; }
-.paint button.paint-save { width: auto; padding: 0 .95rem; font-size: .7rem; letter-spacing: .22em; color: var(--text); border-color: var(--line); }
+.paint button.paint-save { grid-column: 1 / -1; width: 100%; font-size: .68rem; letter-spacing: .22em; padding-left: .22em; color: var(--text); border-color: var(--line); }
 .paint button.paint-save:hover { background: rgba(var(--glow), .15); }
-/* colour: the current colour (tap it for any colour) and a row of swatches */
-.paint-current { position: relative; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); cursor: pointer; overflow: hidden; flex: none; }
+/* colour: the current colour (tap it for any colour) over a grid of swatches */
+.paint-colors { display: flex; flex-direction: column; align-items: center; gap: .55rem; }
+.paint-current { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); cursor: pointer; overflow: hidden; flex: none; }
 .paint-current input { position: absolute; inset: -8px; width: calc(100% + 16px); height: calc(100% + 16px); opacity: 0; cursor: pointer; }
 .paint-current span { position: absolute; inset: 3px; border-radius: 50%; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
-.paint-swatches { display: flex; flex-wrap: wrap; gap: 4px; }
-.paint .paint-swatches button { width: 20px; height: 20px; border-radius: 3px; border: 1px solid rgba(128, 128, 128, .45); }
+.paint-swatches { display: grid; grid-template-columns: repeat(4, 18px); gap: 4px; }
+.paint .paint-swatches button { width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(128, 128, 128, .45); }
 .paint .paint-swatches button:hover { transform: scale(1.12); border-color: var(--text); }
 .paint .paint-swatches button.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--text); }
-.paint-sliders label { display: flex; align-items: center; gap: .45rem; font-size: .62rem; letter-spacing: .18em; color: var(--muted); }
-.paint-sliders input[type="range"] { width: 92px; accent-color: var(--text); }
-.paint-sliders output { min-width: 1.8em; font-variant-numeric: tabular-nums; color: var(--text); }
+.paint-sliders { display: flex; flex-direction: column; gap: .6rem; }
+.paint-sliders label { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .3rem .2rem; font-size: .56rem; letter-spacing: .16em; color: var(--muted); }
+.paint-sliders input[type="range"] { grid-column: 1 / -1; grid-row: 2; width: 100%; margin: 0; accent-color: var(--text); }
+.paint-sliders output { font-variant-numeric: tabular-nums; color: var(--text); font-size: .62rem; }
+.paint .paint-sliders .paint-solid { align-self: flex-start; }
 /* the picture */
 .paint-stage {
-  position: relative; flex: 1 1 auto; min-height: 0;
+  /* taller than it is wide (5:6), as tall as the space allows */
+  position: relative; flex: 0 1 auto; height: 100%; aspect-ratio: 5 / 6; min-width: 0; max-width: calc(100% - 84px - 1.4rem);
   background: #fff; border: 1px solid var(--line); overflow: hidden;
   touch-action: none; -webkit-user-select: none; user-select: none;
   box-shadow: var(--photo-shadow);
@@ -1187,7 +1197,9 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .paint-stage[data-tool="brush"] .paint-over, .paint-stage[data-tool="eraser"] .paint-over { cursor: none; }
 @media (hover: none) { .paint-stage[data-tool] .paint-over { cursor: default; } }
 @media (max-width: 560px) {
-  .paint-bar { gap: .45rem .6rem; }
-  .paint button, .paint-open { width: 34px; height: 34px; }
-  .paint-sliders input[type="range"] { width: 72px; }
+  .paint { gap: .8rem; }
+  .paint-stage { flex: 1 1 auto; aspect-ratio: auto; max-width: none; }
 }
+/* the footer mark: each of the 5 clicks it takes gives it a little bump */
+@keyframes mark-bump { 40% { transform: scale(1.35); } }
+.footer-mark-wrap.bump { animation: mark-bump .35s cubic-bezier(.45, 0, .55, 1); }

@@ -2160,6 +2160,19 @@
       }
     };
   }
+  // the footer's spinning mark opens it, but only on the 5th click in a row
+  // (each click gives the mark a little bump; a pause starts the count again)
+  var clicks = 0, clickTimer = 0;
+  document.addEventListener('click', function (e) {
+    var m = e.target.closest && e.target.closest('.footer-mark-wrap');
+    if (!m || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    clearTimeout(clickTimer);
+    clicks++;
+    if (clicks >= 5) { clicks = 0; return; } // the 5th click goes through to the page
+    e.preventDefault(); e.stopImmediatePropagation();
+    m.classList.remove('bump'); void m.offsetWidth; m.classList.add('bump');
+    clickTimer = setTimeout(function () { clicks = 0; }, 1500);
+  }, true);
   function setup() {
     var root = document.querySelector('main:not([aria-hidden]) .paint');
     if (root) init(root); else app = null;
