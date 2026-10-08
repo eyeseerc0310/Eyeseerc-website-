@@ -1287,6 +1287,17 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .pb-highlighter { height: 10px !important; background: #f5d33a; opacity: .75; }
 @media (max-width: 560px) { .paint-brushes { left: calc(100% + 6px); width: 150px; } }
 
+/* the label beside the mouse over a drawing tool */
+.paint-tip {
+  position: fixed; left: 0; top: 0; z-index: 170; max-width: 220px; padding: .4rem .6rem;
+  font-size: .68rem; line-height: 1.35; letter-spacing: .04em; color: var(--menu-link);
+  background: var(--menu-bg); border: 1px solid var(--menu-line);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .3);
+  pointer-events: none; opacity: 0; transition: opacity .18s cubic-bezier(.45, 0, .55, 1);
+}
+.paint-tip.on { opacity: 1; transition-delay: .25s; }
+
 /* BABBA!!! (the footer mark, clicked on the drawing page) */
 .babba {
   position: fixed; inset: 0; z-index: 160; pointer-events: none;
