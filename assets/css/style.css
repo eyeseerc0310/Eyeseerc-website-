@@ -1379,3 +1379,15 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
   .paint .paint-zoom button { width: 26px; height: 26px; }
   .paint .paint-zoom button.paint-zoom-val { min-width: 2.8rem; font-size: .56rem; }
 }
+/* layers: rename in place, drag by the grip to reorder */
+.pl-grip { flex: none; width: 26px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: grab; touch-action: none; }
+.pl-grip svg { width: 16px; height: 16px; fill: currentColor; stroke: none; }
+.pl-row.dragging { position: relative; z-index: 1; background: var(--menu-bg); box-shadow: 0 6px 16px rgba(0, 0, 0, .35); }
+.pl-row.dragging .pl-grip { cursor: grabbing; }
+.pl-input {
+  flex: 1; min-width: 0; height: 28px; padding: 0 .4rem; font: inherit; font-size: .66rem; letter-spacing: .08em;
+  color: var(--text); background: rgba(var(--glow), .12); border: 1px solid var(--menu-line); border-radius: 2px; outline: none;
+  -webkit-user-select: text; user-select: text;
+}
+/* the feather brush's sample: a soft cloud */
+.pb-feather { height: 12px !important; border-radius: 50%; background: radial-gradient(ellipse at center, currentColor 0%, transparent 70%); opacity: .9; }

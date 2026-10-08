@@ -1941,7 +1941,7 @@
 // layer, so a stroke's opacity stays even.
 (function () {
   var SWATCHES = ['#141414', '#ffffff', '#8a8a8a', '#d6332f', '#f08a24', '#f5d33a', '#3fa34d', '#2f7fd6', '#7b4bc9', '#e36aa6', '#8b5a2b', '#1f3d5c'];
-  var BRUSHES = [['round', 'Round'], ['marker', 'Marker'], ['pencil', 'Pencil'], ['spray', 'Spray'], ['calligraphy', 'Calligraphy'], ['highlighter', 'Highlighter']];
+  var BRUSHES = [['round', 'Round'], ['feather', 'Feather'], ['marker', 'Marker'], ['pencil', 'Pencil'], ['spray', 'Spray'], ['calligraphy', 'Calligraphy'], ['highlighter', 'Highlighter']];
   var SHAPES = [['rect', 'Rectangle'], ['rounded', 'Rounded'], ['ellipse', 'Ellipse'], ['triangle', 'Triangle'], ['star', 'Star'], ['arrow', 'Arrow']];
   var FONTS = [['Jost, "Helvetica Neue", Arial, sans-serif', 'Jost'], ['Georgia, "Times New Roman", serif', 'Serif'], ['"Courier New", Courier, monospace', 'Typewriter'], ['"Marker Felt", "Chalkboard SE", "Comic Sans MS", cursive', 'Marker'], ['Impact, "Arial Black", sans-serif', 'Poster']];
   var app = null;
@@ -2118,17 +2118,30 @@
       c.moveTo(a.x - vx, a.y - vy); c.lineTo(a.x + vx, a.y + vy); c.lineTo(b.x + vx, b.y + vy); c.lineTo(b.x - vx, b.y - vy);
       c.closePath(); c.fill();
     }
+    // feather: very soft round puffs that build up, like an airbrush
+    function feather(c, a, b, pr) {
+      var r = Math.max(6, st.size * 1.8), step = Math.max(1, r / 6), d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.ceil(d / step));
+      var col = parseInt(st.color.slice(1), 16), rgb = (col >> 16 & 255) + ',' + (col >> 8 & 255) + ',' + (col & 255);
+      var f = 0.09 * (down && down.pen ? 0.3 + 0.9 * Math.min(1, pr) : 1);
+      for (var j = d ? 1 : 0; j <= n; j++) {
+        var x = a.x + (b.x - a.x) * j / n, y = a.y + (b.y - a.y) * j / n;
+        var g = c.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, 'rgba(' + rgb + ',' + f + ')'); g.addColorStop(0.45, 'rgba(' + rgb + ',' + f * 0.55 + ')'); g.addColorStop(1, 'rgba(' + rgb + ',0)');
+        c.fillStyle = g; c.fillRect(x - r, y - r, 2 * r, 2 * r);
+      }
+    }
     // an Apple Pencil: each little piece of the line is as thick as the pressure
     function pressed(c, a, b, pr) {
       var w = Math.max(0.6, c.base * (0.15 + 0.85 * Math.min(1, pr * 1.25)));
       c.lineWidth = w; c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
     }
-    function piecewise() { var k = kind(); return k === 'spray' || k === 'calligraphy' || (down && down.pen); }
+    function piecewise() { var k = kind(); return k === 'spray' || k === 'feather' || k === 'calligraphy' || (down && down.pen); }
     var sprayTimer = 0;
     function segment(c, a, b, pr) {
       var k = kind();
       both(c, function () {
         if (k === 'spray') spray(c, b);
+        else if (k === 'feather') feather(c, a, b, pr);
         else if (k === 'calligraphy') nib(c, a, b);
         else pressed(c, a, b, pr);
       });
@@ -2216,9 +2229,26 @@
     function gradient(a, b) {
       octx.clearRect(0, 0, W, H);
       var g = octx.createLinearGradient(a.x, a.y, b.x, b.y);
-      g.addColorStop(0, st.color); g.addColorStop(1, st.color2);
+      // eased (smoothstep), so it fades in and out of each colour gently
+      var c1 = parseInt(st.color.slice(1), 16), c2 = parseInt(st.color2.slice(1), 16);
+      for (var i = 0; i <= 24; i++) {
+        var t = i / 24, e = t * t * (3 - 2 * t), mix = function (sh) { var u = c1 >> sh & 255, v = c2 >> sh & 255; return Math.round(u + (v - u) * e); };
+        g.addColorStop(t, 'rgb(' + mix(16) + ',' + mix(8) + ',' + mix(0) + ')');
+      }
       octx.fillStyle = g;
       if (sel) octx.fillRect(sel.x, sel.y, sel.w, sel.h); else octx.fillRect(0, 0, W, H);
+    }
+
+    // a fine, invisible grain over the gradient as it's laid down: it breaks up
+    // the steps a screen would otherwise show in a long, gentle blend
+    function grainOver() {
+      var d = octx.getImageData(0, 0, ov.width, ov.height), px = d.data;
+      for (var i = 0; i < px.length; i += 4) {
+        if (!px[i + 3]) continue;
+        var n = (Math.random() + Math.random() - 1) * 2.2;
+        px[i] += n; px[i + 1] += n; px[i + 2] += n;
+      }
+      octx.save(); octx.setTransform(1, 0, 0, 1, 0, 0); octx.putImageData(d, 0, 0); octx.restore();
     }
 
     // ---- fill and colour picker ----
@@ -2340,10 +2370,11 @@
       if (!panel) return;
       var rows = layers.slice().reverse().map(function (L) {
         var i = layers.indexOf(L);
-        return '<div class="pl-row' + (L === active ? ' on' : '') + '">' +
+        return '<div class="pl-row' + (L === active ? ' on' : '') + '" data-i="' + i + '">' +
           '<button type="button" class="pl-eye" data-layer-eye="' + i + '" aria-label="' + (L.visible ? 'Hide' : 'Show') + ' ' + L.name + '" aria-pressed="' + (!L.visible) + '">' +
             '<svg viewBox="0 0 24 24">' + (L.visible ? '<path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.6"/>' : '<path d="M3 3l18 18"/><path d="M10.6 6.1A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-2.6 3.3M6.4 7.6A15 15 0 0 0 2.5 12s3.5 6 9.5 6a9 9 0 0 0 4.1-1"/>') + '</svg></button>' +
-          '<button type="button" class="pl-name" data-layer="' + i + '">' + L.name + '</button></div>';
+          '<button type="button" class="pl-name" data-layer="' + i + '" title="Tap again to rename">' + L.name.replace(/[<&]/g, function (ch) { return ch === '<' ? '&lt;' : '&amp;'; }) + '</button>' +
+          '<span class="pl-grip" aria-label="Drag to reorder" title="Drag to reorder"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="1.3"/><circle cx="15" cy="7" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="17" r="1.3"/><circle cx="15" cy="17" r="1.3"/></svg></span></div>';
       }).join('');
       panel.innerHTML = '<div class="pl-title">LAYERS</div><div class="pl-list">' + rows + '</div>' +
         '<div class="pl-acts">' +
@@ -2358,6 +2389,46 @@
       $('[data-act="layers"]').setAttribute('aria-expanded', open ? 'true' : 'false');
       if (open) { var b = $('[data-act="layers"]'); panel.style.top = Math.max(0, Math.min(b.offsetTop - panel.offsetHeight + b.offsetHeight, right.clientHeight - panel.offsetHeight)) + 'px'; }
     }
+    // renaming: tap the picked layer's name again (or double-click any name)
+    function rename(i) {
+      var btn = panel.querySelector('[data-layer="' + i + '"]'); if (!btn) return;
+      var L = layers[i], inp = document.createElement('input');
+      inp.type = 'text'; inp.className = 'pl-input'; inp.value = L.name; inp.maxLength = 24; inp.setAttribute('aria-label', 'Layer name');
+      btn.replaceWith(inp); inp.focus({ preventScroll: true }); inp.select();
+      var done = false;
+      function finish(keep) {
+        if (done) return; done = true;
+        if (keep && inp.value.trim()) L.name = inp.value.trim();
+        renderLayers(); layerPanel(true);
+      }
+      inp.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') finish(true); else if (e.key === 'Escape') finish(false); });
+      inp.addEventListener('blur', function () { finish(true); });
+    }
+    panel.addEventListener('dblclick', function (e) { var n = e.target.closest('[data-layer]'); if (n) rename(+n.dataset.layer); });
+    // reordering: drag a layer by its grip
+    panel.addEventListener('pointerdown', function (e) {
+      var g = e.target.closest('.pl-grip'); if (!g) return;
+      e.preventDefault(); e.stopPropagation();
+      var row = g.closest('.pl-row'), list = row.parentNode, y0 = e.clientY;
+      try { g.setPointerCapture(e.pointerId); } catch (x) {}
+      row.classList.add('dragging');
+      function mv(ev) {
+        var dy = ev.clientY - y0, prev = row.previousElementSibling, next = row.nextElementSibling;
+        if (next && dy > next.offsetHeight / 2) { list.insertBefore(next, row); y0 += next.offsetHeight + 2; }
+        else if (prev && dy < -prev.offsetHeight / 2) { list.insertBefore(row, prev); y0 -= prev.offsetHeight + 2; }
+        row.style.transform = 'translateY(' + (ev.clientY - y0) + 'px)';
+      }
+      function up() {
+        g.removeEventListener('pointermove', mv); g.removeEventListener('pointerup', up); g.removeEventListener('pointercancel', up);
+        row.classList.remove('dragging'); row.style.transform = '';
+        // the list shows the top layer first
+        var order = Array.prototype.map.call(list.children, function (r) { return layers[+r.dataset.i]; }).reverse();
+        if (order.some(function (L, i) { return L !== layers[i]; })) { if (sel) commitSelection(); rememberLayers(); layers = order; mount(); }
+        else renderLayers();
+        layerPanel(true);
+      }
+      g.addEventListener('pointermove', mv); g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up);
+    });
     function layerAct(a) {
       if (sel) commitSelection();
       var i = layers.indexOf(active);
@@ -2427,6 +2498,11 @@
         brushStyle(octx); octx.base = octx.lineWidth;
         if (piecewise()) {
           if (kind() === 'spray') { segment(octx, p, p, 0.5); sprayTimer = setInterval(function () { both(octx, function () { spray(octx, pts[pts.length - 1]); }); }, 35); }
+          else if (kind() === 'feather') {
+            // (keeps softly building while held still)
+            segment(octx, p, p, e.pressure || 0.5);
+            sprayTimer = setInterval(function () { var l = pts[pts.length - 1]; both(octx, function () { feather(octx, l, l, down ? down.pr || 0.5 : 0.5); }); }, 45);
+          }
           else segment(octx, p, p, e.pressure || 0.5);
         } else both(octx, function () { drawPath(octx); });
         return;
@@ -2455,7 +2531,7 @@
       }
       if (t === 'brush') {
         if (piecewise()) {
-          evs.forEach(function (ev) { var q = pos(ev); segment(octx, down.last, q, ev.pressure || 0.5); down.last = q; pts.push(q); });
+          evs.forEach(function (ev) { var q = pos(ev); down.pr = ev.pressure || 0.5; segment(octx, down.last, q, down.pr); down.last = q; pts.push(q); });
         } else {
           evs.forEach(function (ev) { var q = pos(ev), l = pts[pts.length - 1]; if (Math.hypot(q.x - l.x, q.y - l.y) > 0.8 / view.k) pts.push(q); });
           octx.clearRect(0, 0, W, H); brushStyle(octx); both(octx, function () { drawPath(octx); });
@@ -2476,6 +2552,7 @@
       down = null;
       if (t === 'smudge' || t === 'blur') { carry = [null, null]; return; }
       if (t === 'eraser') return;
+      if (t === 'gradient') grainOver();
       if (t === 'brush' && st.brush === 'highlighter') commit('multiply', Math.min(st.alpha, 0.45));
       else commit(null, st.alpha);
       useColor();
@@ -2551,7 +2628,8 @@
       if (z) { var cx = stage.clientWidth / 2, cy = stage.clientHeight / 2; if (z.dataset.zoom === 'fit') fit(); else zoomAt(view.k * (z.dataset.zoom === 'in' ? 1.4 : 1 / 1.4), cx, cy); return; }
       var sa = e.target.closest('[data-sel]'); if (sa) { selAction(sa.dataset.sel); return; }
       var le = e.target.closest('[data-layer-eye]'); if (le) { var L = layers[+le.dataset.layerEye]; L.visible = !L.visible; mount(); layerPanel(true); return; }
-      var ln = e.target.closest('[data-layer]'); if (ln) { if (sel) commitSelection(); active = layers[+ln.dataset.layer]; renderLayers(); layerPanel(true); return; }
+      var ln = e.target.closest('[data-layer]');
+      if (ln) { var L2 = layers[+ln.dataset.layer]; if (L2 === active) { rename(+ln.dataset.layer); return; } if (sel) commitSelection(); active = L2; renderLayers(); layerPanel(true); return; }
       var la = e.target.closest('[data-layer-act]'); if (la) { layerAct(la.dataset.layerAct); return; }
       var a = e.target.closest('[data-act]'); if (!a) return;
       if (a.dataset.act === 'layers') { openMenu(null); layerPanel(panel.hidden); }
