@@ -1935,7 +1935,8 @@
 // move, cutout, magic wand, colour picker, hand and light & dark; mirror.
 // (Filled shapes is a switch in the shapes list.) A selection stays while
 // you draw, and keeps everything inside it, until its X closes it. Holding
-// space grabs the picture, or the selection, with the mouse. Down the right:
+// space grabs whatever the mouse is over (or the whole picture, over
+// nothing). ADJUST opens sliders for the layer you're on. Down the right:
 // two colours, swatches, recent colours, size, opacity, undo / redo, open,
 // clear, layers and SAVE. The picture can be zoomed (pinch, ctrl + scroll,
 // the corner buttons) and moved around (hand, space, two fingers). An Apple
@@ -2093,6 +2094,7 @@
     function anyMenu() { return Object.keys(menus).some(function (t) { return !menus[t].el.hidden; }); }
 
     function setTool(t) {
+      if (adj) adjustDone();
       if (textBox) commitText();
       if (sel && !selTool(t)) anchor();
       st.tool = t;
@@ -2111,7 +2113,7 @@
       if (e.L) { e.L.ctx.save(); e.L.ctx.setTransform(1, 0, 0, 1, 0, 0); e.L.ctx.putImageData(e.data, 0, 0); e.L.ctx.restore(); }
       else { layers = e.list.slice(); layers.forEach(function (L, i) { L.visible = e.vis[i]; }); active = layers.indexOf(e.active) >= 0 ? e.active : layers[layers.length - 1]; mount(); }
     }
-    function doUndo() { if (textBox) commitText(); if (sel && sel.float) commitSelection(); if (!undo.length) return; var e = undo.pop(); redo.push(capture(e)); apply(e); buttons(); autosave(); }
+    function doUndo() { if (adj) adjustDone(); if (textBox) commitText(); if (sel && sel.float) commitSelection(); if (!undo.length) return; var e = undo.pop(); redo.push(capture(e)); apply(e); buttons(); autosave(); }
     function doRedo() { if (!redo.length) return; var e = redo.pop(); undo.push(capture(e)); apply(e); buttons(); autosave(); }
     function buttons() { $('[data-act="undo"]').disabled = !undo.length; $('[data-act="redo"]').disabled = !redo.length; }
 
@@ -2412,13 +2414,20 @@
     function selTool(t) { return t === 'select' || t === 'lasso' || t === 'wand'; }
     // MAGIC WAND: every connected pixel of a similar colour on the layer
     // (a mask, kept with the selection)
-    function wandAt(p) {
+    // (with paint set, it picks up all the paint joined to that spot instead:
+    // anything that isn't see-through, or on the background, isn't white)
+    function wandAt(p, paint) {
       var x0 = Math.floor(p.x * R), y0 = Math.floor(p.y * R), w = active.cv.width, h = active.cv.height;
       if (x0 < 0 || y0 < 0 || x0 >= w || y0 >= h) return;
-      var d = active.ctx.getImageData(0, 0, w, h).data, i0 = (y0 * w + x0) * 4;
+      var d = active.ctx.getImageData(0, 0, w, h).data, i0 = (y0 * w + x0) * 4, bg = active === layers[0];
       var tr = d[i0], tg = d[i0 + 1], tb = d[i0 + 2], ta = d[i0 + 3];
       var seen = new Uint8Array(w * h), stack = [x0, y0], minX = x0, maxX = x0, minY = y0, maxY = y0;
-      function like(k) { var j = k * 4; return Math.abs(d[j] - tr) + Math.abs(d[j + 1] - tg) + Math.abs(d[j + 2] - tb) + Math.abs(d[j + 3] - ta) <= 80; }
+      function like(k) {
+        var j = k * 4;
+        if (paint) return bg ? 765 - d[j] - d[j + 1] - d[j + 2] > 36 : d[j + 3] > 8;
+        return Math.abs(d[j] - tr) + Math.abs(d[j + 1] - tg) + Math.abs(d[j + 2] - tb) + Math.abs(d[j + 3] - ta) <= 80;
+      }
+      if (paint && !like(y0 * w + x0)) return;
       while (stack.length) {
         var y = stack.pop(), x = stack.pop(), k = y * w + x;
         while (x > 0 && !seen[k - 1] && like(k - 1)) { x--; k--; }
@@ -2514,7 +2523,7 @@
     function clearSel() { sel = null; selbar.hidden = true; selx.hidden = true; sctx.clearRect(0, 0, W, H); }
     // the little X on the selection's top left corner closes it
     function placeSelX() {
-      if (!sel || selMode) { selx.hidden = true; return; }
+      if (!sel || selMode || sel.thing) { selx.hidden = true; return; }
       selx.hidden = false;
       var x = view.x + sel.x * view.k, y = view.y + sel.y * view.k;
       selx.style.left = Math.round(Math.max(3, Math.min(stage.clientWidth - 25, x - 11))) + 'px';
@@ -2549,6 +2558,7 @@
       placeSelX();
       if (!sel) return;
       if (sel.float) sctx.drawImage(sel.float, sel.x, sel.y, sel.w, sel.h);
+      if (sel.thing) return;
       // a wand selection shows as a light blue wash over what's picked
       else if (sel.mask) { sctx.save(); sctx.globalAlpha = 0.35; sctx.drawImage(sel.tint || (sel.tint = tinted(sel.mask, '#2f7fd6')), sel.x, sel.y, sel.w, sel.h); sctx.restore(); }
       sctx.save(); sctx.lineWidth = 1 / view.k;
@@ -2680,6 +2690,112 @@
       } else return;
       mount(); layerPanel(true);
     }
+
+    // ---- ADJUST: sliders that change the picked layer (only inside the
+    // selection, if there is one); it's shown live and kept with DONE ----
+    var ADJ = [['exposure', 'Exposure', -100], ['contrast', 'Contrast', -100], ['brilliance', 'Brilliance', -100], ['highlights', 'Highlights', -100],
+      ['shadows', 'Shadows', -100], ['whites', 'Whites', -100], ['blacks', 'Blacks', -100], ['saturation', 'Saturation', -100], ['vibrance', 'Vibrance', -100],
+      ['warmth', 'Warmth', -100], ['tint', 'Tint', -100], ['sharpen', 'Sharpen', 0], ['clarity', 'Clarity', -100], ['vignette', 'Vignette', -100], ['grain', 'Grain', 0], ['fade', 'Fade', 0]];
+    var adjBox = document.createElement('div'), adj = null;
+    adjBox.className = 'paint-adjust'; adjBox.hidden = true; adjBox.setAttribute('role', 'dialog'); adjBox.setAttribute('aria-label', 'Adjust');
+    adjBox.innerHTML = '<div class="pa-title">ADJUST <span>this layer</span></div><div class="pa-list">' + ADJ.map(function (a) {
+      return '<label class="pa-row" data-adj-row="' + a[0] + '"><span>' + a[1].toUpperCase() + '</span><output>0</output>' +
+        '<input type="range" min="' + a[2] + '" max="100" step="1" value="0" data-adj="' + a[0] + '"></label>';
+    }).join('') + '</div><div class="pa-acts"><button type="button" data-adj-act="reset">RESET</button><button type="button" data-adj-act="cancel">CANCEL</button><button type="button" data-adj-act="done">DONE</button></div>';
+    left.appendChild(adjBox);
+    function adjustOpen() {
+      if (adj) { adjustDone(); return; }
+      if (textBox) commitText(); openMenu(null); layerPanel(false); anchor();
+      var cv = active.cv, src = active.ctx.getImageData(0, 0, cv.width, cv.height);
+      adj = { L: active, src: src, out: new ImageData(new Uint8ClampedArray(src.data), cv.width, cv.height), mask: sel ? selPixels() : null, v: {}, blur: null, wide: null, queued: false };
+      Array.prototype.forEach.call(adjBox.querySelectorAll('input'), function (i) { i.value = 0; i.previousElementSibling.textContent = '0'; });
+      adjBox.hidden = false; adjBox.style.top = Math.max(0, Math.min($('[data-act="adjust"]').offsetTop - 40, left.clientHeight - adjBox.offsetHeight)) + 'px';
+      $('[data-act="adjust"]').setAttribute('aria-expanded', 'true');
+    }
+    function adjustClose() { adj = null; adjBox.hidden = true; $('[data-act="adjust"]').setAttribute('aria-expanded', 'false'); }
+    function adjustPut(img) { var c = adj.L.ctx; c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.putImageData(img, 0, 0); c.restore(); }
+    function adjustDone() {
+      if (!adj) return;
+      var changed = Object.keys(adj.v).some(function (k) { return adj.v[k]; });
+      if (changed) { if (adj.queued) adjustRender(); push({ L: adj.L, data: adj.src }); } else adjustPut(adj.src);
+      adjustClose();
+    }
+    function adjustCancel() { if (!adj) return; adjustPut(adj.src); adjustClose(); }
+    function adjustQueue() { if (adj.queued) return; adj.queued = true; requestAnimationFrame(function () { if (adj && adj.queued) adjustRender(); }); }
+    // a soft copy of the layer (a box blur, one way then the other), for
+    // sharpen (small) and clarity (wide)
+    function boxBlur(d, w, h, r) {
+      var a = new Float32Array(w * h * 3), b = new Float32Array(w * h * 3), x, y, c, n = 2 * r + 1;
+      for (y = 0; y < h; y++) for (c = 0; c < 3; c++) {
+        var s = 0, row = y * w;
+        for (x = -r; x <= r; x++) s += d[(row + Math.min(w - 1, Math.max(0, x))) * 4 + c];
+        for (x = 0; x < w; x++) { a[(row + x) * 3 + c] = s / n; s += d[(row + Math.min(w - 1, x + r + 1)) * 4 + c] - d[(row + Math.max(0, x - r)) * 4 + c]; }
+      }
+      for (x = 0; x < w; x++) for (c = 0; c < 3; c++) {
+        var t = 0;
+        for (y = -r; y <= r; y++) t += a[(Math.min(h - 1, Math.max(0, y)) * w + x) * 3 + c];
+        for (y = 0; y < h; y++) { b[(y * w + x) * 3 + c] = t / n; t += a[(Math.min(h - 1, y + r + 1) * w + x) * 3 + c] - a[(Math.max(0, y - r) * w + x) * 3 + c]; }
+      }
+      return b;
+    }
+    function sstep(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+    function adjustRender() {
+      adj.queued = false;
+      var v = adj.v, val = function (k) { return (v[k] || 0) / 100; };
+      var ex = Math.pow(2, val('exposure') * 1.5), co = val('contrast'), hi = val('highlights'), sh = val('shadows'), wh = val('whites'), bl = val('blacks'), fa = val('fade');
+      // one curve for the tones, worked out once for all 256 levels
+      var lut = new Uint8ClampedArray(256), blut = new Float32Array(256), br = val('brilliance');
+      for (var i = 0; i < 256; i++) {
+        var x = i / 255 * ex;
+        x += sh * 0.3 * (1 - sstep(0, 0.55, x)) * (sh > 0 ? 1 - x : x);
+        x += hi * 0.3 * sstep(0.45, 1, x) * (hi > 0 ? 1 - x : x);
+        x += wh * 0.22 * sstep(0.55, 1.05, x);
+        x += bl * 0.16 * Math.pow(1 - Math.min(1, x), 3);
+        x = Math.max(0, Math.min(1, x));
+        x = co >= 0 ? x + co * 0.9 * (x * x * (3 - 2 * x) - x) * 1.6 : 0.5 + (x - 0.5) * (1 + co * 0.6);
+        x = fa ? x * (1 - fa * 0.22) + fa * 0.12 : x;
+        lut[i] = Math.round(Math.max(0, Math.min(1, x)) * 255);
+        // brilliance: brings up the darker parts and holds back the brightest
+        var L = i / 255; blut[i] = L ? Math.max(0, L + br * (0.45 * L * (1 - L) * (1 - L) - 0.25 * L * L * (1 - L))) / L : 1;
+      }
+      var sat = 1 + val('saturation'), vib = val('vibrance'), wa = val('warmth') * 28, ti = val('tint') * 24;
+      var shp = val('sharpen') * 1.6, cl = val('clarity') * 0.7, vg = val('vignette'), gr = val('grain') * 38;
+      var W2 = adj.src.width, H2 = adj.src.height, s = adj.src.data, o = adj.out.data, m = adj.mask;
+      if (shp && !adj.blur) adj.blur = boxBlur(s, W2, H2, 1);
+      if (cl && !adj.wide) adj.wide = boxBlur(s, W2, H2, Math.max(6, Math.round(14 * R)));
+      var cx = W2 / 2, cy = H2 / 2, rr = 1 / Math.hypot(cx, cy);
+      for (var y = 0, k = 0; y < H2; y++) {
+        for (var x2 = 0; x2 < W2; x2++, k += 4) {
+          var a = s[k + 3];
+          if (!a || (m && !m[k + 3])) { o[k] = s[k]; o[k + 1] = s[k + 1]; o[k + 2] = s[k + 2]; o[k + 3] = a; continue; }
+          var r = s[k], g = s[k + 1], b = s[k + 2], j = (k >> 2) * 3;
+          if (shp) { var bb = adj.blur; r += shp * (r - bb[j]); g += shp * (g - bb[j + 1]); b += shp * (b - bb[j + 2]); }
+          if (cl) { var ww = adj.wide, lw = (s[k] - ww[j] + s[k + 1] - ww[j + 1] + s[k + 2] - ww[j + 2]) / 3; r += cl * lw; g += cl * lw; b += cl * lw; }
+          r = lut[r < 0 ? 0 : r > 255 ? 255 : r | 0]; g = lut[g < 0 ? 0 : g > 255 ? 255 : g | 0]; b = lut[b < 0 ? 0 : b > 255 ? 255 : b | 0];
+          var l = 0.299 * r + 0.587 * g + 0.114 * b;
+          if (br) { var f = blut[l | 0]; r *= f; g *= f; b *= f; l *= f; }
+          if (sat !== 1 || vib) {
+            var mx = Math.max(r, g, b), mn = Math.min(r, g, b), ff = sat * (1 + vib * (1 - (mx - mn) / 255) * (vib > 0 ? 1 : 0.8));
+            r = l + (r - l) * ff; g = l + (g - l) * ff; b = l + (b - l) * ff;
+          }
+          if (wa) { r += wa; b -= wa; }
+          if (ti) { g -= ti; r += ti * 0.35; b += ti * 0.35; }
+          if (vg) { var dv = sstep(0.3, 1.05, Math.hypot(x2 - cx, y - cy) * rr) * vg * 0.75, gv = vg > 0 ? 1 - dv : 1; r = vg > 0 ? r * gv : r - dv * (255 - r); g = vg > 0 ? g * gv : g - dv * (255 - g); b = vg > 0 ? b * gv : b - dv * (255 - b); }
+          if (gr) { var n = ((Math.imul(k >> 2, 2654435761) >>> 0) % 1000 / 1000 - 0.5) * gr; r += n; g += n; b += n; }
+          o[k] = r; o[k + 1] = g; o[k + 2] = b; o[k + 3] = a;
+        }
+      }
+      adjustPut(adj.out);
+    }
+    adjBox.addEventListener('input', function (e) {
+      var i = e.target.closest('[data-adj]'); if (!i || !adj) return;
+      adj.v[i.dataset.adj] = +i.value; i.previousElementSibling.textContent = i.value; adjustQueue();
+    });
+    // double-click (or double-tap) a slider's name to put it back to 0
+    adjBox.addEventListener('dblclick', function (e) {
+      var row = e.target.closest('[data-adj-row]'); if (!row || !adj) return;
+      var i = row.querySelector('input'); i.value = 0; i.previousElementSibling.textContent = '0'; adj.v[i.dataset.adj] = 0; adjustQueue();
+    });
 
     // ---- the mouse's brush-size ring ----
     function ring(p) {
@@ -2822,6 +2938,7 @@
       if (spaceGrab) { e.preventDefault(); return; } // (space is already holding something)
       if (anyMenu()) openMenu(null);
       if (!panel.hidden) layerPanel(false);
+      if (adj) adjustDone();
       e.preventDefault();
       try { stage.setPointerCapture(e.pointerId); } catch (x) {}
       pointers[e.pointerId] = screen(e);
@@ -2855,12 +2972,32 @@
       if (spaceGrab) { moveGrab(); return; }
       ring(lastMouse.p);
     });
-    // HOLD SPACE: the mouse grabs the picture (or the selection, when it's
-    // over it) and moves it about; letting go of space puts it down
+    // HOLD SPACE: the mouse grabs whatever it's over (the selection, or the
+    // drawn thing under it, on whichever layer it's on) and moves it about;
+    // over nothing, it grabs the whole picture. Letting go puts it down.
+    function paintAt(p) {
+      var x = Math.floor(p.x * R), y = Math.floor(p.y * R);
+      if (x < 0 || y < 0 || x >= ov.width || y >= ov.height) return null;
+      for (var i = layers.length - 1; i >= 0; i--) {
+        var L = layers[i]; if (!L.visible) continue;
+        var d = L.ctx.getImageData(x, y, 1, 1).data;
+        if (i === 0 ? 765 - d[0] - d[1] - d[2] > 36 : d[3] > 8) return L;
+      }
+      return null;
+    }
     function grabWithSpace() {
       if (!lastMouse || down || pan || gesture || textBox) return;
-      var p = lastMouse.p, s = lastMouse.s;
+      var p = lastMouse.p, s = lastMouse.s, L;
+      if (adj) adjustDone();
       if (sel && !selMode && inSel(p)) { lift(); spaceGrab = { sel: true, ox: p.x - sel.x, oy: p.y - sel.y }; }
+      else if ((L = paintAt(p))) {
+        commitSelection();
+        if (L !== active) { active = L; renderLayers(); }
+        wandAt(p, true);
+        if (!sel) return;
+        sel.thing = true; lift();
+        spaceGrab = { sel: true, thing: true, ox: p.x - sel.x, oy: p.y - sel.y }; drawSel();
+      }
       else spaceGrab = { x: s.x, y: s.y, vx: view.x, vy: view.y };
       stage.classList.add('panning'); octx.clearRect(0, 0, W, H);
     }
@@ -2871,7 +3008,7 @@
     function letGoOfSpace() {
       spaceDown = false; stage.classList.remove('space');
       if (!spaceGrab) return;
-      if (spaceGrab.sel) autosave();
+      if (spaceGrab.thing) commitSelection(); else if (spaceGrab.sel) autosave();
       spaceGrab = null; stage.classList.remove('panning');
     }
     window.addEventListener('blur', function () { letGoOfSpace(); stage.classList.remove('picking'); });
@@ -2915,8 +3052,11 @@
       var ln = e.target.closest('[data-layer]');
       if (ln) { var L2 = layers[+ln.dataset.layer]; if (L2 === active) { rename(+ln.dataset.layer); return; } if (sel) commitSelection(); active = L2; renderLayers(); layerPanel(true); return; }
       var la = e.target.closest('[data-layer-act]'); if (la) { layerAct(la.dataset.layerAct); return; }
+      var aa = e.target.closest('[data-adj-act]');
+      if (aa) { var w2 = aa.dataset.adjAct; if (w2 === 'done') adjustDone(); else if (w2 === 'cancel') adjustCancel(); else { adjustCancel(); adjustOpen(); } return; }
       var a = e.target.closest('[data-act]'); if (!a) return;
       if (a.dataset.act === 'layers') { openMenu(null); layerPanel(panel.hidden); }
+      else if (a.dataset.act === 'adjust') adjustOpen();
       else if (a.dataset.act === 'undo') doUndo();
       else if (a.dataset.act === 'redo') doRedo();
       else if (a.dataset.act === 'clear') {
@@ -2930,6 +3070,7 @@
       if (!document.contains(root)) return;
       if (anyMenu() && !e.target.closest('.paint-brushes, button[data-tool]')) openMenu(null);
       if (!panel.hidden && !e.target.closest('.paint-layerpanel, [data-act="layers"]')) layerPanel(false);
+      if (adj && !e.target.closest('.paint-adjust, [data-act="adjust"], .paint-zoom')) adjustDone();
     }, true);
     colorIn.addEventListener('input', function () { setColor(colorIn.value); if (/eraser|picker|smudge|blur|tone|hand|select|lasso|wand/.test(st.tool)) setTool('brush'); });
     color2In.addEventListener('input', function () { setColor2(color2In.value); });
@@ -3040,11 +3181,13 @@
         }
         if (mod || e.altKey) return;
         if (k === ' ') { if (!spaceDown) { spaceDown = true; stage.classList.add('space'); grabWithSpace(); } e.preventDefault(); return; }
+        if (k === 'escape' && adj) { adjustCancel(); return; }
         if (k === 'escape') { openMenu(null); layerPanel(false); if (sel) commitSelection(); return; }
         if ((k === 'delete' || k === 'backspace') && sel) { e.preventDefault(); selAction('delete'); return; }
         if (k === 'enter' && sel) { selAction('done'); return; }
         var map = { b: 'brush', e: 'eraser', s: 'smudge', u: 'blur', l: 'line', r: 'shape', f: 'fill', g: 'gradient', t: 'text', m: 'select', q: 'lasso', w: 'wand', i: 'picker', h: 'hand', o: 'tone' };
         if (map[k]) setTool(map[k]);
+        else if (k === 'a') adjustOpen();
         else if (k === 'x') { var c1 = st.color; setColor(st.color2); setColor2(c1); }
         else if (k === '[') setSize(st.size - (st.size > 10 ? 4 : 1));
         else if (k === ']') setSize(st.size + (st.size >= 10 ? 4 : 1));
