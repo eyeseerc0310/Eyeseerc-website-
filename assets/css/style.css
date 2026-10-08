@@ -1347,6 +1347,29 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 }
 .paint .paint-savemenu button:hover { color: var(--text); background: rgba(var(--glow), .15); }
 @media (max-width: 560px) { .paint-savemenu { right: calc(100% + 6px); width: 170px; } }
+/* the brush-size ring (it follows the mouse, or a hovering Apple Pencil) */
+.paint-ring { position: absolute; left: 0; top: 0; z-index: 2; border-radius: 50%; pointer-events: none; border: 1px solid rgba(0, 0, 0, .55); box-shadow: 0 0 0 1px rgba(255, 255, 255, .8); }
+.paint-ring[hidden] { display: none; }
+/* the brush, shown in the middle while its size or opacity slider moves */
+.paint-preview {
+  position: absolute; left: 50%; top: 50%; z-index: 2; translate: -50% -50%; border-radius: 50%; pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .45), 0 0 0 2px rgba(255, 255, 255, .8);
+  background: repeating-conic-gradient(#e6e6e6 0 25%, #fff 0 50%) 0 0 / 10px 10px;
+  opacity: 0; transition: opacity .35s cubic-bezier(.45, 0, .55, 1);
+}
+.paint-preview.on { opacity: 1; transition-duration: .15s; }
+.paint-preview i { position: absolute; inset: 0; border-radius: 50%; }
+/* a colour being dragged from the swatches: it drops in and spreads */
+.paint .paint-swatches button, .paint .paint-recent button { touch-action: none; }
+.paint-blob {
+  position: fixed; left: 0; top: 0; z-index: 180; width: 26px; height: 26px; border-radius: 50%; pointer-events: none;
+  box-shadow: 0 0 0 2px #fff, 0 6px 16px rgba(0, 0, 0, .35);
+}
+.paint-blob.over { scale: 1.25; transition: scale .2s cubic-bezier(.45, 0, .55, 1); }
+.paint-blob.plop { animation: blob-plop .26s cubic-bezier(.45, 0, .55, 1) forwards; }
+.paint-blob.gone { animation: blob-gone .26s cubic-bezier(.45, 0, .55, 1) forwards; }
+@keyframes blob-plop { 40% { scale: 1.5; } to { scale: .2; opacity: 0; } }
+@keyframes blob-gone { to { scale: .3; opacity: 0; } }
 /* the X that closes a selection, on its top left corner */
 .paint .paint-selx {
   position: absolute; z-index: 3; width: 22px; height: 22px; border-radius: 50%;

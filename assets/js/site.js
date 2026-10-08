@@ -2904,14 +2904,28 @@
     });
 
     // ---- the mouse's brush-size ring ----
-    function ring(p) {
-      octx.clearRect(0, 0, W, H);
-      if (!p || !/brush|eraser|smudge|blur|tone/.test(st.tool)) return;
-      var r = st.tool === 'brush' && st.brush === 'highlighter' ? Math.max(10, st.size * 2.2) / 2 : (/smudge|blur|tone/.test(st.tool) ? Math.max(4, st.size) : st.size / 2);
-      octx.save(); octx.lineWidth = 1 / view.k;
-      octx.strokeStyle = 'rgba(0,0,0,.5)'; octx.beginPath(); octx.arc(p.x, p.y, Math.max(1, r), 0, Math.PI * 2); octx.stroke();
-      octx.strokeStyle = 'rgba(255,255,255,.75)'; octx.beginPath(); octx.arc(p.x, p.y, Math.max(1, r) + 1 / view.k, 0, Math.PI * 2); octx.stroke();
-      octx.restore();
+    // (a ring on the screen, so it can follow an Apple Pencil, hovering or drawing)
+    var ringEl = document.createElement('div'); ringEl.className = 'paint-ring'; ringEl.hidden = true; stage.appendChild(ringEl);
+    function brushR() { return st.tool === 'brush' && st.brush === 'highlighter' ? Math.max(10, st.size * 2.2) / 2 : (/smudge|blur|tone/.test(st.tool) ? Math.max(4, st.size) : st.size / 2); }
+    function showRing(p) {
+      if (!p || !/brush|eraser|smudge|blur|tone/.test(st.tool) || spaceGrab) { ringEl.hidden = true; return; }
+      var d = Math.max(2, brushR() * 2 * view.k);
+      ringEl.hidden = false; ringEl.style.width = ringEl.style.height = d + 'px';
+      ringEl.style.transform = 'translate(' + (view.x + p.x * view.k - d / 2) + 'px,' + (view.y + p.y * view.k - d / 2) + 'px)';
+    }
+    function hideRing() { ringEl.hidden = true; }
+    function ring(p) { octx.clearRect(0, 0, W, H); showRing(p); }
+
+    // ---- while the size or opacity slider moves: the brush, shown big in
+    // the middle of the picture, at its real size and see-through-ness ----
+    var prev = document.createElement('div'), prevTimer = 0;
+    prev.className = 'paint-preview'; prev.innerHTML = '<i></i>'; stage.appendChild(prev);
+    function preview() {
+      var d = Math.max(2, brushR() * 2 * view.k), dot = prev.firstChild;
+      prev.style.width = prev.style.height = d + 'px';
+      dot.style.background = st.tool === 'eraser' ? '#fff' : st.color; dot.style.opacity = st.alpha;
+      prev.classList.add('on'); clearTimeout(prevTimer);
+      prevTimer = setTimeout(function () { prev.classList.remove('on'); }, 900);
     }
 
     // ---- pointers: drawing, moving the picture around, pinching to zoom ----
@@ -3074,6 +3088,7 @@
         if (pan) { pan = null; stage.classList.remove('panning'); }
       }
       try { stage.setPointerCapture(e.pointerId); } catch (x) {}
+      if (e.pointerType === 'mouse') hideRing();
       pointers[e.pointerId] = screen(e); ptype[e.pointerId] = e.pointerType;
       var ids = Object.keys(pointers);
       // only two fingers pinch
@@ -3099,13 +3114,15 @@
         return;
       }
       if (pan) { var s = screen(e); view.x = pan.vx + s.x - pan.x; view.y = pan.vy + s.y - pan.y; applyView(); return; }
-      if (down && e.pointerId === down.id) { move(e); return; }
+      if (down && e.pointerId === down.id) { move(e); if (down && down.pen) showRing(pos(e)); return; }
+      // an Apple Pencil hovering over the picture shows the brush size too
+      if (e.pointerType === 'pen' && !down) { showRing(pos(e)); return; }
       if (e.pointerType !== 'mouse' || down) return;
       lastMouse = { s: screen(e), p: pos(e) };
       if (spaceDown && !spaceGrab) grabWithSpace();
-      if (spaceGrab) { moveGrab(); return; }
+      if (spaceGrab) { hideRing(); moveGrab(); return; }
       var cq = cornerAt(lastMouse.p, false); cornerCursor(cq);
-      if (cq) { octx.clearRect(0, 0, W, H); return; }
+      if (cq) { octx.clearRect(0, 0, W, H); hideRing(); return; }
       ring(lastMouse.p);
     });
     // HOLD SPACE: the mouse grabs whatever it's over (the selection, or the
@@ -3150,6 +3167,7 @@
     window.addEventListener('blur', function () { letGoOfSpace(); stage.classList.remove('picking'); });
     function up(e) {
       delete pointers[e.pointerId]; delete ptype[e.pointerId];
+      if (e.pointerType === 'pen') hideRing();
       if (gesture) { if (Object.keys(pointers).length < 2) gesture = null; return; }
       if (pan) { pan = null; stage.classList.remove('panning'); return; }
       if (down && e.pointerId === down.id) end();
@@ -3157,7 +3175,7 @@
     stage.addEventListener('pointerup', up);
     stage.addEventListener('contextmenu', function (e) { if (sel && !selMode && inSel(pos(e))) { e.preventDefault(); invertSel(); } });
     stage.addEventListener('pointercancel', function (e) { if (down && e.pointerId === down.id) cancelStroke(); up(e); });
-    stage.addEventListener('pointerleave', function (e) { if (!down && e.pointerType === 'mouse') { octx.clearRect(0, 0, W, H); if (!spaceGrab) lastMouse = null; } });
+    stage.addEventListener('pointerleave', function (e) { if (!down) hideRing(); if (!down && e.pointerType === 'mouse') { octx.clearRect(0, 0, W, H); if (!spaceGrab) lastMouse = null; } });
     // ctrl / cmd + scroll (and a trackpad pinch) zooms; scrolling moves a zoomed-in picture
     stage.addEventListener('wheel', function (e) {
       var s = screen(e);
@@ -3213,8 +3231,65 @@
     }, true);
     colorIn.addEventListener('input', function () { setColor(colorIn.value); if (/eraser|picker|smudge|blur|tone|hand|select|lasso|wand/.test(st.tool)) setTool('brush'); });
     color2In.addEventListener('input', function () { setColor2(color2In.value); });
-    sizeIn.addEventListener('input', function () { setSize(+sizeIn.value); if (textBox) placeTextBox(); });
-    alphaIn.addEventListener('input', function () { st.alpha = +alphaIn.value / 100; alphaIn.nextElementSibling.textContent = alphaIn.value; });
+    sizeIn.addEventListener('input', function () { setSize(+sizeIn.value); if (textBox) placeTextBox(); preview(); });
+    alphaIn.addEventListener('input', function () { st.alpha = +alphaIn.value / 100; alphaIn.nextElementSibling.textContent = alphaIn.value; preview(); });
+
+    // ---- DRAG A COLOUR onto the picture: it drops in and spreads out to
+    // fill the area it lands on (like the fill tool) ----
+    var blob = null;
+    right.addEventListener('pointerdown', function (e) {
+      var sw = e.target.closest('.paint-swatches button, .paint-recent button');
+      if (!sw || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      var start = { x: e.clientX, y: e.clientY, c: sw.dataset.color, el: sw, id: e.pointerId, on: false };
+      try { sw.setPointerCapture(e.pointerId); } catch (x) {}
+      function mv(ev) {
+        if (!start.on) {
+          if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < 6) return;
+          start.on = true;
+          blob = document.createElement('div'); blob.className = 'paint-blob'; blob.style.background = start.c;
+          document.body.appendChild(blob);
+        }
+        blob.style.transform = 'translate(' + (ev.clientX - 13) + 'px,' + (ev.clientY - 13) + 'px)';
+        var over = document.elementFromPoint(ev.clientX, ev.clientY);
+        blob.classList.toggle('over', !!(over && over.closest('.paint-stage')));
+      }
+      function done(ev) {
+        sw.removeEventListener('pointermove', mv); sw.removeEventListener('pointerup', done); sw.removeEventListener('pointercancel', done);
+        if (!start.on) return;
+        // (it was dragged, so the tap that follows isn't a colour pick)
+        var stop = function (c) { c.stopPropagation(); c.preventDefault(); };
+        sw.addEventListener('click', stop, true); setTimeout(function () { sw.removeEventListener('click', stop, true); }, 0);
+        setTimeout(function () { var b = blob; blob = null; if (b) b.remove(); }, ev.type === 'pointerup' ? 260 : 0);
+        var over = ev.type === 'pointerup' && document.elementFromPoint(ev.clientX, ev.clientY);
+        if (blob) { blob.classList.add(over && over.closest('.paint-stage') ? 'plop' : 'gone'); }
+        if (over && over.closest('.paint-stage') && !over.closest('.paint-zoom, .paint-selbar, .paint-selx')) {
+          var r = stage.getBoundingClientRect();
+          plopFill({ x: (ev.clientX - r.left - view.x) / view.k, y: (ev.clientY - r.top - view.y) / view.k }, start.c);
+        }
+      }
+      sw.addEventListener('pointermove', mv); sw.addEventListener('pointerup', done); sw.addEventListener('pointercancel', done);
+    });
+    function plopFill(p, color) {
+      if (p.x < 0 || p.y < 0 || p.x > W || p.y > H) return;
+      if (adj) adjustDone(); if (textBox) commitText(); anchor();
+      var L = active, before = document.createElement('canvas'); before.width = L.cv.width; before.height = L.cv.height;
+      before.getContext('2d').drawImage(L.cv, 0, 0);
+      remember();
+      var keep = st.color; st.color = color; fillAt(p); st.color = keep;
+      var after = document.createElement('canvas'); after.width = L.cv.width; after.height = L.cv.height;
+      after.getContext('2d').drawImage(L.cv, 0, 0);
+      // the new colour spreads out from where it landed (slow, fast, slow)
+      var far = Math.max(Math.hypot(p.x, p.y), Math.hypot(W - p.x, p.y), Math.hypot(p.x, H - p.y), Math.hypot(W - p.x, H - p.y));
+      var t0 = performance.now(), dur = 520 + Math.min(380, far * 0.4), c = L.ctx;
+      function frame(now) {
+        var t = Math.min(1, (now - t0) / dur), e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, L.cv.width, L.cv.height); c.drawImage(before, 0, 0); c.restore();
+        c.save(); c.beginPath(); c.arc(p.x, p.y, Math.max(0.5, far * e), 0, Math.PI * 2); c.clip();
+        c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, L.cv.width, L.cv.height); c.drawImage(after, 0, 0); c.restore();
+        if (t < 1) requestAnimationFrame(frame); else autosave();
+      }
+      requestAnimationFrame(frame);
+    }
     $('.paint-open input').addEventListener('change', function (e) {
       var f = e.target.files && e.target.files[0]; if (!f) return;
       var im = new Image();
