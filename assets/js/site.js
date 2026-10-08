@@ -1749,6 +1749,8 @@
         bar.appendChild(b);
       });
       filter.insertAdjacentElement('afterend', bar);
+      // (anything marked for it sits at the right end of this line)
+      var extra = filter.parentNode.querySelector('[data-into-grid-size]'); if (extra) bar.appendChild(extra);
       bar.addEventListener('click', function (e) {
         var b = e.target.closest('button'); if (!b) return;
         var n = +b.dataset.cols;

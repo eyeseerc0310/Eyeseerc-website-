@@ -5,10 +5,17 @@ permalink: /projects/
 tight_top: true
 description: "Projects by {{ site.title }}"
 ---
-<h1 class="page-title">PROJECTS</h1>
+{% comment %} TRYING OUT: four places for the paint button (1-4); one will stay {% endcomment %}
+<h1 class="page-title"><span class="pj-title">PROJECTS<a class="pj-paint pj-paint-1" href="{{ '/draw/' | relative_url }}" aria-label="Paint" title="Paint">{% include paint-icon.html %}<span class="pick-no">1</span></a></span></h1>
 <div class="gallery-filter" role="group" aria-label="Show">
   <button type="button" data-filter="digital" aria-pressed="true">DIGITAL</button>
   {% comment %} data-soon: not open yet; clicking it just gives the line a shake {% endcomment %}
   <button type="button" data-filter="physical" aria-pressed="false" data-soon aria-disabled="true">PHYSICAL<span class="soon-note">COMING SOON</span></button>
 </div>
+{% comment %} (moved into the photos-per-row line, at its right end) {% endcomment %}
+<a class="pj-paint pj-paint-2" data-into-grid-size href="{{ '/draw/' | relative_url }}" aria-label="Paint" title="Paint">{% include paint-icon.html %}<span class="pick-no">2</span></a>
 {% include gallery.html folder="projects" style="grid" shape="natural" show_kind="digital" digital_caption="???" %}
+<div class="pj-end">
+  <a class="pj-paint pj-paint-4" href="{{ '/draw/' | relative_url }}" aria-label="Paint" title="Paint">{% include paint-icon.html %}<span class="pj-label">DRAW</span><span class="pick-no">4</span></a>
+</div>
+<a class="pj-paint pj-paint-3" href="{{ '/draw/' | relative_url }}" aria-label="Paint" title="Paint">{% include paint-icon.html %}<span class="pick-no">3</span></a>
