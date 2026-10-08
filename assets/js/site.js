@@ -112,9 +112,28 @@
   // and their prices are set in _config.yml); the price follows the size.
   function buildPanel(link) {
     var d = link.dataset, unit = parseFloat(d.price) || 0, qty = 1;
-    var sizes = link.hasAttribute('data-sizes') && window.SHOP && window.SHOP.sizes || [];
-    var size = sizes[0] || null;
-    if (size) unit = parseFloat(size.price) || unit;
+    var S = window.SHOP || {};
+    var sizes = link.hasAttribute('data-sizes') && S.sizes || [];
+    // Shop 2 (trial): PAPER and FRAME too, plus SEE IT ON A WALL / SIZE GUIDE
+    var extras = sizes.length > 0 && link.hasAttribute('data-extras');
+    var papers = extras && S.papers || [], frames = extras && S.frames || [];
+    var pick = { size: sizes[0] || null, paper: papers[0] || null, frame: frames[0] || null };
+    var lists = { size: sizes, paper: papers, frame: frames };
+    function framed() { return !!(pick.frame && pick.frame.color); }
+    function framePrice() { return framed() ? (parseFloat((S.framePrices || [])[sizes.indexOf(pick.size)]) || 0) : 0; }
+    function price() {
+      if (!pick.size) return unit;
+      return (parseFloat(pick.size.price) || 0) + (pick.paper ? parseFloat(pick.paper.price) || 0 : 0) + framePrice();
+    }
+    function menu(key, label) {
+      return '<div class="lb-size" data-pick="' + key + '">' +
+        '<button type="button" class="lb-size-btn" aria-haspopup="listbox" aria-expanded="false">' +
+          '<span>' + label + '</span><span class="lb-size-val"></span>' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>' +
+        '</button>' +
+        '<div class="lb-size-list" role="listbox"></div>' +
+      '</div>';
+    }
     panel.innerHTML =
       '<div class="lb-panel-title"></div><p class="lb-panel-desc"></p>' +
       '<div class="lb-panel-row">' +
@@ -122,60 +141,84 @@
         '<div class="lb-panel-price"></div>' +
         '<button type="button" class="lb-panel-add"><span>ADD TO CART</span></button>' +
       '</div>' +
-      (sizes.length ?
-        '<div class="lb-size">' +
-          '<button type="button" class="lb-size-btn" aria-haspopup="listbox" aria-expanded="false">' +
-            '<span>SIZE</span><span class="lb-size-val"></span>' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>' +
-          '</button>' +
-          '<div class="lb-size-list" role="listbox"></div>' +
-        '</div>' : '');
+      (sizes.length ? menu('size', 'SIZE') : '') +
+      (extras ? '<div class="lb-opts">' + menu('paper', 'PAPER') + menu('frame', 'FRAME') + '</div>' +
+        '<div class="lb-tools"><button type="button" data-tool="wall">SEE IT ON A WALL</button><span aria-hidden="true">\u00b7</span><button type="button" data-tool="guide">SIZE GUIDE</button></div>' : '');
     panel.querySelector('.lb-panel-title').textContent = d.title || '';
     panel.querySelector('.lb-panel-desc').textContent = d.desc || '';
     var qtyEl = panel.querySelector('.lb-qty span'), priceEl = panel.querySelector('.lb-panel-price');
-    var sizeBox = panel.querySelector('.lb-size');
-    if (sizeBox) {
-      var list = sizeBox.querySelector('.lb-size-list');
-      sizes.forEach(function (sz, i) {
-        var o = document.createElement('button');
-        o.type = 'button'; o.className = 'lb-size-opt'; o.setAttribute('role', 'option'); o.dataset.i = i;
-        o.innerHTML = '<span></span><span></span>';
-        o.firstChild.textContent = sz.size + ' in'; o.lastChild.textContent = money(parseFloat(sz.price) || 0);
-        list.appendChild(o);
+    var boxes = Array.prototype.slice.call(panel.querySelectorAll('.lb-size'));
+    boxes.forEach(function (b) {
+      var key = b.dataset.pick, list = b.querySelector('.lb-size-list');
+      lists[key].forEach(function (o, i) {
+        var el = document.createElement('button');
+        el.type = 'button'; el.className = 'lb-size-opt'; el.setAttribute('role', 'option'); el.dataset.i = i;
+        el.innerHTML = '<span></span><span></span>';
+        if (key === 'size') { el.firstChild.textContent = o.size + ' in'; el.lastChild.textContent = money(parseFloat(o.price) || 0); }
+        else if (key === 'paper') { el.firstChild.textContent = o.name; el.lastChild.textContent = parseFloat(o.price) ? '+' + money(parseFloat(o.price)) : ''; }
+        else { el.firstChild.textContent = o.color ? o.name : 'No frame'; el.lastChild.className = 'lb-frame-chip'; if (o.color) el.lastChild.style.background = o.color; }
+        list.appendChild(el);
       });
+    });
+    function val(key) {
+      var o = pick[key];
+      return key === 'size' ? o.size + ' IN' : o.name.toUpperCase();
     }
     function update() {
+      unit = price();
       qtyEl.textContent = qty;
       priceEl.textContent = link.hasAttribute('data-sold-out') ? 'Sold out' : money(unit * qty);
-      if (sizeBox) {
-        sizeBox.querySelector('.lb-size-val').textContent = size.size + ' IN';
-        Array.prototype.forEach.call(sizeBox.querySelectorAll('.lb-size-opt'), function (o) {
-          o.setAttribute('aria-selected', sizes[o.dataset.i] === size ? 'true' : 'false');
+      boxes.forEach(function (b) {
+        var key = b.dataset.pick;
+        b.querySelector('.lb-size-val').textContent = val(key);
+        Array.prototype.forEach.call(b.querySelectorAll('.lb-size-opt'), function (o) {
+          o.setAttribute('aria-selected', lists[key][o.dataset.i] === pick[key] ? 'true' : 'false');
+          // the frame list shows each frame's price for the size picked
+          if (key === 'frame' && lists.frame[o.dataset.i].color) o.lastChild.textContent = '+' + money(parseFloat((S.framePrices || [])[sizes.indexOf(pick.size)]) || 0);
         });
-      }
+      });
     }
-    function sizeMenu(open) {
-      if (!sizeBox) return;
-      sizeBox.classList.toggle('open', open);
-      sizeBox.querySelector('.lb-size-btn').setAttribute('aria-expanded', open ? 'true' : 'false');
+    function sizeMenu(b, open) {
+      boxes.forEach(function (x) {
+        var on = x === b && open;
+        x.classList.toggle('open', on);
+        x.querySelector('.lb-size-btn').setAttribute('aria-expanded', on ? 'true' : 'false');
+      });
     }
     update();
     if (link.hasAttribute('data-sold-out')) {
       panel.querySelector('.lb-panel-add').hidden = true; panel.querySelector('.lb-qty').hidden = true;
-      if (sizeBox) sizeBox.hidden = true;
+      boxes.forEach(function (b) { b.hidden = true; });
+      var tools = panel.querySelector('.lb-tools'); if (tools) tools.hidden = true;
     }
+    // (the wall view's size buttons change the size here too)
+    function setSize(i) { pick.size = sizes[i]; update(); }
     panel.onclick = function (e) {
       var q = e.target.closest('[data-q]');
       if (q) { qty = Math.max(1, Math.min(99, qty + parseInt(q.dataset.q, 10))); update(); return; }
-      if (e.target.closest('.lb-size-btn')) { sizeMenu(!sizeBox.classList.contains('open')); return; }
+      var btn = e.target.closest('.lb-size-btn');
+      if (btn) { var b = btn.parentNode; sizeMenu(b, !b.classList.contains('open')); return; }
       var opt = e.target.closest('.lb-size-opt');
-      if (opt) { size = sizes[opt.dataset.i]; unit = parseFloat(size.price) || 0; update(); sizeMenu(false); return; }
-      sizeMenu(false);
+      if (opt) { var key = opt.closest('.lb-size').dataset.pick; pick[key] = lists[key][opt.dataset.i]; update(); sizeMenu(null, false); return; }
+      sizeMenu(null, false);
+      var tool = e.target.closest('[data-tool]');
+      if (tool && window.eyeseercPrintTools) {
+        window.eyeseercPrintTools.open(tool.dataset.tool, {
+          image: img.currentSrc || img.src, w: img.naturalWidth, h: img.naturalHeight,
+          sizes: sizes, size: sizes.indexOf(pick.size), frame: pick.frame, onSize: setSize
+        });
+        return;
+      }
       if (e.target.closest('.lb-panel-add') && window.eyeseercCart) {
-        var sid = size ? '-' + size.size.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+        var slug = function (t) { return '-' + String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
+        var sid = pick.size ? slug(pick.size.size) : '', extra = '';
+        var title = (d.title || '') + (pick.size ? ' \u2014 ' + pick.size.size + ' in' : '');
+        if (extras) {
+          sid += slug(pick.paper.name) + slug(pick.frame.name);
+          title += ', ' + pick.paper.name.toLowerCase() + ', ' + (framed() ? pick.frame.name.toLowerCase() + ' frame' : 'no frame');
+        }
         // (the cart slides in over the print, which stays open behind it)
-        window.eyeseercCart.add({ id: d.id + sid, title: (d.title || '') + (size ? ' \u2014 ' + size.size + ' in' : ''),
-          price: unit, image: d.image, variant: d.variant || '' }, qty);
+        window.eyeseercCart.add({ id: d.id + sid, title: title, price: unit, image: d.image, variant: d.variant || '' }, qty);
       }
     };
   }
@@ -204,8 +247,9 @@
   window.addEventListener('resize', sizePanel);
   // a click anywhere else in the viewer closes an open SIZE list
   box.addEventListener('click', function (e) {
-    var open = panel.querySelector('.lb-size.open');
-    if (open && !open.contains(e.target)) { open.classList.remove('open'); open.querySelector('.lb-size-btn').setAttribute('aria-expanded', 'false'); }
+    Array.prototype.forEach.call(panel.querySelectorAll('.lb-size.open'), function (open) {
+      if (!open.contains(e.target)) { open.classList.remove('open'); open.querySelector('.lb-size-btn').setAttribute('aria-expanded', 'false'); }
+    });
   }, true);
 
   // ---- Shop items: more photos stacked behind the main one ----
@@ -767,6 +811,7 @@
     e.preventDefault();
     var shopItem = link.hasAttribute('data-shop');
     box.classList.toggle('shop-mode', shopItem);
+    box.classList.toggle('shop-extras', shopItem && link.hasAttribute('data-extras'));
     if (!shopItem) {
       geo = null; prog = target = 0; minStep = 0;
       if (raf) { cancelAnimationFrame(raf); raf = null; }
@@ -1864,4 +1909,129 @@
   });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
   document.addEventListener('pageswap:done', setup);
+})();
+
+// Shop 2 (trial): SEE IT ON A WALL and SIZE GUIDE, opened from a print's
+// details box. One overlay over the viewer: a room with the print hung over a
+// sofa, to scale, in the frame picked; or a to-scale diagram of every size
+// next to a person. Size buttons along the bottom switch sizes (and the
+// details box follows). A tap outside, DONE or Escape closes it.
+(function () {
+  var ov = null, room, art, sofa, chips, title, body, guide, state = null, mode = '';
+  var SOFA_W = 84, SOFA_H = 33; // inches
+  function dims(i) {
+    var n = String(state.sizes[i].size).match(/[\d.]+/g) || [8, 12];
+    var a = parseFloat(n[0]), b = parseFloat(n[1] || n[0]);
+    var lo = Math.min(a, b), hi = Math.max(a, b);
+    return state.w >= state.h ? { w: hi, h: lo } : { w: lo, h: hi };
+  }
+  function build() {
+    ov = document.createElement('div');
+    ov.className = 'pt-overlay';
+    ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    ov.innerHTML =
+      '<div class="pt-box">' +
+        '<div class="pt-head"><span class="pt-title"></span><button type="button" class="pt-done">DONE</button></div>' +
+        '<div class="pt-body">' +
+          '<div class="pt-room"><div class="pt-wall"></div><div class="pt-floor"></div>' +
+            '<div class="pt-art"><img alt=""></div>' +
+            '<svg class="pt-sofa" viewBox="0 0 84 33" preserveAspectRatio="none" aria-hidden="true">' +
+              '<rect x="4" y="2" width="76" height="19" rx="3.5" fill="#5f6469"/>' +
+              '<rect x="0" y="10" width="9" height="19" rx="3" fill="#575c61"/><rect x="75" y="10" width="9" height="19" rx="3" fill="#575c61"/>' +
+              '<rect x="8" y="17" width="34" height="10" rx="2.5" fill="#6c7176"/><rect x="42" y="17" width="34" height="10" rx="2.5" fill="#6c7176"/>' +
+              '<rect x="7" y="26" width="70" height="4" rx="1" fill="#52575c"/>' +
+              '<rect x="9" y="30" width="2.2" height="3" fill="#2e2a26"/><rect x="72.8" y="30" width="2.2" height="3" fill="#2e2a26"/>' +
+            '</svg>' +
+          '</div>' +
+          '<div class="pt-guide"></div>' +
+        '</div>' +
+        '<div class="pt-chips" role="group" aria-label="Size"></div>' +
+        '<p class="pt-note"></p>' +
+      '</div>';
+    document.body.appendChild(ov);
+    room = ov.querySelector('.pt-room'); art = ov.querySelector('.pt-art'); sofa = ov.querySelector('.pt-sofa');
+    chips = ov.querySelector('.pt-chips'); title = ov.querySelector('.pt-title'); guide = ov.querySelector('.pt-guide');
+    ov.addEventListener('click', function (e) {
+      if (e.target === ov || e.target.closest('.pt-done')) { close(); return; }
+      var c = e.target.closest('[data-size]');
+      if (c) { pickSize(parseInt(c.dataset.size, 10)); }
+    });
+    // nothing in here moves the viewer behind it
+    ['wheel', 'touchstart', 'touchmove', 'touchend'].forEach(function (t) {
+      ov.addEventListener(t, function (e) { e.stopPropagation(); }, { passive: true });
+    });
+    window.addEventListener('resize', function () { if (state) layout(); });
+  }
+  function pickSize(i) {
+    state.size = i;
+    if (state.onSize) state.onSize(i);
+    layout();
+  }
+  function layout() {
+    Array.prototype.forEach.call(chips.children, function (c) { c.setAttribute('aria-pressed', +c.dataset.size === state.size ? 'true' : 'false'); });
+    var d = dims(state.size);
+    if (mode === 'wall') {
+      // the room is this many inches wide (narrower on a phone, so the print reads bigger)
+      var W = room.clientWidth, H = room.clientHeight, R = W / H > 1.2 ? 150 : 100, k = W / R;
+      var floorY = H * 0.84;
+      sofa.style.width = SOFA_W * k + 'px'; sofa.style.height = SOFA_H * k + 'px';
+      sofa.style.left = (W - SOFA_W * k) / 2 + 'px'; sofa.style.top = floorY - SOFA_H * k + 'px';
+      // hung with its bottom 9 in above the back of the sofa
+      var fr = state.frame && state.frame.color ? 1.25 : 0;
+      var aw = (d.w + 2 * fr) * k, ah = (d.h + 2 * fr) * k;
+      art.style.width = aw + 'px'; art.style.height = ah + 'px';
+      art.style.left = (W - aw) / 2 + 'px'; art.style.top = floorY - SOFA_H * k - 9 * k - ah + 'px';
+      art.style.borderWidth = fr * k + 'px';
+      art.style.borderColor = fr ? state.frame.color : 'transparent';
+      ov.querySelector('.pt-note').textContent = state.sizes[state.size].size + ' in print' + (fr ? ', ' + state.frame.name.toLowerCase() + ' frame' : '') + ' · over an 84 in sofa';
+    } else {
+      // every size drawn to scale on a wall, centred at eye level (57 in), next to a 5′9″ person
+      var all = state.sizes.map(function (s, i) { return dims(i); });
+      var cx = 54, cy = 90 - 57, svg = '<svg viewBox="0 0 84 92" aria-hidden="true">' +
+        '<line class="pt-g-floor" x1="0" y1="90" x2="84" y2="90"/>' +
+        '<path class="pt-g-person" d="M10.5 27.5q4.5-1.6 9 0l2.6 1.8q1.2.9 1.2 2.6l.4 18.6q0 1.9-1.7 1.9l-.6-.8-.6 38.4h-4.9l-.6-33.4h-1.2l-.6 33.4H8.6L8 51.6l-.6.8q-1.7 0-1.7-1.9l.4-18.6q0-1.7 1.2-2.6z"/>' +
+        '<circle class="pt-g-person" cx="15" cy="22.3" r="4.3"/>' +
+        '<text class="pt-g-label" x="15" y="15.2" text-anchor="middle">5′9″</text>';
+      // the size picked shows the photo; every size is outlined (and named) over it
+      var r0 = all[state.size];
+      svg += '<image href="' + state.image + '" x="' + (cx - r0.w / 2) + '" y="' + (cy - r0.h / 2) + '" width="' + r0.w + '" height="' + r0.h + '" preserveAspectRatio="xMidYMid slice" opacity=".9"/>';
+      all.forEach(function (r, i) {
+        var x = cx - r.w / 2, y = cy - r.h / 2, on = i === state.size;
+        svg += '<rect class="pt-g-print' + (on ? ' on' : '') + '" x="' + x + '" y="' + y + '" width="' + r.w + '" height="' + r.h + '"/>';
+        svg += '<text class="pt-g-size' + (on ? ' on' : '') + '" x="' + (x + 0.5) + '" y="' + (y + 2.1) + '">' + state.sizes[i].size.replace(/\s/g, '') + '</text>';
+      });
+      svg += '</svg>';
+      var rows = state.sizes.map(function (s, i) {
+        var r = dims(i);
+        return '<tr' + (i === state.size ? ' class="on"' : '') + '><td>' + s.size + ' in</td><td>' + Math.round(r.w * 2.54) + ' × ' + Math.round(r.h * 2.54) + ' cm</td><td>' + ((window.SHOP && window.SHOP.currency) || '$') + s.price + '</td></tr>';
+      }).join('');
+      guide.innerHTML = svg + '<table class="pt-g-table">' + rows + '</table>';
+      ov.querySelector('.pt-note').textContent = 'Every size to scale, hung at eye level';
+    }
+  }
+  function onKey(e) {
+    if (!state) return;
+    if (e.key === 'Escape') close();
+    if (e.key === 'Escape' || e.key.indexOf('Arrow') === 0) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }
+  function open(kind, s) {
+    if (!ov) build();
+    state = s; mode = kind;
+    ov.classList.toggle('pt-wallmode', kind === 'wall');
+    title.textContent = kind === 'wall' ? 'SEE IT ON A WALL' : 'SIZE GUIDE';
+    ov.querySelector('.pt-art img').src = s.image;
+    chips.innerHTML = s.sizes.map(function (z, i) { return '<button type="button" data-size="' + i + '">' + z.size + '</button>'; }).join('');
+    ov.classList.add('open');
+    window.addEventListener('keydown', onKey, true);
+    requestAnimationFrame(layout);
+    setTimeout(function () { var b = ov.querySelector('.pt-done'); if (b) b.focus({ preventScroll: true }); }, 50);
+  }
+  function close() {
+    if (!ov) return;
+    ov.classList.remove('open');
+    state = null;
+    window.removeEventListener('keydown', onKey, true);
+  }
+  window.eyeseercPrintTools = { open: open, close: close };
+  document.addEventListener('pageswap:done', close);
 })();
