@@ -99,7 +99,7 @@
       </a>
       {% endif %}
     </div>
-    <p>&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.{% comment %} the spinning mark opens the (hidden) drawing page {% endcomment %}<a class="footer-mark-wrap" href="{{ '/draw/' | relative_url }}" aria-label="Draw" title="Draw"><img class="footer-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392"></a></p>
+    <p>&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.{% comment %} the spinning mark opens the (hidden) drawing page {% endcomment %}<a class="footer-mark-wrap" href="{{ '/draw/' | relative_url }}" aria-label="Draw" title="Draw"><img class="footer-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392" draggable="false"></a></p>
   </footer>
 
   <script>window.SHOP = { store: {{ site.shopify_store | jsonify }}, currency: {{ site.currency | jsonify }}, sizes: {{ site.print_sizes | jsonify }}, papers: {{ site.print_papers | jsonify }} };</script>
