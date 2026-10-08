@@ -36,27 +36,6 @@ print_sizes:
   - size: "20 × 30"
     price: 160
 
-# Shop 2 (trial page) extras in the details box: a PAPER drop-down (price is
-# added to the print), a FRAME drop-down (frame_prices: one per print size
-# above, same order), plus SEE IT ON A WALL and SIZE GUIDE.
-print_papers:
-  - name: "Matte"
-    price: 0
-  - name: "Lustre"
-    price: 0
-  - name: "Fine art"
-    price: 20
-print_frames:
-  - name: "None"
-    color: ""
-  - name: "Black"
-    color: "#1c1c1c"
-  - name: "White"
-    color: "#f1efea"
-  - name: "Oak"
-    color: "#b48a5c"
-frame_prices: [45, 65, 90, 125]
-
 # Your Shopify store's address, e.g. "eyeseerc.myshopify.com". When this is
 # set (and each shop item has a shopify_variant number in _data/shop.yml) the
 # cart's CHECK OUT button sends buyers to Shopify's checkout. Until then the
