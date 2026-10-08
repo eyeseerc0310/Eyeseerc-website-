@@ -2020,7 +2020,7 @@
       layers.forEach(function (L) { L.cv.style.visibility = L.visible ? '' : 'hidden'; stack.appendChild(L.cv); });
       renderLayers();
     }
-    layers.push(makeLayer('Background', true)); active = layers[0]; mount();
+    layers.push(makeLayer('Background', true)); layers[0].base = true; active = layers[0]; mount();
 
     function applyView() {
       world.style.transform = 'translate(' + view.x + 'px,' + view.y + 'px) scale(' + view.k + ')';
@@ -2107,11 +2107,11 @@
     // ---- undo / redo: snapshots of one layer, or of the layer list ----
     function snapOf(L) { return L.ctx.getImageData(0, 0, L.cv.width, L.cv.height); }
     function push(e) { undo.push(e); if (undo.length > LIMIT) undo.shift(); redo = []; buttons(); autosave(); }
-    function remember() { push({ L: active, data: snapOf(active) }); }
+    function remember() { push({ L: active, data: snapOf(active), bg: active.bg }); }
     function rememberLayers() { push({ list: layers.slice(), active: active, vis: layers.map(function (L) { return L.visible; }) }); }
-    function capture(e) { return e.L ? { L: e.L, data: snapOf(e.L) } : { list: layers.slice(), active: active, vis: layers.map(function (L) { return L.visible; }) }; }
+    function capture(e) { return e.L ? { L: e.L, data: snapOf(e.L), bg: e.L.bg } : { list: layers.slice(), active: active, vis: layers.map(function (L) { return L.visible; }) }; }
     function apply(e) {
-      if (e.L) { e.L.ctx.save(); e.L.ctx.setTransform(1, 0, 0, 1, 0, 0); e.L.ctx.putImageData(e.data, 0, 0); e.L.ctx.restore(); }
+      if (e.L) { if (e.bg != null) e.L.bg = e.bg; e.L.ctx.save(); e.L.ctx.setTransform(1, 0, 0, 1, 0, 0); e.L.ctx.putImageData(e.data, 0, 0); e.L.ctx.restore(); renderLayers(); }
       else { layers = e.list.slice(); layers.forEach(function (L, i) { L.visible = e.vis[i]; }); active = layers.indexOf(e.active) >= 0 ? e.active : layers[layers.length - 1]; mount(); }
     }
     function doUndo() { if (adj) adjustDone(); if (textBox) commitText(); if (sel && sel.float) commitSelection(); if (!undo.length) return; var e = undo.pop(); redo.push(capture(e)); apply(e); buttons(); autosave(); }
@@ -2632,8 +2632,14 @@
       }
       if (a === 'delete') { if (!sel.float) lift(); sel.float = null; clearSel(); autosave(); return; }
       if (a === 'copy') {
-        if (sel.float) active.ctx.drawImage(sel.float, sel.x, sel.y, sel.w, sel.h); else lift(true);
-        sel.x += 14; sel.y += 14; drawSel(); return;
+        // COPY: the selection is copied onto a new layer just above, picked
+        // up and ready to move (the original stays where it is)
+        if (layers.length >= 10) return;
+        anchor(); lift(true);
+        var f = sel.float; sel.float = null; undo.pop();
+        rememberLayers();
+        var L2 = makeLayer('Copy', false); layers.splice(layers.indexOf(active) + 1, 0, L2); active = L2; mount();
+        sel.float = f; sel.x += 14; sel.y += 14; drawSel(); autosave(); return;
       }
       lift();
       var f = sel.float, g = document.createElement('canvas'); g.width = f.width; g.height = f.height;
@@ -2668,9 +2674,9 @@
       panel.innerHTML = '<div class="pl-title">LAYERS</div><div class="pl-list">' + rows + '</div>' +
         '<div class="pl-acts">' +
           '<button type="button" data-layer-act="add" title="New layer" aria-label="New layer"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>' +
-          '<button type="button" data-layer-act="up" title="Move up" aria-label="Move layer up"' + (layers.indexOf(active) === layers.length - 1 ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>' +
-          '<button type="button" data-layer-act="down" title="Move down" aria-label="Move layer down"' + (layers.indexOf(active) === 0 ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>' +
-          '<button type="button" data-layer-act="delete" title="Delete layer" aria-label="Delete layer"' + '><svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 12h8l1-12"/></svg></button>' +
+          '<button type="button" data-layer-act="up" title="Move up" aria-label="Move layer up"' + (layers.indexOf(active) === layers.length - 1 || active.base ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>' +
+          '<button type="button" data-layer-act="down" title="Move down" aria-label="Move layer down"' + (layers.indexOf(active) <= 1 ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>' +
+          '<button type="button" data-layer-act="delete" title="' + (active.base ? 'Make the background see-through' : 'Delete layer') + '" aria-label="Delete layer"' + (active.base && !active.bg ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 12h8l1-12"/></svg></button>' +
         '</div>';
     }
     function layerPanel(open) {
@@ -2712,6 +2718,8 @@
         row.classList.remove('dragging'); row.style.transform = '';
         // the list shows the top layer first
         var order = Array.prototype.map.call(list.children, function (r) { return layers[+r.dataset.i]; }).reverse();
+        // (the Background always stays at the bottom)
+        var b0 = layers[0]; if (b0.base && order[0] !== b0) { order.splice(order.indexOf(b0), 1); order.unshift(b0); }
         if (order.some(function (L, i) { return L !== layers[i]; })) { if (sel) commitSelection(); rememberLayers(); layers = order; mount(); }
         else renderLayers();
         layerPanel(true);
@@ -2725,16 +2733,17 @@
         if (layers.length >= 10) return;
         rememberLayers();
         var L = makeLayer('Layer ' + (++count), false); layers.splice(i + 1, 0, L); active = L;
+      } else if (a === 'delete' && active.base) {
+        // the Background always stays; deleting it makes it see-through
+        if (!active.bg) return;
+        remember(); active.ctx.clearRect(0, 0, W, H); active.bg = false;
+        renderLayers(); layerPanel(true); return;
       } else if (a === 'delete') {
-        // (any layer can go, the white Background too; the last one left
-        // is swapped for an empty, see-through one)
         rememberLayers();
-        layers.splice(i, 1);
-        if (!layers.length) layers.push(makeLayer('Layer ' + (++count), false));
-        active = layers[Math.max(0, i - 1)];
-      } else if (a === 'up' && i < layers.length - 1) {
+        layers.splice(i, 1); active = layers[Math.max(0, i - 1)];
+      } else if (a === 'up' && i < layers.length - 1 && !active.base) {
         rememberLayers(); layers.splice(i, 1); layers.splice(i + 1, 0, active);
-      } else if (a === 'down' && i > 0) {
+      } else if (a === 'down' && i > 1) {
         rememberLayers(); layers.splice(i, 1); layers.splice(i - 1, 0, active);
       } else return;
       mount(); layerPanel(true);
@@ -3162,8 +3171,8 @@
     });
     var saveMenu = document.createElement('div');
     saveMenu.className = 'paint-savemenu'; saveMenu.hidden = true; saveMenu.setAttribute('role', 'menu');
-    saveMenu.innerHTML = '<button type="button" role="menuitem" data-save="png">PNG<small>keeps see-through parts</small></button>' +
-      '<button type="button" role="menuitem" data-save="jpeg">JPEG<small>smaller, white behind</small></button>';
+    saveMenu.innerHTML = '<button type="button" role="menuitem" data-save="png">PNG</button>' +
+      '<button type="button" role="menuitem" data-save="jpeg">JPEG</button>';
     right.appendChild(saveMenu);
     function savePanel(open) {
       saveMenu.hidden = !open;
@@ -3209,7 +3218,7 @@
           cv = document.createElement('canvas'); cv.width = L.cv.width; cv.height = L.cv.height;
           var x = cv.getContext('2d'); x.drawImage(L.cv, 0, 0); base(x); x.drawImage(sel.float, sel.x, sel.y, sel.w, sel.h);
         }
-        return new Promise(function (ok) { cv.toBlob(function (b) { ok({ name: L.name, visible: L.visible, bg: L.bg, blob: b }); }, 'image/png'); });
+        return new Promise(function (ok) { cv.toBlob(function (b) { ok({ name: L.name, visible: L.visible, bg: L.bg, base: L.base, blob: b }); }, 'image/png'); });
       })).then(function (list) {
         if (list.some(function (l) { return !l.blob; })) return;
         info.layers = list;
@@ -3229,7 +3238,7 @@
           Promise.all(d.layers.map(function (l) { return createImageBitmap(l.blob); })).then(function (ims) {
             if (undo.length || !restoring) { done(); return; } // (they've started drawing already)
             layers = d.layers.map(function (l, i) {
-              var L = makeLayer(l.name, l.bg != null ? l.bg : i === 0); L.visible = l.visible !== false;
+              var L = makeLayer(l.name, l.bg != null ? l.bg : i === 0); L.visible = l.visible !== false; L.base = l.base != null ? l.base : i === 0;
               L.ctx.drawImage(ims[i], 0, 0, ims[i].width / d.R, ims[i].height / d.R);
               return L;
             });
