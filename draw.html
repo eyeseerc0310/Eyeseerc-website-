@@ -40,7 +40,7 @@ description: "A little drawing page"
       <canvas class="paint-selov" aria-hidden="true"></canvas>
     </div>
     <button type="button" class="paint-selx" hidden aria-label="Close the selection" title="Close the selection (Esc)"><svg viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
-    <div class="paint-selbar" hidden><button type="button" data-sel="copy">COPY</button><button type="button" data-sel="fliph">FLIP &#8596;</button><button type="button" data-sel="flipv">FLIP &#8597;</button><button type="button" data-sel="delete">DELETE</button><button type="button" data-sel="layer">CUT TO LAYER</button><button type="button" data-sel="done">DONE</button></div>
+    <div class="paint-selbar" hidden><button type="button" data-sel="copy">COPY</button><button type="button" data-sel="fliph">FLIP &#8596;</button><button type="button" data-sel="flipv">FLIP &#8597;</button><button type="button" data-sel="invert" title="Invert the colours (or right-click the selection)">INVERT</button><button type="button" data-sel="delete">DELETE</button><button type="button" data-sel="layer">CUT TO LAYER</button><button type="button" data-sel="done">DONE</button></div>
     <div class="paint-zoom" role="group" aria-label="Zoom"><button type="button" data-zoom="out" aria-label="Zoom out" title="Zoom out (-)">&#8722;</button><button type="button" data-zoom="fit" class="paint-zoom-val" title="Fit (0)">100%</button><button type="button" data-zoom="in" aria-label="Zoom in" title="Zoom in (+)">+</button></div>
   </div>
   <div class="paint-bar paint-right" role="toolbar" aria-label="Colour and actions">
@@ -63,7 +63,7 @@ description: "A little drawing page"
       <label class="paint-open" title="Open a picture to draw on"><input type="file" accept="image/*" aria-label="Open a picture"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="1.5"/><path d="M3.5 16l5-5 4 4 2.5-2.5L20.5 18"/><circle cx="15.5" cy="9" r="1.5"/></svg></label>
       <button type="button" data-act="clear" aria-label="Clear" title="Clear"><svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 12h8l1-12"/></svg></button>
       <button type="button" data-act="layers" class="paint-layers-btn" aria-label="Layers" title="Layers" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M12 4l8.5 4.5L12 13 3.5 8.5z"/><path d="M3.5 12.5L12 17l8.5-4.5"/><path d="M3.5 16.5L12 21l8.5-4.5" opacity=".6"/></svg><span>LAYERS</span></button>
-      <button type="button" data-act="save" class="paint-save" title="Save as a picture" aria-label="Save"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/></svg><span>SAVE</span></button>
+      <button type="button" data-act="save" class="paint-save" title="Save as a picture (PNG or JPEG)" aria-expanded="false" aria-label="Save"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/></svg><span>SAVE</span></button>
     </div>
   </div>
 </section>
