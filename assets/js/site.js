@@ -2756,7 +2756,7 @@
       ['warmth', 'Warmth', -100], ['tint', 'Tint', -100], ['sharpen', 'Sharpen', 0], ['clarity', 'Clarity', -100], ['vignette', 'Vignette', -100], ['grain', 'Grain', 0], ['fade', 'Fade', 0]];
     var adjBox = document.createElement('div'), adj = null;
     adjBox.className = 'paint-adjust'; adjBox.hidden = true; adjBox.setAttribute('role', 'dialog'); adjBox.setAttribute('aria-label', 'Adjust');
-    adjBox.innerHTML = '<div class="pa-title">ADJUST <span>this layer</span></div><div class="pa-list">' + ADJ.map(function (a) {
+    adjBox.innerHTML = '<div class="pa-title">ADJUST <span>current layer</span></div><div class="pa-list">' + ADJ.map(function (a) {
       return '<label class="pa-row" data-adj-row="' + a[0] + '"><span>' + a[1].toUpperCase() + '</span><output>0</output>' +
         '<input type="range" min="' + a[2] + '" max="100" step="1" value="0" data-adj="' + a[0] + '"></label>';
     }).join('') + '</div><div class="pa-acts"><button type="button" data-adj-act="reset">RESET</button><button type="button" data-adj-act="cancel">CANCEL</button><button type="button" data-adj-act="done">DONE</button></div>';
