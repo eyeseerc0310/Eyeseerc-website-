@@ -3249,7 +3249,9 @@
           blob = document.createElement('div'); blob.className = 'paint-blob'; blob.style.background = start.c;
           document.body.appendChild(blob);
         }
-        blob.style.transform = 'translate(' + (ev.clientX - 13) + 'px,' + (ev.clientY - 13) + 'px)';
+        // (placed with translate, not transform: its grow-and-plop scale is
+        // applied after a translate, so it can't throw the position off)
+        blob.style.translate = (ev.clientX - 13) + 'px ' + (ev.clientY - 13) + 'px';
         var over = document.elementFromPoint(ev.clientX, ev.clientY);
         blob.classList.toggle('over', !!(over && over.closest('.paint-stage')));
       }
