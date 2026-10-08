@@ -2053,7 +2053,7 @@
 
     function setTool(t) {
       if (textBox) commitText();
-      if (sel && t !== 'select') commitSelection();
+      if (sel && t !== 'select' && t !== 'lasso') commitSelection();
       st.tool = t;
       Array.prototype.forEach.call(root.querySelectorAll('button[data-tool]'), function (b) { b.setAttribute('aria-pressed', b.dataset.tool === t ? 'true' : 'false'); });
       stage.dataset.tool = t;
@@ -2118,30 +2118,44 @@
       c.moveTo(a.x - vx, a.y - vy); c.lineTo(a.x + vx, a.y + vy); c.lineTo(b.x + vx, b.y + vy); c.lineTo(b.x - vx, b.y - vy);
       c.closePath(); c.fill();
     }
-    // feather: very soft round puffs that build up, like an airbrush
-    function feather(c, a, b, pr) {
-      var r = Math.max(6, st.size * 1.8), step = Math.max(1, r / 6), d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.ceil(d / step));
-      var col = parseInt(st.color.slice(1), 16), rgb = (col >> 16 & 255) + ',' + (col >> 8 & 255) + ',' + (col & 255);
-      var f = 0.09 * (down && down.pen ? 0.3 + 0.9 * Math.min(1, pr) : 1);
-      for (var j = d ? 1 : 0; j <= n; j++) {
-        var x = a.x + (b.x - a.x) * j / n, y = a.y + (b.y - a.y) * j / n;
-        var g = c.createRadialGradient(x, y, 0, x, y, r);
-        g.addColorStop(0, 'rgba(' + rgb + ',' + f + ')'); g.addColorStop(0.45, 'rgba(' + rgb + ',' + f * 0.55 + ')'); g.addColorStop(1, 'rgba(' + rgb + ',0)');
-        c.fillStyle = g; c.fillRect(x - r, y - r, 2 * r, 2 * r);
-      }
+    // feather: the whole stroke as one very soft line (the line itself is
+    // drawn off to the side; only its blurred shadow lands on the picture),
+    // so there's nothing to stack up into rings
+    var featherQueued = false;
+    function featherStroke() {
+      if (featherQueued) return;
+      featherQueued = true;
+      requestAnimationFrame(function () { if (featherQueued) featherNow(); });
+    }
+    function featherNow() {
+      featherQueued = false;
+      octx.clearRect(0, 0, W, H);
+      var r = Math.max(3, st.size), OFF = W + 200;
+      octx.save();
+      octx.lineCap = 'round'; octx.lineJoin = 'round'; octx.lineWidth = r * 1.35;
+      octx.strokeStyle = octx.fillStyle = '#000';
+      octx.shadowColor = st.color; octx.shadowBlur = r * 0.85 * R; octx.shadowOffsetX = OFF * R; octx.shadowOffsetY = 0;
+      [pts, st.mirror ? pts.map(function (q) { return { x: W - q.x, y: q.y }; }) : null].forEach(function (list) {
+        if (!list || !list.length) return;
+        octx.beginPath();
+        if (list.length === 1) { octx.arc(list[0].x - OFF, list[0].y, r * 0.675, 0, Math.PI * 2); octx.fill(); return; }
+        octx.moveTo(list[0].x - OFF, list[0].y);
+        for (var i = 1; i < list.length - 1; i++) octx.quadraticCurveTo(list[i].x - OFF, list[i].y, (list[i].x + list[i + 1].x) / 2 - OFF, (list[i].y + list[i + 1].y) / 2);
+        var l = list[list.length - 1]; octx.lineTo(l.x - OFF, l.y); octx.stroke();
+      });
+      octx.restore();
     }
     // an Apple Pencil: each little piece of the line is as thick as the pressure
     function pressed(c, a, b, pr) {
       var w = Math.max(0.6, c.base * (0.15 + 0.85 * Math.min(1, pr * 1.25)));
       c.lineWidth = w; c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
     }
-    function piecewise() { var k = kind(); return k === 'spray' || k === 'feather' || k === 'calligraphy' || (down && down.pen); }
+    function piecewise() { var k = kind(); return k === 'spray' || k === 'calligraphy' || (down && down.pen && k !== 'feather'); }
     var sprayTimer = 0;
     function segment(c, a, b, pr) {
       var k = kind();
       both(c, function () {
         if (k === 'spray') spray(c, b);
-        else if (k === 'feather') feather(c, a, b, pr);
         else if (k === 'calligraphy') nib(c, a, b);
         else pressed(c, a, b, pr);
       });
@@ -2236,7 +2250,8 @@
         g.addColorStop(t, 'rgb(' + mix(16) + ',' + mix(8) + ',' + mix(0) + ')');
       }
       octx.fillStyle = g;
-      if (sel) octx.fillRect(sel.x, sel.y, sel.w, sel.h); else octx.fillRect(0, 0, W, H);
+      if (sel && sel.poly) { outline(octx, sel.x, sel.y, 1); octx.fill(); }
+      else if (sel) octx.fillRect(sel.x, sel.y, sel.w, sel.h); else octx.fillRect(0, 0, W, H);
     }
 
     // a fine, invisible grain over the gradient as it's laid down: it breaks up
@@ -2320,16 +2335,37 @@
     }
 
     // ---- select and move: a box round part of the layer; drag it to move it ----
-    var sel = null, selMode = null, selOff = null;
-    function inSel(p) { return sel && p.x >= sel.x && p.x <= sel.x + sel.w && p.y >= sel.y && p.y <= sel.y + sel.h; }
+    var sel = null, selMode = null, selOff = null, lasso = [];
+    // (a lasso selection keeps its outline, relative to its box)
+    function inSel(p) {
+      if (!sel || p.x < sel.x || p.x > sel.x + sel.w || p.y < sel.y || p.y > sel.y + sel.h) return false;
+      if (!sel.poly) return true;
+      var x = p.x - sel.x, y = p.y - sel.y, inside = false, P = sel.poly;
+      for (var i = 0, j = P.length - 1; i < P.length; j = i++) {
+        if ((P[i].y > y) !== (P[j].y > y) && x < (P[j].x - P[i].x) * (y - P[i].y) / (P[j].y - P[i].y) + P[i].x) inside = !inside;
+      }
+      return inside;
+    }
+    function outline(c, ox, oy, k) {
+      c.beginPath();
+      sel.poly.forEach(function (q, i) { c[i ? 'lineTo' : 'moveTo']((q.x + ox) * k, (q.y + oy) * k); });
+      c.closePath();
+    }
     function lift(keep) {
       // the pixels come up off the layer (or a copy of them does)
       if (sel.float) return;
       remember();
       var f = document.createElement('canvas'); f.width = Math.max(1, Math.round(sel.w * R)); f.height = Math.max(1, Math.round(sel.h * R));
-      f.getContext('2d').drawImage(active.cv, Math.round(sel.x * R), Math.round(sel.y * R), f.width, f.height, 0, 0, f.width, f.height);
-      if (!keep) active.ctx.clearRect(sel.x, sel.y, sel.w, sel.h);
-      if (!keep && active === layers[0]) { active.ctx.fillStyle = '#fff'; active.ctx.fillRect(sel.x, sel.y, sel.w, sel.h); }
+      var fx = f.getContext('2d');
+      fx.drawImage(active.cv, Math.round(sel.x * R), Math.round(sel.y * R), f.width, f.height, 0, 0, f.width, f.height);
+      if (sel.poly) { fx.globalCompositeOperation = 'destination-in'; outline(fx, 0, 0, R); fx.fill(); fx.globalCompositeOperation = 'source-over'; }
+      if (!keep) {
+        var c = active.ctx; c.save();
+        if (sel.poly) { outline(c, sel.x, sel.y, 1); c.clip(); }
+        c.clearRect(sel.x, sel.y, sel.w, sel.h);
+        if (active === layers[0]) { c.fillStyle = '#fff'; c.fillRect(sel.x, sel.y, sel.w, sel.h); }
+        c.restore();
+      }
       sel.float = f;
     }
     function drawSel() {
@@ -2337,8 +2373,9 @@
       if (!sel) return;
       if (sel.float) octx.drawImage(sel.float, sel.x, sel.y, sel.w, sel.h);
       octx.save(); octx.lineWidth = 1 / view.k;
-      octx.setLineDash([5 / view.k, 4 / view.k]); octx.strokeStyle = '#000'; octx.strokeRect(sel.x, sel.y, sel.w, sel.h);
-      octx.lineDashOffset = 4.5 / view.k; octx.strokeStyle = '#fff'; octx.strokeRect(sel.x, sel.y, sel.w, sel.h);
+      var edge = function () { if (sel.poly) outline(octx, sel.x, sel.y, 1); else { octx.beginPath(); octx.rect(sel.x, sel.y, sel.w, sel.h); } octx.stroke(); };
+      octx.setLineDash([5 / view.k, 4 / view.k]); octx.strokeStyle = '#000'; edge();
+      octx.lineDashOffset = 4.5 / view.k; octx.strokeStyle = '#fff'; edge();
       octx.restore();
     }
     function commitSelection() {
@@ -2349,6 +2386,14 @@
     function selAction(a) {
       if (!sel) return;
       if (a === 'done') { commitSelection(); return; }
+      if (a === 'layer') {
+        // CUT TO LAYER: the selection comes out onto a layer of its own
+        lift();
+        rememberLayers();
+        var L = makeLayer('Cutout', false); L.ctx.drawImage(sel.float, sel.x, sel.y, sel.w, sel.h);
+        layers.splice(layers.indexOf(active) + 1, 0, L); active = L;
+        sel = null; selbar.hidden = true; octx.clearRect(0, 0, W, H); mount(); return;
+      }
       if (a === 'delete') { if (!sel.float) lift(); sel.float = null; sel = null; selbar.hidden = true; octx.clearRect(0, 0, W, H); return; }
       if (a === 'copy') {
         if (sel.float) active.ctx.drawImage(sel.float, sel.x, sel.y, sel.w, sel.h); else lift(true);
@@ -2358,7 +2403,9 @@
       var f = sel.float, g = document.createElement('canvas'); g.width = f.width; g.height = f.height;
       var gx = g.getContext('2d');
       if (a === 'fliph') { gx.translate(f.width, 0); gx.scale(-1, 1); } else { gx.translate(0, f.height); gx.scale(1, -1); }
-      gx.drawImage(f, 0, 0); sel.float = g; drawSel();
+      gx.drawImage(f, 0, 0); sel.float = g;
+      if (sel.poly) sel.poly = sel.poly.map(function (q) { return a === 'fliph' ? { x: sel.w - q.x, y: q.y } : { x: q.x, y: sel.h - q.y }; });
+      drawSel();
     }
 
     // ---- layers ----
@@ -2471,11 +2518,12 @@
     }
     function begin(e) {
       var p = pos(e), t = st.tool;
-      if (t !== 'select' && sel) commitSelection();
+      if (t !== 'select' && t !== 'lasso' && sel) commitSelection();
       if (t === 'picker') { setColor(sampleAt(p)); setTool('brush'); return; }
       if (t === 'text') { if (textBox) { commitText(); return; } startText(p); return; }
-      if (t === 'select') {
+      if (t === 'select' || t === 'lasso') {
         if (inSel(p)) { selMode = 'move'; selOff = { x: p.x - sel.x, y: p.y - sel.y }; lift(); }
+        else if (t === 'lasso') { commitSelection(); selMode = 'lasso'; lasso = [p]; }
         else { commitSelection(); selMode = 'new'; sel = { x: p.x, y: p.y, w: 0, h: 0, ax: p.x, ay: p.y, float: null }; }
         down = { id: e.pointerId, start: p, last: p };
         return;
@@ -2498,13 +2546,10 @@
         brushStyle(octx); octx.base = octx.lineWidth;
         if (piecewise()) {
           if (kind() === 'spray') { segment(octx, p, p, 0.5); sprayTimer = setInterval(function () { both(octx, function () { spray(octx, pts[pts.length - 1]); }); }, 35); }
-          else if (kind() === 'feather') {
-            // (keeps softly building while held still)
-            segment(octx, p, p, e.pressure || 0.5);
-            sprayTimer = setInterval(function () { var l = pts[pts.length - 1]; both(octx, function () { feather(octx, l, l, down ? down.pr || 0.5 : 0.5); }); }, 45);
-          }
+
           else segment(octx, p, p, e.pressure || 0.5);
-        } else both(octx, function () { drawPath(octx); });
+        } else if (kind() === 'feather') featherStroke();
+        else both(octx, function () { drawPath(octx); });
         return;
       }
       strokeStyle(octx); // line and shapes
@@ -2512,7 +2557,15 @@
     function move(e) {
       var evs = e.getCoalescedEvents && e.getCoalescedEvents().length ? e.getCoalescedEvents() : [e];
       var p = pos(e), t = st.tool;
-      if (t === 'select') {
+      if (selMode === 'lasso') {
+        // the cutout's outline follows the pointer
+        evs.forEach(function (ev) { var q = pos(ev), l = lasso[lasso.length - 1]; if (Math.hypot(q.x - l.x, q.y - l.y) > 2 / view.k) lasso.push(q); });
+        octx.clearRect(0, 0, W, H); octx.save(); octx.lineWidth = 1.2 / view.k; octx.setLineDash([5 / view.k, 4 / view.k]);
+        octx.beginPath(); lasso.forEach(function (q, i) { octx[i ? 'lineTo' : 'moveTo'](q.x, q.y); });
+        octx.strokeStyle = '#000'; octx.stroke(); octx.lineDashOffset = 4.5 / view.k; octx.strokeStyle = '#fff'; octx.stroke(); octx.restore();
+        return;
+      }
+      if (t === 'select' || t === 'lasso') {
         if (selMode === 'move') { sel.x = p.x - selOff.x; sel.y = p.y - selOff.y; }
         else { sel.x = Math.min(sel.ax, p.x); sel.y = Math.min(sel.ay, p.y); sel.w = Math.abs(p.x - sel.ax); sel.h = Math.abs(p.y - sel.ay); }
         drawSel(); return;
@@ -2534,7 +2587,8 @@
           evs.forEach(function (ev) { var q = pos(ev); down.pr = ev.pressure || 0.5; segment(octx, down.last, q, down.pr); down.last = q; pts.push(q); });
         } else {
           evs.forEach(function (ev) { var q = pos(ev), l = pts[pts.length - 1]; if (Math.hypot(q.x - l.x, q.y - l.y) > 0.8 / view.k) pts.push(q); });
-          octx.clearRect(0, 0, W, H); brushStyle(octx); both(octx, function () { drawPath(octx); });
+          if (kind() === 'feather') featherStroke();
+          else { octx.clearRect(0, 0, W, H); brushStyle(octx); both(octx, function () { drawPath(octx); }); }
         }
         return;
       }
@@ -2545,7 +2599,15 @@
     function end() {
       var t = st.tool;
       clearInterval(sprayTimer);
-      if (t === 'select') {
+      if (selMode === 'lasso') {
+        var xs = lasso.map(function (q) { return q.x; }), ys = lasso.map(function (q) { return q.y; });
+        var x0 = Math.max(0, Math.min.apply(null, xs)), y0 = Math.max(0, Math.min.apply(null, ys));
+        var x1 = Math.min(W, Math.max.apply(null, xs)), y1 = Math.min(H, Math.max.apply(null, ys));
+        sel = lasso.length > 2 && x1 - x0 > 3 && y1 - y0 > 3 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0, float: null, poly: lasso.map(function (q) { return { x: q.x - x0, y: q.y - y0 }; }) } : null;
+        if (!sel) octx.clearRect(0, 0, W, H);
+        selbar.hidden = !sel; selMode = null; down = null; drawSel(); return;
+      }
+      if (t === 'select' || t === 'lasso') {
         if (selMode === 'new' && (sel.w < 3 || sel.h < 3)) { sel = null; octx.clearRect(0, 0, W, H); }
         selbar.hidden = !sel; selMode = null; down = null; drawSel(); return;
       }
@@ -2553,6 +2615,8 @@
       if (t === 'smudge' || t === 'blur') { carry = [null, null]; return; }
       if (t === 'eraser') return;
       if (t === 'gradient') grainOver();
+      // (a feather stroke's last frame is drawn before it's laid down)
+      if (t === 'brush' && st.brush === 'feather' && featherQueued) featherNow();
       if (t === 'brush' && st.brush === 'highlighter') commit('multiply', Math.min(st.alpha, 0.45));
       else commit(null, st.alpha);
       useColor();
@@ -2620,7 +2684,7 @@
         var tl = t.dataset.tool, reopen = menus[tl] && (st.tool !== tl || menus[tl].el.hidden);
         setTool(tl); openMenu(menus[tl] && reopen ? tl : null); return;
       }
-      var s = e.target.closest('[data-color]'); if (s) { setColor(s.dataset.color); if (/eraser|picker|smudge|blur|hand|select/.test(st.tool)) setTool('brush'); return; }
+      var s = e.target.closest('[data-color]'); if (s) { setColor(s.dataset.color); if (/eraser|picker|smudge|blur|hand|select|lasso/.test(st.tool)) setTool('brush'); return; }
       if (e.target.closest('.paint-swap')) { var c1 = st.color; setColor(st.color2); setColor2(c1); return; }
       if (e.target.closest('.paint-solid')) { st.solid = !st.solid; $('.paint-solid').setAttribute('aria-pressed', st.solid ? 'true' : 'false'); return; }
       if (e.target.closest('.paint-mirror')) { st.mirror = !st.mirror; $('.paint-mirror').setAttribute('aria-pressed', st.mirror ? 'true' : 'false'); guide.hidden = !st.mirror; return; }
@@ -2694,7 +2758,7 @@
         if (k === 'escape') { openMenu(null); layerPanel(false); if (sel) commitSelection(); return; }
         if ((k === 'delete' || k === 'backspace') && sel) { e.preventDefault(); selAction('delete'); return; }
         if (k === 'enter' && sel) { selAction('done'); return; }
-        var map = { b: 'brush', e: 'eraser', s: 'smudge', u: 'blur', l: 'line', r: 'shape', f: 'fill', g: 'gradient', t: 'text', m: 'select', i: 'picker', h: 'hand' };
+        var map = { b: 'brush', e: 'eraser', s: 'smudge', u: 'blur', l: 'line', r: 'shape', f: 'fill', g: 'gradient', t: 'text', m: 'select', q: 'lasso', i: 'picker', h: 'hand' };
         if (map[k]) setTool(map[k]);
         else if (k === 'x') { var c1 = st.color; setColor(st.color2); setColor2(c1); }
         else if (k === '[') setSize(st.size - (st.size > 10 ? 4 : 1));
