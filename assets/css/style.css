@@ -1428,6 +1428,7 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
   animation: pl-in .25s cubic-bezier(.45, 0, .55, 1);
 }
 .paint-layerpanel[hidden] { display: none; }
+.pl-empty { padding: .6rem .4rem; font-size: .6rem; letter-spacing: .06em; line-height: 1.5; color: var(--menu-link); opacity: .75; }
 @keyframes pl-in { from { opacity: 0; transform: translateX(6px); } }
 .pl-title { font-size: .58rem; letter-spacing: .24em; color: var(--muted); padding: .15rem .3rem .45rem; }
 .pl-list { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow-y: auto; }
