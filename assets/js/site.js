@@ -1956,6 +1956,35 @@
     var color2In = $('.paint-second input'), color2Dot = $('.paint-second span');
     var sizeIn = $('.paint-size'), alphaIn = $('.paint-alpha'), zoomVal = $('.paint-zoom-val'), selbar = $('.paint-selbar');
     var left = $('.paint-left'), right = $('.paint-right');
+
+    // ---- a little label beside the mouse saying what each tool does ----
+    var tip = document.createElement('div'), tipOn = null;
+    tip.className = 'paint-tip'; tip.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(tip);
+    function hideTip() { tipOn = null; tip.classList.remove('on'); }
+    function placeTip(e) {
+      var w = tip.offsetWidth, h = tip.offsetHeight, vw = document.documentElement.clientWidth;
+      var x = e.clientX - 16 - w;
+      if (x < 8) x = Math.min(e.clientX + 18, vw - w - 8);
+      var y = Math.max(8, Math.min(e.clientY - h / 2, window.innerHeight - h - 8));
+      tip.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
+    }
+    function showTip(e) {
+      if (e.pointerType === 'touch') return;
+      var b = e.target.closest('button[data-tip]');
+      if (!b || e.buttons) { hideTip(); return; }
+      if (b !== tipOn) { tipOn = b; tip.textContent = b.dataset.tip; }
+      placeTip(e);
+      tip.classList.add('on');
+    }
+    left.addEventListener('pointerover', showTip);
+    left.addEventListener('pointermove', showTip);
+    left.addEventListener('pointerleave', hideTip);
+    left.addEventListener('pointerdown', hideTip);
+    document.addEventListener('pageswap:start', function gone() {
+      document.removeEventListener('pageswap:start', gone);
+      tip.remove();
+    });
     var st = { tool: 'brush', brush: 'round', shape: 'rect', font: FONTS[0][0], color: colorIn.value, color2: color2In.value,
       size: +sizeIn.value, alpha: +alphaIn.value / 100, solid: false, mirror: false };
     var W = 0, H = 0, R = 1, view = { k: 1, x: 0, y: 0 }, fitK = 1;
