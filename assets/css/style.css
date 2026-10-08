@@ -1075,10 +1075,9 @@ body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 
    as a magnifying glass: the strip is the part of the photo the header is
    over, magnified a little (1.08x) around the header's bottom edge (so it lines up with the
    photo there, nudged 20px right), and scrolling slides the photo
-   through it. At the very top of the page the header is above the photo,
-   so it's just the plain see-through bar; scrolling, the magnified photo
-   slides up into it, its top edge softly faded. --s is how far the page
-   is scrolled (set by site.js). */
+   through it. Above the photo's top edge it shows a mirrored copy of the
+   photo, so there's always something under the glass. --s is how far the
+   page is scrolled (set by site.js). */
 .show-band { display: none; }
 @media (min-width: 561px) {
   .show-slide .show-photo { top: var(--hdr, 0px); }
@@ -1096,10 +1095,8 @@ body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 
   /* the copy sits exactly where the photo is and drifts with it */
   .show-drift { position: absolute; left: 0; right: 0; top: var(--hdr, 0px); height: 100%; transform: scale(1.07); }
   .show-slide.on .show-drift, .show-slide.was .show-drift { transform: scale(1); transition: transform 9s cubic-bezier(.3, 0, .4, 1); }
-  .show-slide .show-band .show-drift img {
-    transform: none; transition: none;
-    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 40px); mask-image: linear-gradient(to bottom, transparent, #000 40px);
-  }
+  .show-slide .show-band .show-drift img { transform: none; transition: none; }
+  .show-slide .show-band .show-drift img.show-mirror { top: -100%; transform: scaleY(-1); }
 }
 @media (min-width: 561px) and (prefers-reduced-motion: reduce) {
   .show-drift, .show-slide.on .show-drift, .show-slide.was .show-drift { transform: none; transition: none; }
