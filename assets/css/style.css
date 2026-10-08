@@ -1172,7 +1172,7 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .paint button.paint-save:hover { background: rgba(var(--glow), .15); }
 /* colour: the current colour (tap it for any colour) over a grid of swatches */
 .paint-colors { display: flex; flex-direction: column; align-items: center; gap: .55rem; }
-.paint-current { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); cursor: pointer; overflow: hidden; flex: none; }
+.paint-current { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(128, 128, 128, .7); cursor: pointer; overflow: hidden; flex: none; }
 .paint-current input { position: absolute; inset: -8px; width: calc(100% + 16px); height: calc(100% + 16px); opacity: 0; cursor: pointer; }
 .paint-current span { position: absolute; inset: 3px; border-radius: 50%; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15); }
 .paint-swatches { display: grid; grid-template-columns: repeat(4, 18px); gap: 4px; }
@@ -1186,8 +1186,8 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .paint .paint-sliders .paint-solid { align-self: flex-start; }
 /* the picture */
 .paint-stage {
-  /* taller than it is wide (5:6), as tall as the space allows */
-  position: relative; flex: 0 1 auto; height: 100%; aspect-ratio: 5 / 6; min-width: 0; max-width: calc(100% - 84px - 1.4rem);
+  /* wide (8:5), as tall as the space allows (and never past the edge of the screen) */
+  position: relative; flex: 0 1 auto; height: 100%; aspect-ratio: 8 / 5; min-width: 0; max-width: calc(100% - 84px - 1.4rem);
   background: #fff; border: 1px solid var(--line); overflow: hidden;
   touch-action: none; -webkit-user-select: none; user-select: none;
   box-shadow: var(--photo-shadow);
