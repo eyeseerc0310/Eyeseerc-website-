@@ -2020,7 +2020,7 @@
       layers.forEach(function (L) { L.cv.style.visibility = L.visible ? '' : 'hidden'; stack.appendChild(L.cv); });
       renderLayers();
     }
-    layers.push(makeLayer('Background', true)); layers[0].base = true; active = layers[0]; mount();
+    layers.push(makeLayer('Background', true)); active = layers[0]; mount();
 
     function applyView() {
       world.style.transform = 'translate(' + view.x + 'px,' + view.y + 'px) scale(' + view.k + ')';
@@ -2674,9 +2674,9 @@
       panel.innerHTML = '<div class="pl-title">LAYERS</div><div class="pl-list">' + rows + '</div>' +
         '<div class="pl-acts">' +
           '<button type="button" data-layer-act="add" title="New layer" aria-label="New layer"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>' +
-          '<button type="button" data-layer-act="up" title="Move up" aria-label="Move layer up"' + (layers.indexOf(active) === layers.length - 1 || active.base ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>' +
-          '<button type="button" data-layer-act="down" title="Move down" aria-label="Move layer down"' + (layers.indexOf(active) <= 1 ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>' +
-          '<button type="button" data-layer-act="delete" title="' + (active.base ? 'Make the background see-through' : 'Delete layer') + '" aria-label="Delete layer"' + (active.base && !active.bg ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 12h8l1-12"/></svg></button>' +
+          '<button type="button" data-layer-act="up" title="Move up" aria-label="Move layer up"' + (layers.indexOf(active) === layers.length - 1 || active.bg ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>' +
+          '<button type="button" data-layer-act="down" title="Move down" aria-label="Move layer down"' + (layers.indexOf(active) <= (layers[0].bg ? 1 : 0) ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>' +
+          '<button type="button" data-layer-act="delete" title="' + (active.bg ? 'Make the background see-through' : 'Delete layer') + '" aria-label="Delete layer"><svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M9 7V5h6v2"/><path d="M7 7l1 12h8l1-12"/></svg></button>' +
         '</div>';
     }
     function layerPanel(open) {
@@ -2766,8 +2766,8 @@
         row.classList.remove('dragging'); row.style.transform = '';
         // the list shows the top layer first
         var order = Array.prototype.map.call(list.children, function (r) { return layers[+r.dataset.i]; }).reverse();
-        // (the Background always stays at the bottom)
-        var b0 = layers[0]; if (b0.base && order[0] !== b0) { order.splice(order.indexOf(b0), 1); order.unshift(b0); }
+        // (the white Background always stays at the bottom)
+        var b0 = layers[0]; if (b0.bg && order[0] !== b0) { order.splice(order.indexOf(b0), 1); order.unshift(b0); }
         if (order.some(function (L, i) { return L !== layers[i]; })) { if (sel) commitSelection(); rememberLayers(); layers = order; mount(); }
         else renderLayers();
         layerPanel(true);
@@ -2781,17 +2781,21 @@
         if (layers.length >= 10) return;
         rememberLayers();
         var L = makeLayer('Layer ' + (++count), false); layers.splice(i + 1, 0, L); active = L;
-      } else if (a === 'delete' && active.base) {
-        // the Background always stays; deleting it makes it see-through
-        if (!active.bg) return;
+      } else if (a === 'delete' && active.bg) {
+        // deleting the white Background makes it see-through (it stays,
+        // at the bottom, as an empty layer)
         remember(); active.ctx.clearRect(0, 0, W, H); active.bg = false;
         renderLayers(); layerPanel(true); return;
       } else if (a === 'delete') {
+        // any other layer can go, even the only one: an empty, see-through
+        // layer takes its place, so there's always something to draw on
         rememberLayers();
-        layers.splice(i, 1); active = layers[Math.max(0, i - 1)];
-      } else if (a === 'up' && i < layers.length - 1 && !active.base) {
+        layers.splice(i, 1);
+        if (!layers.length) layers.push(makeLayer('Layer ' + (++count), false));
+        active = layers[Math.max(0, i - 1)];
+      } else if (a === 'up' && i < layers.length - 1 && !active.bg) {
         rememberLayers(); layers.splice(i, 1); layers.splice(i + 1, 0, active);
-      } else if (a === 'down' && i > 1) {
+      } else if (a === 'down' && i > (layers[0].bg ? 1 : 0)) {
         rememberLayers(); layers.splice(i, 1); layers.splice(i - 1, 0, active);
       } else return;
       mount(); layerPanel(true);
@@ -3356,7 +3360,7 @@
           cv = document.createElement('canvas'); cv.width = L.cv.width; cv.height = L.cv.height;
           var x = cv.getContext('2d'); x.drawImage(L.cv, 0, 0); base(x); x.drawImage(sel.float, sel.x, sel.y, sel.w, sel.h);
         }
-        return new Promise(function (ok) { cv.toBlob(function (b) { ok({ name: L.name, visible: L.visible, bg: L.bg, base: L.base, blob: b }); }, 'image/png'); });
+        return new Promise(function (ok) { cv.toBlob(function (b) { ok({ name: L.name, visible: L.visible, bg: L.bg, blob: b }); }, 'image/png'); });
       })).then(function (list) {
         if (list.some(function (l) { return !l.blob; })) return;
         info.layers = list;
@@ -3376,7 +3380,7 @@
           Promise.all(d.layers.map(function (l) { return createImageBitmap(l.blob); })).then(function (ims) {
             if (undo.length || !restoring) { done(); return; } // (they've started drawing already)
             layers = d.layers.map(function (l, i) {
-              var L = makeLayer(l.name, l.bg != null ? l.bg : i === 0); L.visible = l.visible !== false; L.base = l.base != null ? l.base : i === 0;
+              var L = makeLayer(l.name, l.bg != null ? l.bg : i === 0); L.visible = l.visible !== false;
               L.ctx.drawImage(ims[i], 0, 0, ims[i].width / d.R, ims[i].height / d.R);
               return L;
             });
