@@ -154,6 +154,7 @@
       if (pick.size) unit = (parseFloat(pick.size.price) || 0) + (pick.paper ? parseFloat(pick.paper.price) || 0 : 0);
       qtyEl.textContent = qty;
       priceEl.textContent = link.hasAttribute('data-sold-out') ? 'Sold out' : money(unit * qty);
+      if (box.classList.contains('open')) sizePanel();
       boxes.forEach(function (b) {
         var key = b.dataset.pick;
         b.querySelector('.lb-size-val').textContent = key === 'size' ? pick.size.size + ' IN' : pick.paper.name.toUpperCase();
@@ -209,10 +210,24 @@
   function sizePanel() {
     if (!box.classList.contains('shop-mode')) return;
     var t = img.style.transform; img.style.transform = '';
-    panel.style.width = img.getBoundingClientRect().width + 'px';
+    var w = img.getBoundingClientRect().width;
+    panel.style.width = w + 'px';
     img.style.transform = t;
+    // ...but never so narrow that ADD TO CART loses its clear space either
+    // side (measured, since browsers draw the letters at different widths):
+    // under a tall, narrow photo the box is a little wider than the photo
+    var b = panel.querySelector('.lb-panel-add');
+    minPanel = 0;
+    if (b && b.firstChild && b.clientWidth) {
+      b.style.letterSpacing = '';
+      minPanel = Math.min(panel.offsetWidth - b.clientWidth + b.firstChild.offsetWidth + 2 * 18, window.innerWidth - 16);
+      if (minPanel > w) panel.style.width = minPanel + 'px';
+    }
+    // (phones: the stack sets the width from here on, keeping to the same minimum)
+    if (deckCards.length && deckShown) placeDeck(Math.min(1, prog));
     fitAdd();
   }
+  var minPanel = 0;
   window.addEventListener('resize', sizePanel);
   // a click anywhere else in the viewer closes an open SIZE list
   box.addEventListener('click', function (e) {
@@ -315,7 +330,7 @@
     deckK = 1 - 2 * over / W;
     deck.style.transform = (img.style.transform || '') + ' scale(' + deckK + ')';
     // phones: the details box stays exactly as wide as the (smaller) front photo
-    if (window.innerWidth <= 760) { panel.style.width = (W - 2 * over) + 'px'; if (show !== deckShown) fitAdd(); }
+    if (window.innerWidth <= 760) { panel.style.width = Math.max(W - 2 * over, minPanel) + 'px'; if (show !== deckShown) fitAdd(); }
     deck.style.opacity = show ? 1 : 0;
     deck.style.pointerEvents = show > 0.9 ? 'auto' : 'none';
     img.style.opacity = show ? 0 : '';
