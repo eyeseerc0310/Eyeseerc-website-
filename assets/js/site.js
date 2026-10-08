@@ -2145,20 +2145,34 @@
       });
       octx.restore();
     }
-    // an Apple Pencil: each little piece of the line is as thick as the pressure
-    function pressed(c, a, b, pr) {
-      var w = Math.max(0.6, c.base * (0.15 + 0.85 * Math.min(1, pr * 1.25)));
-      c.lineWidth = w; c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
+    // an Apple Pencil: the line's width follows the pressure, smoothed (the
+    // Pencil sometimes reports 0 between readings, which must not count as
+    // a change), and it changes gradually along each little piece of the
+    // line, so a light line never jumps into blobs
+    function penWidth(base, raw) {
+      var p = raw > 0 ? raw : (down.pr != null ? down.pr : 0.3);
+      down.pr = down.pr == null ? p : down.pr * 0.6 + p * 0.4;
+      return Math.max(0.6, base * (0.12 + 0.88 * Math.min(1, down.pr * 1.25)));
+    }
+    function taper(c, a, b, w0, w1) {
+      var d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.ceil(d / Math.max(0.6, Math.min(w0, w1) / 2.5)));
+      for (var i = 0; i < n; i++) {
+        var t0 = i / n, t1 = (i + 1) / n;
+        c.lineWidth = w0 + (w1 - w0) * t1;
+        c.beginPath(); c.moveTo(a.x + (b.x - a.x) * t0, a.y + (b.y - a.y) * t0); c.lineTo(a.x + (b.x - a.x) * t1, a.y + (b.y - a.y) * t1); c.stroke();
+      }
+    }
+    function pressed(c, a, b, raw) {
+      var w1 = penWidth(c.base, raw), w0 = down.w != null ? down.w : w1;
+      down.w = w1;
+      both(c, function () { taper(c, a, b, w0, w1); });
     }
     function piecewise() { var k = kind(); return k === 'spray' || k === 'calligraphy' || (down && down.pen && k !== 'feather'); }
     var sprayTimer = 0;
     function segment(c, a, b, pr) {
       var k = kind();
-      both(c, function () {
-        if (k === 'spray') spray(c, b);
-        else if (k === 'calligraphy') nib(c, a, b);
-        else pressed(c, a, b, pr);
-      });
+      if (k !== 'spray' && k !== 'calligraphy') { pressed(c, a, b, pr); return; }
+      both(c, function () { if (k === 'spray') spray(c, b); else nib(c, a, b); });
     }
     function commit(mode, alpha) {
       var c = active.ctx;
@@ -2539,7 +2553,8 @@
         // the eraser works straight on the layer, so you see it as you go
         var c = active.ctx; c.save(); c.globalCompositeOperation = active === layers[0] ? 'source-over' : 'destination-out';
         strokeStyle(c); c.strokeStyle = c.fillStyle = '#fff'; c.base = st.size;
-        both(c, function () { c.beginPath(); c.arc(p.x, p.y, st.size / 2, 0, Math.PI * 2); c.fill(); });
+        if (down.pen) pressed(c, p, p, e.pressure);
+        else both(c, function () { c.beginPath(); c.arc(p.x, p.y, st.size / 2, 0, Math.PI * 2); c.fill(); });
         c.restore(); return;
       }
       if (t === 'brush') {
@@ -2547,7 +2562,7 @@
         if (piecewise()) {
           if (kind() === 'spray') { segment(octx, p, p, 0.5); sprayTimer = setInterval(function () { both(octx, function () { spray(octx, pts[pts.length - 1]); }); }, 35); }
 
-          else segment(octx, p, p, e.pressure || 0.5);
+          else segment(octx, p, p, e.pressure);
         } else if (kind() === 'feather') featherStroke();
         else both(octx, function () { drawPath(octx); });
         return;
@@ -2576,15 +2591,16 @@
         var c = active.ctx; c.save(); c.globalCompositeOperation = active === layers[0] ? 'source-over' : 'destination-out';
         strokeStyle(c); c.strokeStyle = c.fillStyle = '#fff'; c.base = st.size;
         evs.forEach(function (ev) {
-          var q = pos(ev), l = down.last, pr = down.pen ? ev.pressure : 1;
-          both(c, function () { if (down.pen) pressed(c, l, q, pr); else { c.lineWidth = st.size; c.beginPath(); c.moveTo(l.x, l.y); c.lineTo(q.x, q.y); c.stroke(); } });
+          var q = pos(ev), l = down.last;
+          if (down.pen) pressed(c, l, q, ev.pressure);
+          else both(c, function () { c.lineWidth = st.size; c.beginPath(); c.moveTo(l.x, l.y); c.lineTo(q.x, q.y); c.stroke(); });
           down.last = q;
         });
         c.restore(); return;
       }
       if (t === 'brush') {
         if (piecewise()) {
-          evs.forEach(function (ev) { var q = pos(ev); down.pr = ev.pressure || 0.5; segment(octx, down.last, q, down.pr); down.last = q; pts.push(q); });
+          evs.forEach(function (ev) { var q = pos(ev); segment(octx, down.last, q, ev.pressure); down.last = q; pts.push(q); });
         } else {
           evs.forEach(function (ev) { var q = pos(ev), l = pts[pts.length - 1]; if (Math.hypot(q.x - l.x, q.y - l.y) > 0.8 / view.k) pts.push(q); });
           if (kind() === 'feather') featherStroke();
