@@ -2700,6 +2700,54 @@
       inp.addEventListener('blur', function () { finish(true); });
     }
     panel.addEventListener('dblclick', function (e) { var n = e.target.closest('[data-layer]'); if (n) rename(+n.dataset.layer); });
+    // RIGHT-CLICK A LAYER (or press and hold it): SELECT, which selects
+    // everything on that layer
+    var lmenu = document.createElement('div');
+    lmenu.className = 'paint-lmenu'; lmenu.hidden = true; lmenu.setAttribute('role', 'menu');
+    lmenu.innerHTML = '<button type="button" role="menuitem" data-lmenu="select">SELECT</button>';
+    document.body.appendChild(lmenu);
+    document.addEventListener('pageswap:start', function gone() { document.removeEventListener('pageswap:start', gone); lmenu.remove(); });
+    function layerMenu(i, x, y) {
+      lmenu.dataset.i = i; lmenu.hidden = false;
+      lmenu.style.left = Math.min(x, document.documentElement.clientWidth - lmenu.offsetWidth - 8) + 'px';
+      lmenu.style.top = Math.min(y, window.innerHeight - lmenu.offsetHeight - 8) + 'px';
+    }
+    panel.addEventListener('contextmenu', function (e) {
+      var row = e.target.closest('.pl-row'); if (!row) return;
+      e.preventDefault(); layerMenu(+row.dataset.i, e.clientX, e.clientY);
+    });
+    var holdTimer = 0;
+    panel.addEventListener('pointerdown', function (e) {
+      var row = e.target.closest('.pl-row'); if (!row || e.pointerType === 'mouse' || e.target.closest('.pl-grip')) return;
+      var x = e.clientX, y = e.clientY; clearTimeout(holdTimer);
+      holdTimer = setTimeout(function () { held = true; layerMenu(+row.dataset.i, x, y); }, 550);
+    });
+    // (lifting the finger after a hold mustn't also pick or rename the layer)
+    var held = false;
+    panel.addEventListener('click', function (e) { if (held) { held = false; e.stopPropagation(); e.preventDefault(); } }, true);
+    ['pointerup', 'pointercancel', 'pointermove'].forEach(function (t) { panel.addEventListener(t, function (e) { if (t !== 'pointermove' || e.pointerType !== 'mouse') clearTimeout(holdTimer); }); });
+    lmenu.addEventListener('click', function (e) {
+      if (!e.target.closest('[data-lmenu]')) return;
+      var L = layers[+lmenu.dataset.i]; lmenu.hidden = true; layerPanel(false);
+      if (L) selectLayer(L);
+    });
+    document.addEventListener('pointerdown', function (e) { if (!lmenu.hidden && !e.target.closest('.paint-lmenu')) lmenu.hidden = true; }, true);
+    function selectLayer(L) {
+      if (adj) adjustDone(); if (textBox) commitText(); commitSelection();
+      active = L; renderLayers();
+      var w = L.cv.width, h = L.cv.height, d = L.ctx.getImageData(0, 0, w, h).data, minX = w, minY = h, maxX = -1, maxY = -1, on = new Uint8Array(w * h);
+      for (var y = 0, k = 0; y < h; y++) for (var x = 0; x < w; x++, k++) {
+        var j = k * 4;
+        if (L.bg ? 765 - d[j] - d[j + 1] - d[j + 2] > 36 : d[j + 3] > 0) { on[k] = 1; if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+      }
+      if (maxX < 0) return; // (nothing on it)
+      var mw = maxX - minX + 1, mh = maxY - minY + 1, m = document.createElement('canvas'); m.width = mw; m.height = mh;
+      var mx = m.getContext('2d'), md = mx.createImageData(mw, mh);
+      for (var yy = 0; yy < mh; yy++) for (var xx = 0; xx < mw; xx++) if (on[(yy + minY) * w + xx + minX]) md.data[(yy * mw + xx) * 4 + 3] = 255;
+      mx.putImageData(md, 0, 0);
+      sel = { x: minX / R, y: minY / R, w: mw / R, h: mh / R, float: null, mask: m, maskData: md.data };
+      selbar.hidden = false; drawSel();
+    }
     // reordering: drag a layer by its grip
     panel.addEventListener('pointerdown', function (e) {
       var g = e.target.closest('.pl-grip'); if (!g) return;
@@ -2867,10 +2915,11 @@
     }
 
     // ---- pointers: drawing, moving the picture around, pinching to zoom ----
-    var pointers = {}, gesture = null, pan = null, spaceDown = false, spaceGrab = null, lastMouse = null;
+    var pointers = {}, ptype = {}, gesture = null, pan = null, spaceDown = false, spaceGrab = null, lastMouse = null;
     function screen(e) { var r = stage.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
     function cancelStroke() {
       if (!down) return;
+      if (selMode === 'scale') { refitMask(); selMode = null; down = null; selbar.classList.remove('away'); drawSel(); return; }
       clearInterval(sprayTimer);
       if (down.snap) { var e = undo.pop(); if (e) apply(e); buttons(); }
       down = null; octx.clearRect(0, 0, W, H);
@@ -2881,7 +2930,7 @@
         lift();
         // the opposite corner stays put
         down = { id: e.pointerId, start: p, last: p, scale: { ax: cq.c[1] === 'w' ? sel.x + sel.w : sel.x, ay: cq.c[0] === 'n' ? sel.y + sel.h : sel.y, w: sel.w, h: sel.h, poly: sel.poly, sx: cq.c[1] === 'w' ? -1 : 1, sy: cq.c[0] === 'n' ? -1 : 1 } };
-        selMode = 'scale'; return;
+        selMode = 'scale'; selbar.classList.add('away'); return;
       }
       if (!selTool(t) && sel) anchor();
       if (t === 'picker') { setColor(sampleAt(p)); setTool('brush'); return; }
@@ -2929,9 +2978,10 @@
       var evs = e.getCoalescedEvents && e.getCoalescedEvents().length ? e.getCoalescedEvents() : [e];
       var p = pos(e), t = st.tool;
       if (selMode === 'scale') {
-        // keeps its shape; hold shift to stretch it freely
+        // free to stretch; hold shift for a perfect square (let go of shift
+        // and it's free again)
         var z = down.scale, nw = Math.max(4 / view.k, (p.x - z.ax) * z.sx), nh = Math.max(4 / view.k, (p.y - z.ay) * z.sy);
-        if (!e.shiftKey) { var f = Math.max(nw / z.w, nh / z.h); nw = z.w * f; nh = z.h * f; }
+        if (e.shiftKey) nw = nh = Math.max(nw, nh);
         sel.w = nw; sel.h = nh; sel.x = z.sx > 0 ? z.ax : z.ax - nw; sel.y = z.sy > 0 ? z.ay : z.ay - nh;
         if (z.poly) sel.poly = z.poly.map(function (q) { return { x: q.x * nw / z.w, y: q.y * nh / z.h }; });
         drawSel(); return;
@@ -2981,7 +3031,7 @@
     function end() {
       var t = st.tool;
       clearInterval(sprayTimer);
-      if (selMode === 'scale') { refitMask(); selMode = null; down = null; drawSel(); autosave(); return; }
+      if (selMode === 'scale') { refitMask(); selMode = null; down = null; selbar.classList.remove('away'); drawSel(); autosave(); return; }
       if (selMode === 'lasso') {
         var xs = lasso.map(function (q) { return q.x; }), ys = lasso.map(function (q) { return q.y; });
         var x0 = Math.max(0, Math.min.apply(null, xs)), y0 = Math.max(0, Math.min.apply(null, ys));
@@ -3013,10 +3063,21 @@
       if (!panel.hidden) layerPanel(false);
       if (adj) adjustDone();
       e.preventDefault();
+      // palm rejection: while the Pencil is on the picture, a hand resting
+      // on the screen is ignored (it used to count as a pinch: 800% at once)
+      if (e.pointerType === 'touch' && Object.keys(ptype).some(function (id) { return ptype[id] === 'pen'; })) return;
+      // the first finger (or a mouse or Pencil) starts afresh, forgetting any
+      // touch whose lift went missing
+      if (e.isPrimary) {
+        if (e.pointerType === 'pen' && down && !down.pen) cancelStroke(); // (a palm got there first)
+        pointers = {}; ptype = {}; gesture = null;
+        if (pan) { pan = null; stage.classList.remove('panning'); }
+      }
       try { stage.setPointerCapture(e.pointerId); } catch (x) {}
-      pointers[e.pointerId] = screen(e);
+      pointers[e.pointerId] = screen(e); ptype[e.pointerId] = e.pointerType;
       var ids = Object.keys(pointers);
-      if (ids.length === 2 && e.pointerType === 'touch') {
+      // only two fingers pinch
+      if (ids.length === 2 && ptype[ids[0]] === 'touch' && ptype[ids[1]] === 'touch') {
         // two fingers: pinch to zoom, drag to move the picture
         cancelStroke(); pan = null;
         var a = pointers[ids[0]], b = pointers[ids[1]];
@@ -3088,7 +3149,7 @@
     }
     window.addEventListener('blur', function () { letGoOfSpace(); stage.classList.remove('picking'); });
     function up(e) {
-      delete pointers[e.pointerId];
+      delete pointers[e.pointerId]; delete ptype[e.pointerId];
       if (gesture) { if (Object.keys(pointers).length < 2) gesture = null; return; }
       if (pan) { pan = null; stage.classList.remove('panning'); return; }
       if (down && e.pointerId === down.id) end();
@@ -3271,6 +3332,7 @@
         }
         if (mod || e.altKey) return;
         if (k === ' ') { if (!spaceDown) { spaceDown = true; stage.classList.add('space'); grabWithSpace(); } e.preventDefault(); return; }
+        if (k === 'escape' && !lmenu.hidden) { lmenu.hidden = true; return; }
         if (k === 'escape' && adj) { adjustCancel(); return; }
         if (k === 'escape') { openMenu(null); layerPanel(false); if (sel) commitSelection(); return; }
         if ((k === 'delete' || k === 'backspace') && sel) { e.preventDefault(); selAction('delete'); return; }
