@@ -1869,7 +1869,7 @@
   function stop() { clearTimeout(timer); root = null; }
 
   function setup() {
-    var el = document.querySelector('main:not([aria-hidden]) .show');
+    var el = document.querySelector('main:not([aria-hidden]) section.show');
     if (!el || el === root) return;
     root = el; cur = 0; busy = false;
     root.style.setProperty('--show-time', TIME + 'ms');

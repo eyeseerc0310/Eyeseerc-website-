@@ -157,7 +157,7 @@ html.theme-fading {
   transition: --bg 1.5s ease, --surface 1.5s ease, --text 1.5s ease, --muted 1.5s ease, --line 1.5s ease,
     --accent 1.5s ease, --menu-bg 1.5s ease, --menu-line 1.5s ease, --menu-link 1.5s ease !important;
 }
-html.theme-fading body *:not(.show *), html.theme-fading body *:not(.show *)::before, html.theme-fading body *:not(.show *)::after {
+html.theme-fading body *:not(section.show *), html.theme-fading body *:not(section.show *)::before, html.theme-fading body *:not(section.show *)::after {
   transition: box-shadow 1.5s ease !important;
 }
 /* (the home page's photos carry on drifting and fading as they were) */
@@ -1012,8 +1012,8 @@ a.shop-photo[href]:hover { transform: scale(1.04); z-index: 1; }
    version of the usual bar, light or dark with the theme); scrolling down
    brings up the footer. --hdr is the header's height, measured by site.js. */
 .site-main.full-show { flex: 1 0 auto; max-width: none; width: 100%; padding: 0; margin: calc(-1 * var(--hdr, 0px)) 0 0; }
-body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 55%, transparent); }
-.show { position: relative; height: 100vh; height: 100svh; background: #0b0b0b; color: #f4f3f0; overflow: hidden; }
+body:has(section.show) .site-header::before { background: color-mix(in srgb, var(--bg) 55%, transparent); }
+section.show { position: relative; height: 100vh; height: 100svh; background: #0b0b0b; color: #f4f3f0; overflow: hidden; }
 .show-slides { position: absolute; inset: 0; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
 .show-slide { position: absolute; inset: 0; margin: 0; opacity: 0; z-index: 0; }
 /* the new photo fades in over the old one (slow-fast-slow), so the screen never dips to black */
@@ -1106,7 +1106,7 @@ body:has(.show) .site-header::before { background: color-mix(in srgb, var(--bg) 
 .show-dot.done i::after { transform: none; }
 /* the current photo's line fills up until the next photo comes */
 .show-dot.now i::after { animation: show-fill var(--show-time, 6s) linear forwards; }
-.show.paused .show-dot.now i::after { animation-play-state: paused; }
+section.show.paused .show-dot.now i::after { animation-play-state: paused; }
 @keyframes show-fill { to { transform: none; } }
 @media (max-width: 560px) {
   .show-bar { flex-direction: column; align-items: flex-start; gap: .55rem; }
