@@ -1363,7 +1363,7 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 /* phones: one tool per row, slimmer; the second colour tucked on the first */
 @media (max-width: 560px) {
   .paint-left .paint-group { gap: 3px; }
-  .paint-left button { width: 34px !important; height: 31px !important; }
+  .paint-left button { width: 34px !important; height: 29px !important; }
   .paint-pair { width: 36px; height: 40px; }
   .paint-pair .paint-current { width: 32px; height: 32px; }
   .paint-second { width: 18px; height: 18px; right: -2px; }

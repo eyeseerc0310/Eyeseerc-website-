@@ -2053,7 +2053,7 @@
 
     function setTool(t) {
       if (textBox) commitText();
-      if (sel && t !== 'select' && t !== 'lasso') commitSelection();
+      if (sel && !selTool(t)) commitSelection();
       st.tool = t;
       Array.prototype.forEach.call(root.querySelectorAll('button[data-tool]'), function (b) { b.setAttribute('aria-pressed', b.dataset.tool === t ? 'true' : 'false'); });
       stage.dataset.tool = t;
@@ -2265,6 +2265,7 @@
       }
       octx.fillStyle = g;
       if (sel && sel.poly) { outline(octx, sel.x, sel.y, 1); octx.fill(); }
+      else if (sel && sel.mask) { octx.fillRect(sel.x, sel.y, sel.w, sel.h); octx.save(); octx.globalCompositeOperation = 'destination-in'; octx.drawImage(sel.mask, sel.x, sel.y, sel.w, sel.h); octx.restore(); }
       else if (sel) octx.fillRect(sel.x, sel.y, sel.w, sel.h); else octx.fillRect(0, 0, W, H);
     }
 
@@ -2350,9 +2351,58 @@
 
     // ---- select and move: a box round part of the layer; drag it to move it ----
     var sel = null, selMode = null, selOff = null, lasso = [];
+    function selTool(t) { return t === 'select' || t === 'lasso' || t === 'wand'; }
+    // MAGIC WAND: every connected pixel of a similar colour on the layer
+    // (a mask, kept with the selection)
+    function wandAt(p) {
+      var x0 = Math.floor(p.x * R), y0 = Math.floor(p.y * R), w = active.cv.width, h = active.cv.height;
+      if (x0 < 0 || y0 < 0 || x0 >= w || y0 >= h) return;
+      var d = active.ctx.getImageData(0, 0, w, h).data, i0 = (y0 * w + x0) * 4;
+      var tr = d[i0], tg = d[i0 + 1], tb = d[i0 + 2], ta = d[i0 + 3];
+      var seen = new Uint8Array(w * h), stack = [x0, y0], minX = x0, maxX = x0, minY = y0, maxY = y0;
+      function like(k) { var j = k * 4; return Math.abs(d[j] - tr) + Math.abs(d[j + 1] - tg) + Math.abs(d[j + 2] - tb) + Math.abs(d[j + 3] - ta) <= 80; }
+      while (stack.length) {
+        var y = stack.pop(), x = stack.pop(), k = y * w + x;
+        while (x > 0 && !seen[k - 1] && like(k - 1)) { x--; k--; }
+        var up = false, dn = false;
+        while (x < w && !seen[k] && like(k)) {
+          seen[k] = 1; if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
+          if (y > 0) { var u = k - w; if (!seen[u] && like(u)) { if (!up) { stack.push(x, y - 1); up = true; } } else up = false; }
+          if (y < h - 1) { var v = k + w; if (!seen[v] && like(v)) { if (!dn) { stack.push(x, y + 1); dn = true; } } else dn = false; }
+          x++; k++;
+        }
+      }
+      // grow it a hair (about 1px) so the soft, anti-aliased edge goes with it
+      var g = Math.max(1, Math.round(R)), grown = new Uint8Array(w * h);
+      for (var gy = Math.max(0, minY - g); gy <= Math.min(h - 1, maxY + g); gy++) {
+        for (var gx = Math.max(0, minX - g); gx <= Math.min(w - 1, maxX + g); gx++) {
+          var hit = 0;
+          for (var oy = -g; oy <= g && !hit; oy++) for (var ox = -g; ox <= g; ox++) {
+            var yy2 = gy + oy, xx2 = gx + ox;
+            if (yy2 >= 0 && yy2 < h && xx2 >= 0 && xx2 < w && seen[yy2 * w + xx2]) { hit = 1; break; }
+          }
+          grown[gy * w + gx] = hit;
+        }
+      }
+      seen = grown; minX = Math.max(0, minX - g); minY = Math.max(0, minY - g); maxX = Math.min(w - 1, maxX + g); maxY = Math.min(h - 1, maxY + g);
+      var mw = maxX - minX + 1, mh = maxY - minY + 1, m = document.createElement('canvas'); m.width = mw; m.height = mh;
+      var mx = m.getContext('2d'), md = mx.createImageData(mw, mh);
+      for (var yy = 0; yy < mh; yy++) for (var xx = 0; xx < mw; xx++) if (seen[(yy + minY) * w + xx + minX]) md.data[(yy * mw + xx) * 4 + 3] = 255;
+      mx.putImageData(md, 0, 0);
+      sel = { x: minX / R, y: minY / R, w: mw / R, h: mh / R, float: null, mask: m, maskData: md.data };
+    }
+    function tinted(m, color) {
+      var t = document.createElement('canvas'); t.width = m.width; t.height = m.height;
+      var x = t.getContext('2d'); x.drawImage(m, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = color; x.fillRect(0, 0, t.width, t.height);
+      return t;
+    }
     // (a lasso selection keeps its outline, relative to its box)
     function inSel(p) {
       if (!sel || p.x < sel.x || p.x > sel.x + sel.w || p.y < sel.y || p.y > sel.y + sel.h) return false;
+      if (sel.mask) {
+        var mx = Math.floor((p.x - sel.x) * R), my = Math.floor((p.y - sel.y) * R);
+        return mx >= 0 && my >= 0 && mx < sel.mask.width && my < sel.mask.height && sel.maskData[(my * sel.mask.width + mx) * 4 + 3] > 0;
+      }
       if (!sel.poly) return true;
       var x = p.x - sel.x, y = p.y - sel.y, inside = false, P = sel.poly;
       for (var i = 0, j = P.length - 1; i < P.length; j = i++) {
@@ -2373,7 +2423,14 @@
       var fx = f.getContext('2d');
       fx.drawImage(active.cv, Math.round(sel.x * R), Math.round(sel.y * R), f.width, f.height, 0, 0, f.width, f.height);
       if (sel.poly) { fx.globalCompositeOperation = 'destination-in'; outline(fx, 0, 0, R); fx.fill(); fx.globalCompositeOperation = 'source-over'; }
-      if (!keep) {
+      if (sel.mask) { fx.globalCompositeOperation = 'destination-in'; fx.drawImage(sel.mask, 0, 0, f.width, f.height); fx.globalCompositeOperation = 'source-over'; }
+      if (!keep && sel.mask) {
+        var cm = active.ctx; cm.save(); cm.setTransform(1, 0, 0, 1, 0, 0);
+        cm.globalCompositeOperation = 'destination-out'; cm.drawImage(sel.mask, Math.round(sel.x * R), Math.round(sel.y * R));
+        cm.globalCompositeOperation = 'source-over';
+        if (active === layers[0]) cm.drawImage(tinted(sel.mask, '#fff'), Math.round(sel.x * R), Math.round(sel.y * R));
+        cm.restore();
+      } else if (!keep) {
         var c = active.ctx; c.save();
         if (sel.poly) { outline(c, sel.x, sel.y, 1); c.clip(); }
         c.clearRect(sel.x, sel.y, sel.w, sel.h);
@@ -2386,6 +2443,8 @@
       octx.clearRect(0, 0, W, H);
       if (!sel) return;
       if (sel.float) octx.drawImage(sel.float, sel.x, sel.y, sel.w, sel.h);
+      // a wand selection shows as a light blue wash over what's picked
+      else if (sel.mask) { octx.save(); octx.globalAlpha = 0.35; octx.drawImage(sel.tint || (sel.tint = tinted(sel.mask, '#2f7fd6')), sel.x, sel.y, sel.w, sel.h); octx.restore(); }
       octx.save(); octx.lineWidth = 1 / view.k;
       var edge = function () { if (sel.poly) outline(octx, sel.x, sel.y, 1); else { octx.beginPath(); octx.rect(sel.x, sel.y, sel.w, sel.h); } octx.stroke(); };
       octx.setLineDash([5 / view.k, 4 / view.k]); octx.strokeStyle = '#000'; edge();
@@ -2419,6 +2478,12 @@
       if (a === 'fliph') { gx.translate(f.width, 0); gx.scale(-1, 1); } else { gx.translate(0, f.height); gx.scale(1, -1); }
       gx.drawImage(f, 0, 0); sel.float = g;
       if (sel.poly) sel.poly = sel.poly.map(function (q) { return a === 'fliph' ? { x: sel.w - q.x, y: q.y } : { x: q.x, y: sel.h - q.y }; });
+      if (sel.mask) {
+        var m2 = document.createElement('canvas'); m2.width = sel.mask.width; m2.height = sel.mask.height;
+        var mx2 = m2.getContext('2d');
+        if (a === 'fliph') { mx2.translate(m2.width, 0); mx2.scale(-1, 1); } else { mx2.translate(0, m2.height); mx2.scale(1, -1); }
+        mx2.drawImage(sel.mask, 0, 0); sel.mask = m2; sel.maskData = mx2.getImageData(0, 0, m2.width, m2.height).data; sel.tint = null;
+      }
       drawSel();
     }
 
@@ -2532,11 +2597,12 @@
     }
     function begin(e) {
       var p = pos(e), t = st.tool;
-      if (t !== 'select' && t !== 'lasso' && sel) commitSelection();
+      if (!selTool(t) && sel) commitSelection();
       if (t === 'picker') { setColor(sampleAt(p)); setTool('brush'); return; }
       if (t === 'text') { if (textBox) { commitText(); return; } startText(p); return; }
-      if (t === 'select' || t === 'lasso') {
+      if (selTool(t)) {
         if (inSel(p)) { selMode = 'move'; selOff = { x: p.x - sel.x, y: p.y - sel.y }; lift(); }
+        else if (t === 'wand') { commitSelection(); wandAt(p); selbar.hidden = !sel; drawSel(); return; }
         else if (t === 'lasso') { commitSelection(); selMode = 'lasso'; lasso = [p]; }
         else { commitSelection(); selMode = 'new'; sel = { x: p.x, y: p.y, w: 0, h: 0, ax: p.x, ay: p.y, float: null }; }
         down = { id: e.pointerId, start: p, last: p };
@@ -2580,7 +2646,7 @@
         octx.strokeStyle = '#000'; octx.stroke(); octx.lineDashOffset = 4.5 / view.k; octx.strokeStyle = '#fff'; octx.stroke(); octx.restore();
         return;
       }
-      if (t === 'select' || t === 'lasso') {
+      if (selTool(t)) {
         if (selMode === 'move') { sel.x = p.x - selOff.x; sel.y = p.y - selOff.y; }
         else { sel.x = Math.min(sel.ax, p.x); sel.y = Math.min(sel.ay, p.y); sel.w = Math.abs(p.x - sel.ax); sel.h = Math.abs(p.y - sel.ay); }
         drawSel(); return;
@@ -2623,7 +2689,7 @@
         if (!sel) octx.clearRect(0, 0, W, H);
         selbar.hidden = !sel; selMode = null; down = null; drawSel(); return;
       }
-      if (t === 'select' || t === 'lasso') {
+      if (selTool(t)) {
         if (selMode === 'new' && (sel.w < 3 || sel.h < 3)) { sel = null; octx.clearRect(0, 0, W, H); }
         selbar.hidden = !sel; selMode = null; down = null; drawSel(); return;
       }
@@ -2700,7 +2766,7 @@
         var tl = t.dataset.tool, reopen = menus[tl] && (st.tool !== tl || menus[tl].el.hidden);
         setTool(tl); openMenu(menus[tl] && reopen ? tl : null); return;
       }
-      var s = e.target.closest('[data-color]'); if (s) { setColor(s.dataset.color); if (/eraser|picker|smudge|blur|hand|select|lasso/.test(st.tool)) setTool('brush'); return; }
+      var s = e.target.closest('[data-color]'); if (s) { setColor(s.dataset.color); if (/eraser|picker|smudge|blur|hand|select|lasso|wand/.test(st.tool)) setTool('brush'); return; }
       if (e.target.closest('.paint-swap')) { var c1 = st.color; setColor(st.color2); setColor2(c1); return; }
       if (e.target.closest('.paint-solid')) { st.solid = !st.solid; $('.paint-solid').setAttribute('aria-pressed', st.solid ? 'true' : 'false'); return; }
       if (e.target.closest('.paint-mirror')) { st.mirror = !st.mirror; $('.paint-mirror').setAttribute('aria-pressed', st.mirror ? 'true' : 'false'); guide.hidden = !st.mirror; return; }
@@ -2774,7 +2840,7 @@
         if (k === 'escape') { openMenu(null); layerPanel(false); if (sel) commitSelection(); return; }
         if ((k === 'delete' || k === 'backspace') && sel) { e.preventDefault(); selAction('delete'); return; }
         if (k === 'enter' && sel) { selAction('done'); return; }
-        var map = { b: 'brush', e: 'eraser', s: 'smudge', u: 'blur', l: 'line', r: 'shape', f: 'fill', g: 'gradient', t: 'text', m: 'select', q: 'lasso', i: 'picker', h: 'hand' };
+        var map = { b: 'brush', e: 'eraser', s: 'smudge', u: 'blur', l: 'line', r: 'shape', f: 'fill', g: 'gradient', t: 'text', m: 'select', q: 'lasso', w: 'wand', i: 'picker', h: 'hand' };
         if (map[k]) setTool(map[k]);
         else if (k === 'x') { var c1 = st.color; setColor(st.color2); setColor2(c1); }
         else if (k === '[') setSize(st.size - (st.size > 10 ? 4 : 1));
