@@ -1931,7 +1931,7 @@
   document.addEventListener('pageswap:done', setup);
 })();
 
-// Paint: the drawing page (the paintbrush button on the Projects page).
+// Paint: the hidden drawing page (5 clicks on the footer's spinning mark).
 // Tools down the left: brush (with a list of brushes), eraser, smudge, blur,
 // line, shapes (a list), fill, gradient, text (a list of fonts), select &
 // move, cutout, magic wand, colour picker, hand and light & dark; mirror.
@@ -3463,22 +3463,21 @@
       keyup: function (e) { if (e.key === ' ') letGoOfSpace(); else if (e.key === 'Alt') stage.classList.remove('picking'); }
     };
   }
-  // the footer's spinning mark: 5 clicks in a row and BABBA!!! pops up
-  // (each click gives the mark a little bump; a pause starts the count again)
+  // the footer's spinning mark opens the drawing page, but only on the 5th
+  // click in a row (each click gives the mark a little bump; a pause starts
+  // the count again). On the drawing page itself, one click: BABBA!!!
   var clicks = 0, clickTimer = 0;
   document.addEventListener('click', function (e) {
     var m = e.target.closest && e.target.closest('.footer-mark-wrap');
     if (!m || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    e.preventDefault(); e.stopImmediatePropagation();
+    if (document.querySelector('main:not([aria-hidden]) .paint:not(.dr)')) { e.preventDefault(); e.stopImmediatePropagation(); babba(); return; }
     clearTimeout(clickTimer);
+    clicks++;
+    if (clicks >= 5) { clicks = 0; return; } // the 5th click goes through to the page
+    e.preventDefault(); e.stopImmediatePropagation();
     m.classList.remove('bump'); void m.offsetWidth; m.classList.add('bump');
-    if (++clicks >= 5) { clicks = 0; babba(); return; }
     clickTimer = setTimeout(function () { clicks = 0; }, 1500);
   }, true);
-  document.addEventListener('keydown', function (e) {
-    var m = (e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('.footer-mark-wrap');
-    if (m) { e.preventDefault(); m.click(); }
-  });
   // the cat pops up for 5 seconds, then zooms off to the left
   var babbaOn = false;
   function babba() {
@@ -3607,7 +3606,7 @@
         URL.revokeObjectURL(im.src);
         remember();
         setSource(g, w, h);
-        st.s = 1; st.ox = 0; st.oy = 0; st.rot = 0; st.flip = false; st.inv = [];
+        st.s = 1; st.ox = 0; st.oy = 0; st.rot = 0; st.ang = 0; st.flip = false; st.inv = []; st.v = {};
         process(); syncScale(); draw(); save();
       };
       im.src = URL.createObjectURL(file);
@@ -3621,13 +3620,19 @@
 
     // ---- ADJUST: the tones, worked out over the whole photo ----
     function val(k) { return (st.v[k] || 0) / 100; }
+    // LEVELS: black, mid (gamma x 100) and white in, black and white out
+    var LV = { lb: 0, lg: 100, lw: 255, ob: 0, ow: 255 };
+    function lv(k) { return st.v[k] != null ? st.v[k] : LV[k]; }
+    function changed() { return Object.keys(st.v).some(function (k) { return st.v[k] !== (k in LV ? LV[k] : 0); }); }
     function process() {
       if (!G) return;
       var ex = Math.pow(2, val('exposure') * 1.5), co = val('contrast'), hi = val('highlights'), sh = val('shadows'), wh = val('whites'), bl = val('blacks');
       var fa = val('fade'), br = val('brilliance'), shp = val('sharpen') * 1.6, cl = val('clarity') * 0.7;
-      var lut = new Float32Array(256);
+      var lut = new Float32Array(256), lb = lv('lb'), lw = lv('lw'), lg = lv('lg') / 100, ob = lv('ob'), ow = lv('ow');
       for (var i = 0; i < 256; i++) {
-        var x = i / 255 * ex;
+        var x = Math.max(0, Math.min(1, (i - lb) / Math.max(1, lw - lb)));
+        x = Math.pow(x, 1 / lg); x = (ob + x * (ow - ob)) / 255;
+        x *= ex;
         x += sh * 0.3 * (1 - sstep(0, 0.55, x)) * (sh > 0 ? 1 - x : x);
         x += hi * 0.3 * sstep(0.45, 1, x) * (hi > 0 ? 1 - x : x);
         x += wh * 0.22 * sstep(0.55, 1.05, x);
@@ -3651,6 +3656,42 @@
       proc.getContext('2d').putImageData(img, 0, 0);
     }
 
+    // COMMIT: the tones, levels, inverted shapes, vignette, grain and
+    // threshold all go into the photo itself, and the sliders go back to the
+    // start, so it can be pushed further and further
+    function bake() {
+      if (!G || (!changed() && !st.inv.length)) return;
+      remember();
+      process();
+      var d = proc.getContext('2d').getImageData(0, 0, SW, SH).data, g = new Uint8ClampedArray(SW * SH), i, j;
+      for (i = 0, j = 0; i < g.length; i++, j += 4) g[i] = d[j];
+      if (st.inv.length) {
+        var m = document.createElement('canvas'); m.width = SW; m.height = SH;
+        var mx = m.getContext('2d'); mx.fillStyle = '#fff';
+        st.inv.forEach(function (sh) { mx.globalCompositeOperation = 'xor'; mx.beginPath(); sh.pts.forEach(function (q, k) { mx[k ? 'lineTo' : 'moveTo'](q.x, q.y); }); mx.closePath(); mx.fill(); });
+        var md = mx.getImageData(0, 0, SW, SH).data;
+        for (i = 0; i < g.length; i++) if (md[i * 4 + 3] > 127) g[i] = 255 - g[i];
+      }
+      var vg = val('vignette'), gr = val('grain'), th = val('threshold');
+      if (vg || gr || th) {
+        var M = pm(), bw = th >= 1 ? 0 : 0.5 * (1 - th), tl = new Uint8ClampedArray(256);
+        for (i = 0; i < 256; i++) { var x0 = i / 255, h = bw ? sstep(0.5 - bw, 0.5 + bw, x0) : (x0 >= 0.5 ? 1 : 0); tl[i] = (x0 * (1 - th) + th * h) * 255; }
+        for (var y = 0, k = 0; y < SH; y++) for (var x = 0; x < SW; x++, k++) {
+          var v = g[k] / 255;
+          if (vg) {
+            var wx = M.a * (x + 0.5) + M.c * (y + 0.5) + M.e - 0.5, wy = M.b * (x + 0.5) + M.d * (y + 0.5) + M.f - 0.5;
+            var t = Math.max(0, Math.min(1, (Math.hypot(wx, wy) - 0.22) / 0.53)), al = t * Math.abs(vg) * 0.85;
+            v = v * (1 - al) + (vg > 0 ? 0 : 1) * al;
+          }
+          if (gr) { var n = Math.random(), o = v < 0.5 ? 2 * v * n : 1 - 2 * (1 - v) * (1 - n), a = gr * 0.55; v = v * (1 - a) + o * a; }
+          v = Math.max(0, Math.min(255, v * 255));
+          g[k] = th ? tl[v | 0] : v;
+        }
+      }
+      G = g; blurS = blurW = null; st.v = {}; st.inv = [];
+      process(); syncSliders(); syncLevels(); draw(); save();
+    }
+
     // ---- putting the piece together (the window only; the frame is the
     // white round it, which nothing can touch) ----
     var grainTile = null;
@@ -3672,7 +3713,7 @@
     // where the photo is: from its own pixels to window units (the window is 1 across)
     function pm() {
       var ew = st.rot % 2 ? SH : SW, eh = st.rot % 2 ? SW : SH, k = Math.max(1 / ew, 1 / eh) * st.s;
-      return new DOMMatrix().translate(0.5 + st.ox, 0.5 + st.oy).rotate(st.rot * 90).scale(st.flip ? -1 : 1, 1).scale(k, k).translate(-SW / 2, -SH / 2);
+      return new DOMMatrix().translate(0.5 + st.ox, 0.5 + st.oy).rotate(st.rot * 90 + (st.ang || 0)).scale(st.flip ? -1 : 1, 1).scale(k, k).translate(-SW / 2, -SH / 2);
     }
     function photoTransform(c, n) { c.setTransform(new DOMMatrix().scale(n, n).multiply(pm())); } // (n pixels across)
     // the photo's four corners, in window units
@@ -3740,7 +3781,7 @@
       var srcChanged = sn.G !== G;
       st = sn.st;
       if (srcChanged) { if (sn.G) setSource(sn.G, sn.SW, sn.SH); else { G = null; src = proc = null; empty.hidden = false; } }
-      process(); syncScale(); syncSliders(); draw(); save();
+      process(); syncScale(); syncSliders(); syncLevels(); draw(); drawSel(); save();
     }
     function doUndo() { exitT(); if (!undo.length) return; redo.push(snap()); restore(undo.pop()); buttons(); }
     function doRedo() { if (!redo.length) return; undo.push(snap()); restore(redo.pop()); buttons(); }
@@ -3763,8 +3804,48 @@
       }
       if (!sel) return;
       c.setTransform(DPR, 0, 0, DPR, 0, 0); c.translate(n.x, n.y);
-      var edge = function () { shapePath(c, sel, n.s); if (selMode === 'lasso') { /* still open */ } c.stroke(); };
+      var edge = function () { shapePath(c, sel, n.s); c.stroke(); };
       c.lineWidth = 1; c.setLineDash([5, 4]); c.strokeStyle = '#000'; edge(); c.lineDashOffset = 4.5; c.strokeStyle = '#fff'; edge();
+      if (!selMode) {
+        // a handle on each corner: drag one to size the selection
+        c.setLineDash([]); c.fillStyle = '#fff'; c.strokeStyle = '#141414';
+        sbCorners().forEach(function (r) { c.fillRect(r.x * n.s - 4, r.y * n.s - 4, 8, 8); c.strokeRect(r.x * n.s - 4, r.y * n.s - 4, 8, 8); });
+      }
+    }
+    // the selection's box (in window units) and its corners
+    function sb() {
+      if (!sel.pts) return { x: sel.x, y: sel.y, w: sel.w, h: sel.h };
+      var xs = sel.pts.map(function (q) { return q.x; }), ys = sel.pts.map(function (q) { return q.y; });
+      var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys);
+      return { x: x0, y: y0, w: Math.max.apply(null, xs) - x0, h: Math.max.apply(null, ys) - y0 };
+    }
+    function sbCorners() { var b = sb(); return [{ x: b.x, y: b.y }, { x: b.x + b.w, y: b.y }, { x: b.x + b.w, y: b.y + b.h }, { x: b.x, y: b.y + b.h }]; }
+    // what's under the pointer: a corner to size from, the inside to move,
+    // or (in FIT's box) just outside a corner, to turn it
+    function zone(p, kind) {
+      var w = wbox(), r0 = (kind === 'mouse' ? 10 : 20) / w.s, r1 = (kind === 'mouse' ? 34 : 46) / w.s, q, i;
+      if (tmode && proc) {
+        q = corners();
+        for (i = 0; i < 4; i++) if (Math.hypot(p.x - q[i].x, p.y - q[i].y) <= r0) return { k: 'scale', i: i, q: q };
+        if (inPoly(p, q)) return { k: 'move' };
+        for (i = 0; i < 4; i++) if (Math.hypot(p.x - q[i].x, p.y - q[i].y) <= r1) return { k: 'turn', i: i, q: q };
+        return null;
+      }
+      if (sel && !selMode && tool !== 'move') {
+        q = sbCorners();
+        for (i = 0; i < 4; i++) if (Math.hypot(p.x - q[i].x, p.y - q[i].y) <= r0) return { k: 'sscale', i: i, q: q };
+        if (inSel(p)) return { k: 'smove' };
+      }
+      return null;
+    }
+    // the cursor for each (the resize arrows follow the corner's direction)
+    function cursorFor(z) {
+      if (!z) return '';
+      if (z.k === 'move' || z.k === 'smove') return 'move';
+      if (z.k === 'turn') return 'turn';
+      var c = z.q.reduce(function (a, r) { return { x: a.x + r.x / 4, y: a.y + r.y / 4 }; }, { x: 0, y: 0 }), r = z.q[z.i];
+      var dir = (Math.atan2(r.y - c.y, r.x - c.x) * 180 / Math.PI + 360) % 180;
+      return dir < 22.5 || dir >= 157.5 ? 'ew' : dir < 67.5 ? 'nwse' : dir < 112.5 ? 'ns' : 'nesw';
     }
     function placeX() {
       if (!sel || selMode) { selx.hidden = true; return; }
@@ -3827,7 +3908,7 @@
       syncScale(); draw(); if (ghostOn) drawGhost(); if (tmode) drawSel();
     }
 
-    var pts = {}, drag = null, pinch = null;
+    var pts = {}, drag = null, pinch = null, sdrag = null;
     stage.addEventListener('pointerdown', function (e) {
       if (e.target.closest('.paint-selbar, .paint-selx, .dr-empty')) return;
       if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -3842,21 +3923,22 @@
         drag = null; if (selMode) { sel = null; selMode = null; drawSel(); }
         var a = pts[ids[0]], b = pts[ids[1]], r = stage.getBoundingClientRect(), n = wbox();
         if (!pinch) remember();
-        pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s: st.s, ox: st.ox, oy: st.oy, mx: ((a.x + b.x) / 2 - r.left - n.x) / n.s, my: ((a.y + b.y) / 2 - r.top - n.y) / n.s };
+        pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, a: Math.atan2(b.y - a.y, b.x - a.x), ang: st.ang || 0, s: st.s, ox: st.ox, oy: st.oy, mx: ((a.x + b.x) / 2 - r.left - n.x) / n.s, my: ((a.y + b.y) / 2 - r.top - n.y) / n.s };
         ghostShow(); return;
       }
       if (ids.length > 1) return;
       var p = wpos(e);
+      var z = zone(p, e.pointerType);
       if (tmode) {
-        var q = corners(), w = wbox(), r0 = (e.pointerType === 'mouse' ? 12 : 22) / w.s, hit = -1;
-        q.forEach(function (c, i) { if (hit < 0 && Math.hypot(p.x - c.x, p.y - c.y) <= r0) hit = i; });
-        if (hit >= 0) {
-          remember();
-          tdrag = { a: q[(hit + 2) % 4], c: q[hit], s: st.s, cx: 0.5 + st.ox, cy: 0.5 + st.oy };
-        } else if (inPoly(p, q)) drag = { p: p, ox: st.ox, oy: st.oy, moved: false, t: true };
+        if (z && z.k === 'scale') { remember(); tdrag = { a: z.q[(z.i + 2) % 4], c: z.q[z.i], s: st.s, cx: 0.5 + st.ox, cy: 0.5 + st.oy }; }
+        else if (z && z.k === 'turn') { remember(); tdrag = { turn: true, cx: 0.5 + st.ox, cy: 0.5 + st.oy, a0: Math.atan2(p.y - 0.5 - st.oy, p.x - 0.5 - st.ox), ang: st.ang || 0 }; }
+        else if (z && z.k === 'move') drag = { p: p, ox: st.ox, oy: st.oy, moved: false, t: true };
         else exitT();
         return;
       }
+      // an existing selection: size it by a corner, or move it from inside
+      if (z && z.k === 'sscale') { sdrag = { a: z.q[(z.i + 2) % 4], b: sb(), sel: JSON.parse(JSON.stringify(sel)) }; drawSel(); return; }
+      if (z && z.k === 'smove') { sdrag = { move: true, p: p, sel: JSON.parse(JSON.stringify(sel)) }; return; }
       if (tool === 'move') {
         if (!proc) return;
         drag = { p: p, ox: st.ox, oy: st.oy, moved: false };
@@ -3873,9 +3955,34 @@
         var ids = Object.keys(pts); if (ids.length < 2) return;
         var a = pts[ids[0]], b = pts[ids[1]], r = stage.getBoundingClientRect(), n = wbox();
         var d = Math.hypot(a.x - b.x, a.y - b.y) || 1, mx = ((a.x + b.x) / 2 - r.left - n.x) / n.s, my = ((a.y + b.y) / 2 - r.top - n.y) / n.s;
-        var s = Math.max(0.25, Math.min(4, pinch.s * d / pinch.d)), f = s / pinch.s;
-        st.s = s; st.ox = mx - 0.5 - (pinch.mx - 0.5 - pinch.ox) * f; st.oy = my - 0.5 - (pinch.my - 0.5 - pinch.oy) * f;
+        var s = Math.max(0.25, Math.min(4, pinch.s * d / pinch.d)), f = s / pinch.s, da = Math.atan2(b.y - a.y, b.x - a.x) - pinch.a;
+        // (the spot between the fingers stays under them as it sizes and turns)
+        var vx = 0.5 + pinch.ox - pinch.mx, vy = 0.5 + pinch.oy - pinch.my, cs = Math.cos(da), sn = Math.sin(da);
+        st.s = s; st.ang = pinch.ang + da * 180 / Math.PI;
+        st.ox = mx + (vx * cs - vy * sn) * f - 0.5; st.oy = my + (vx * sn + vy * cs) * f - 0.5;
         syncScale(); draw(); drawGhost(); if (tmode) drawSel(); return;
+      }
+      if (!Object.keys(pts).length && e.pointerType === 'mouse' && proc !== undefined) stage.dataset.hover = cursorFor(zone(wpos(e), 'mouse'));
+      if (sdrag && pts[e.pointerId]) {
+        var sp = wpos(e), o = sdrag.sel;
+        if (sdrag.move) {
+          var dx = sp.x - sdrag.p.x, dy = sp.y - sdrag.p.y;
+          if (o.pts) sel.pts = o.pts.map(function (q) { return { x: q.x + dx, y: q.y + dy }; }); else { sel.x = o.x + dx; sel.y = o.y + dy; }
+        } else {
+          // free to stretch; with shift it keeps its own proportions
+          var A = sdrag.a, B = sdrag.b, nw = Math.max(4 / wbox().s, Math.abs(sp.x - A.x)), nh = Math.max(4 / wbox().s, Math.abs(sp.y - A.y));
+          if (e.shiftKey) { var ff = Math.max(nw / B.w, nh / B.h); nw = B.w * ff; nh = B.h * ff; }
+          var nx = sp.x < A.x ? A.x - nw : A.x, ny = sp.y < A.y ? A.y - nh : A.y;
+          if (o.pts) sel.pts = o.pts.map(function (q) { return { x: nx + (q.x - B.x) / (B.w || 1) * nw, y: ny + (q.y - B.y) / (B.h || 1) * nh }; });
+          else { sel.x = nx; sel.y = ny; sel.w = nw; sel.h = nh; }
+        }
+        drawSel(); return;
+      }
+      if (tdrag && tdrag.turn && pts[e.pointerId]) {
+        // turning round the middle (shift: in steps of 15 degrees)
+        var tp = wpos(e), ang = tdrag.ang + (Math.atan2(tp.y - tdrag.cy, tp.x - tdrag.cx) - tdrag.a0) * 180 / Math.PI;
+        if (e.shiftKey) ang = Math.round(ang / 15) * 15;
+        st.ang = ang; draw(); drawGhost(); drawSel(); return;
       }
       if (tdrag && pts[e.pointerId]) {
         var q = wpos(e), a = tdrag.a, f = Math.hypot(q.x - a.x, q.y - a.y) / (Math.hypot(tdrag.c.x - a.x, tdrag.c.y - a.y) || 1);
@@ -3891,13 +3998,16 @@
       } else if (selMode === 'lasso') {
         var l = sel.pts[sel.pts.length - 1]; if (Math.hypot(p.x - l.x, p.y - l.y) * wbox().s > 2) sel.pts.push(p); drawSel();
       } else if (selMode === 'box') {
-        sel.x = Math.min(sel.ax, p.x); sel.y = Math.min(sel.ay, p.y); sel.w = Math.abs(p.x - sel.ax); sel.h = Math.abs(p.y - sel.ay); drawSel();
+        var bw2 = Math.abs(p.x - sel.ax), bh2 = Math.abs(p.y - sel.ay);
+        if (e.shiftKey) bw2 = bh2 = Math.max(bw2, bh2); // (shift: a perfect square)
+        sel.x = p.x < sel.ax ? sel.ax - bw2 : sel.ax; sel.y = p.y < sel.ay ? sel.ay - bh2 : sel.ay; sel.w = bw2; sel.h = bh2; drawSel();
       }
     });
     function up(e) {
       delete pts[e.pointerId];
       if (pinch) { if (Object.keys(pts).length < 2) { pinch = null; if (!tmode) ghostHide(); save(); } return; }
       if (tdrag) { tdrag = null; save(); return; }
+      if (sdrag) { sdrag = null; drawSel(); return; }
       if (!drag) return;
       if (drag.t) { drag = null; save(); return; } // (moving it inside the box: the box stays)
       if (tool === 'move') { if (drag.moved) { ghostHide(); save(); } }
@@ -3946,6 +4056,7 @@
     right.appendChild(adjBox);
     function syncSliders() { Array.prototype.forEach.call(adjBox.querySelectorAll('input'), function (i) { i.value = st.v[i.dataset.adj] || 0; i.previousElementSibling.textContent = i.value; }); }
     function adjust(open) {
+      if (!open && !adjBox.hidden) { adjBox.hidden = true; bake(); }
       adjBox.hidden = !open; $('[data-dract="adjust"]').setAttribute('aria-expanded', open ? 'true' : 'false');
       if (open) { syncSliders(); var b = $('[data-dract="adjust"]'); adjBox.style.top = Math.max(0, Math.min(b.offsetTop - 40, right.clientHeight - adjBox.offsetHeight)) + 'px'; }
     }
@@ -3968,6 +4079,67 @@
       remember(); st.v[k] = 0; syncSliders(); process(); draw(); save();
     });
 
+    // ---- LEVELS: the photo's spread of tones, with the black, mid and white
+    // points to drag (and the darkest and lightest it can come out) ----
+    var lvBox = document.createElement('div'), lvStart = null;
+    lvBox.className = 'paint-adjust dr-adjust dr-levels'; lvBox.hidden = true;
+    lvBox.innerHTML = '<div class="pa-title">LEVELS</div><canvas class="lv-hist" width="256" height="100"></canvas>' +
+      '<div class="lv-track" data-lv="in"><i data-k="lb" class="lv-b"></i><i data-k="lg" class="lv-g"></i><i data-k="lw" class="lv-w"></i></div>' +
+      '<div class="lv-nums"><output data-o="lb">0</output><output data-o="lg">1.00</output><output data-o="lw">255</output></div>' +
+      '<div class="lv-sub">OUTPUT</div><div class="lv-grad"></div>' +
+      '<div class="lv-track" data-lv="out"><i data-k="ob" class="lv-b"></i><i data-k="ow" class="lv-w"></i></div>' +
+      '<div class="lv-nums"><output data-o="ob">0</output><output data-o="ow">255</output></div>' +
+      '<div class="pa-acts"><button type="button" data-adj-act="reset">RESET</button><button type="button" data-adj-act="done">DONE</button></div>';
+    right.appendChild(lvBox);
+    function midPos() { var lb = lv('lb'), lw = lv('lw'); return lb + (lw - lb) * Math.pow(0.5, lv('lg') / 100); }
+    function syncLevels() {
+      var put = function (k, v) { var el = lvBox.querySelector('[data-k="' + k + '"]'); if (el) el.style.left = v / 255 * 100 + '%'; };
+      put('lb', lv('lb')); put('lw', lv('lw')); put('lg', midPos()); put('ob', lv('ob')); put('ow', lv('ow'));
+      lvBox.querySelector('[data-o="lb"]').textContent = lv('lb'); lvBox.querySelector('[data-o="lw"]').textContent = lv('lw');
+      lvBox.querySelector('[data-o="lg"]').textContent = (lv('lg') / 100).toFixed(2);
+      lvBox.querySelector('[data-o="ob"]').textContent = lv('ob'); lvBox.querySelector('[data-o="ow"]').textContent = lv('ow');
+    }
+    function histogram() {
+      var c = lvBox.querySelector('.lv-hist'), x = c.getContext('2d'), h = new Uint32Array(256), i;
+      x.clearRect(0, 0, 256, 100); if (!G) return;
+      for (i = 0; i < G.length; i += 3) h[G[i]]++;
+      var sorted = Array.prototype.slice.call(h).sort(function (a, b) { return a - b; }), top = sorted[250] || 1; // (a few tall spikes don't flatten the rest)
+      x.fillStyle = getComputedStyle(lvBox).color || '#ddd';
+      for (i = 0; i < 256; i++) { var v = Math.min(1, h[i] / top) * 100; x.fillRect(i, 100 - v, 1, v); }
+    }
+    function levels(open) {
+      if (!open && !lvBox.hidden) { lvBox.hidden = true; bake(); }
+      lvBox.hidden = !open; $('[data-dract="levels"]').setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) { histogram(); syncLevels(); var b = $('[data-dract="levels"]'); lvBox.style.top = Math.max(0, Math.min(b.offsetTop - 40, right.clientHeight - lvBox.offsetHeight)) + 'px'; }
+    }
+    var lvq = false;
+    lvBox.addEventListener('pointerdown', function (e) {
+      var tr = e.target.closest('.lv-track'); if (!tr || !G) return;
+      e.preventDefault();
+      var r = tr.getBoundingClientRect(), at = function (ev) { return Math.max(0, Math.min(255, (ev.clientX - r.left) / r.width * 255)); };
+      // the nearest handle to the pointer is the one that moves
+      var v0 = at(e), keys = tr.dataset.lv === 'in' ? ['lb', 'lg', 'lw'] : ['ob', 'ow'];
+      var k = keys.reduce(function (best, kk) { var pos = kk === 'lg' ? midPos() : lv(kk); return Math.abs(pos - v0) < Math.abs((best === 'lg' ? midPos() : lv(best)) - v0) ? kk : best; }, keys[0]);
+      lvStart = JSON.stringify(st.v);
+      try { tr.setPointerCapture(e.pointerId); } catch (x) {}
+      function mv(ev) {
+        var v = Math.round(at(ev));
+        if (k === 'lb') st.v.lb = Math.min(v, lv('lw') - 2);
+        else if (k === 'lw') st.v.lw = Math.max(v, lv('lb') + 2);
+        else if (k === 'lg') { var t = Math.max(0.01, Math.min(0.99, (at(ev) - lv('lb')) / Math.max(1, lv('lw') - lv('lb')))); st.v.lg = Math.round(Math.max(10, Math.min(999, Math.log(t) / Math.log(0.5) * 100))); }
+        else st.v[k] = v;
+        syncLevels();
+        if (lvq) return; lvq = true;
+        requestAnimationFrame(function () { lvq = false; process(); draw(); });
+      }
+      function done() {
+        tr.removeEventListener('pointermove', mv); tr.removeEventListener('pointerup', done); tr.removeEventListener('pointercancel', done);
+        if (lvStart !== JSON.stringify(st.v)) { var now = st.v; st.v = JSON.parse(lvStart); remember(); st.v = now; save(); }
+      }
+      mv(e);
+      tr.addEventListener('pointermove', mv); tr.addEventListener('pointerup', done); tr.addEventListener('pointercancel', done);
+    });
+
     // ---- saving: the whole piece, frame and all ----
     var saveMenu = document.createElement('div');
     saveMenu.className = 'paint-savemenu'; saveMenu.hidden = true;
@@ -3977,7 +4149,7 @@
       saveMenu.hidden = !open; var b = $('[data-dract="save"]'); b.setAttribute('aria-expanded', open ? 'true' : 'false');
       if (open) saveMenu.style.top = Math.max(0, Math.min(b.offsetTop + b.offsetHeight - saveMenu.offsetHeight, right.clientHeight - saveMenu.offsetHeight)) + 'px';
     }
-    function closePanels() { adjust(false); savePanel(false); }
+    function closePanels() { adjust(false); levels(false); savePanel(false); }
     function download(type) {
       var out = document.createElement('canvas'); out.width = FW; out.height = FH;
       var c = out.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, FW, FH);
@@ -3997,21 +4169,27 @@
       var s = e.target.closest('[data-drsel]'); if (s) { if (s.dataset.drsel === 'invert') invert(); else if (tmode) exitT(); else clearSel(); return; }
       var sv = e.target.closest('[data-drsave]'); if (sv) { savePanel(false); download(sv.dataset.drsave); return; }
       var aa = e.target.closest('[data-adj-act]');
-      if (aa) { if (aa.dataset.adjAct === 'reset' && Object.keys(st.v).some(function (k) { return st.v[k]; })) { remember(); st.v = {}; syncSliders(); process(); draw(); save(); } else if (aa.dataset.adjAct === 'done') adjust(false); return; }
+      if (aa) {
+        if (aa.dataset.adjAct === 'reset' && changed()) { remember(); st.v = {}; syncSliders(); syncLevels(); process(); draw(); save(); }
+        else if (aa.dataset.adjAct === 'done') { adjust(false); levels(false); }
+        return;
+      }
       var a = e.target.closest('[data-dract]'); if (!a) return;
       var k = a.dataset.dract;
       if (k === 'invert') invert();
       else if (k === 'undo') doUndo();
       else if (k === 'redo') doRedo();
-      else if (k === 'adjust') { savePanel(false); adjust(adjBox.hidden); }
+      else if (k === 'adjust') { savePanel(false); levels(false); adjust(adjBox.hidden); }
+      else if (k === 'levels') { savePanel(false); adjust(false); levels(lvBox.hidden); }
       else if (k === 'save') { adjust(false); savePanel(saveMenu.hidden); }
       else if (proc && k === 'rotate') { remember(); st.rot = (st.rot + 1) % 4; draw(); drawSel(); if (ghostOn) drawGhost(); save(); }
       else if (proc && k === 'flip') { remember(); st.flip = !st.flip; draw(); drawSel(); if (ghostOn) drawGhost(); save(); }
-      else if (proc && k === 'fit') { remember(); st.s = 1; st.ox = st.oy = 0; syncScale(); draw(); enterT(); }
+      else if (proc && k === 'fit') { remember(); st.s = 1; st.ox = st.oy = 0; st.ang = 0; syncScale(); draw(); enterT(); }
     });
     document.addEventListener('pointerdown', function (e) {
       if (!document.contains(root)) return;
       if (!adjBox.hidden && !e.target.closest('.dr-adjust, [data-dract="adjust"]')) adjust(false);
+      if (!lvBox.hidden && !e.target.closest('.dr-levels, [data-dract="levels"]')) levels(false);
       if (!saveMenu.hidden && !e.target.closest('.paint-savemenu, [data-dract="save"]')) savePanel(false);
     }, true);
 
@@ -4054,6 +4232,7 @@
         if (k === 'v') setTool('move'); else if (k === 'm') setTool('select'); else if (k === 'q') setTool('lasso');
         else if (k === 'i') invert();
         else if (k === 'a') adjust(adjBox.hidden);
+        else if (k === 'l') levels(lvBox.hidden);
       }
     };
     document.addEventListener('pageswap:start', function gone() { document.removeEventListener('pageswap:start', gone); tip.remove(); if (saveTimer) { clearTimeout(saveTimer); storeNow(); } });
