@@ -2035,15 +2035,27 @@
       if (textBox) placeTextBox();
       placeSelX();
     }
+    // the zoom buttons sit above SAVE; on a phone (no room there) they sit
+    // in the picture's corner instead
+    var zoomBox = $('.paint-zoom'), saveBtn = $('[data-act="save"]');
+    function phoneLayout() { return window.matchMedia('(max-width: 560px)').matches; }
+    function placeZoom() {
+      if (phoneLayout()) { if (zoomBox.parentNode !== stage) stage.appendChild(zoomBox); }
+      else if (zoomBox.nextElementSibling !== saveBtn) saveBtn.parentNode.insertBefore(zoomBox, saveBtn);
+    }
+    placeZoom();
     function fit() {
+      placeZoom();
       var sw = stage.clientWidth, sh = stage.clientHeight;
       if (!sw || !sh) return;
-      fitK = Math.min(sw / W, sh / H);
+      // ("100%" leaves a little room round the picture (80% of the space),
+      // except on a phone, where every bit of width counts)
+      fitK = Math.min(sw / W, sh / H) * (phoneLayout() ? 1 : 0.8);
       view.k = fitK; view.x = (sw - W * fitK) / 2; view.y = (sh - H * fitK) / 2;
       applyView();
     }
     function zoomAt(k, cx, cy) {
-      k = Math.max(fitK * 0.25, Math.min(fitK * 8, k));
+      k = Math.max(fitK * 0.25, Math.min(fitK * 10, k));
       view.x = cx - (cx - view.x) * k / view.k; view.y = cy - (cy - view.y) * k / view.k; view.k = k;
       applyView();
     }
@@ -3118,7 +3130,7 @@
       if (gesture) {
         var ids = Object.keys(pointers); if (ids.length < 2) return;
         var a = pointers[ids[0]], b = pointers[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y) || 1, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        var k = Math.max(fitK * 0.25, Math.min(fitK * 8, gesture.k * d / gesture.d));
+        var k = Math.max(fitK * 0.25, Math.min(fitK * 10, gesture.k * d / gesture.d));
         var px = (gesture.mx - gesture.vx) / gesture.k, py = (gesture.my - gesture.vy) / gesture.k;
         view.k = k; view.x = mx - px * k; view.y = my - py * k; applyView();
         return;
@@ -3211,7 +3223,7 @@
       if (e.target.closest('.paint-solid')) { st.solid = !st.solid; $('.paint-solid').setAttribute('aria-checked', st.solid ? 'true' : 'false'); if (st.tool !== 'shape') setTool('shape'); return; }
       if (e.target.closest('.paint-mirror')) { st.mirror = !st.mirror; $('.paint-mirror').setAttribute('aria-pressed', st.mirror ? 'true' : 'false'); guide.hidden = !st.mirror; return; }
       var z = e.target.closest('[data-zoom]');
-      if (z) { var cx = stage.clientWidth / 2, cy = stage.clientHeight / 2; if (z.dataset.zoom === 'fit') fit(); else zoomAt(view.k * (z.dataset.zoom === 'in' ? 1.4 : 1 / 1.4), cx, cy); return; }
+      if (z) { var cx = stage.clientWidth / 2, cy = stage.clientHeight / 2; if (z.dataset.zoom === 'fit') fit(); else zoomAt(view.k * (z.dataset.zoom === 'in' ? 1.25 : 1 / 1.25), cx, cy); return; }
       var sa = e.target.closest('[data-sel]'); if (sa) { selAction(sa.dataset.sel); return; }
       var le = e.target.closest('[data-layer-eye]'); if (le) { var L = layers[+le.dataset.layerEye]; L.visible = !L.visible; mount(); layerPanel(true); autosave(); return; }
       var ln = e.target.closest('[data-layer]');
@@ -3431,8 +3443,8 @@
         else if (k === 'x') { var c1 = st.color; setColor(st.color2); setColor2(c1); }
         else if (k === '[') setSize(st.size - (st.size > 10 ? 4 : 1));
         else if (k === ']') setSize(st.size + (st.size >= 10 ? 4 : 1));
-        else if (k === '+' || k === '=') zoomAt(view.k * 1.4, stage.clientWidth / 2, stage.clientHeight / 2);
-        else if (k === '-') zoomAt(view.k / 1.4, stage.clientWidth / 2, stage.clientHeight / 2);
+        else if (k === '+' || k === '=') zoomAt(view.k * 1.25, stage.clientWidth / 2, stage.clientHeight / 2);
+        else if (k === '-') zoomAt(view.k / 1.25, stage.clientWidth / 2, stage.clientHeight / 2);
         else if (k === '0') fit();
       },
       keyup: function (e) { if (e.key === ' ') letGoOfSpace(); else if (e.key === 'Alt') stage.classList.remove('picking'); }
