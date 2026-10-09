@@ -1992,7 +1992,7 @@
     });
     var st = { tool: 'brush', brush: 'round', shape: 'rect', font: FONTS[0][0], color: colorIn.value, color2: color2In.value,
       size: +sizeIn.value, alpha: +alphaIn.value / 100, solid: false, mirror: false, tone: 'dodge' };
-    var W = 0, H = 0, R = 1, view = { k: 1, x: 0, y: 0 }, fitK = 1;
+    var W = 0, H = 0, R = 1, view = { k: 1, x: 0, y: 0 }, fitK = 1, fillK = 1;
     var layers = [], active = null, undo = [], redo = [], LIMIT = 14, recent = [];
 
     // ---- the picture: a stack of layers, zoomed and moved as one ----
@@ -2048,9 +2048,10 @@
       placeZoom();
       var sw = stage.clientWidth, sh = stage.clientHeight;
       if (!sw || !sh) return;
-      // ("100%" leaves a little room round the picture (80% of the space),
-      // except on a phone, where every bit of width counts)
-      fitK = Math.min(sw / W, sh / H) * (phoneLayout() ? 1 : 0.8);
+      // ("100%" leaves a small margin round the picture, except on a phone,
+      // where every bit of width counts; fillK just fills the space)
+      fillK = Math.min(sw / W, sh / H) * 0.99;
+      fitK = phoneLayout() ? fillK : fillK * 0.93;
       view.k = fitK; view.x = (sw - W * fitK) / 2; view.y = (sh - H * fitK) / 2;
       applyView();
     }
@@ -2058,6 +2059,15 @@
       k = Math.max(fitK * 0.25, Math.min(fitK * 10, k));
       view.x = cx - (cx - view.x) * k / view.k; view.y = cy - (cy - view.y) * k / view.k; view.k = k;
       applyView();
+    }
+    // the zoom buttons: steps of 25%, but the first step in lands exactly on
+    // filling the space (and stepping back out stops there and at 100%)
+    function zoomStep(dir) {
+      var k = view.k, t = k * (dir > 0 ? 1.25 : 0.8), e = 1e-4;
+      if (dir > 0 && k < fillK - e && t > fillK) t = fillK;
+      if (dir < 0 && k > fillK + e && t < fillK) t = fillK;
+      if (dir < 0 && k > fitK + e && t < fitK) t = fitK;
+      zoomAt(t, stage.clientWidth / 2, stage.clientHeight / 2);
     }
     function pos(e) { var r = stage.getBoundingClientRect(); return { x: (e.clientX - r.left - view.x) / view.k, y: (e.clientY - r.top - view.y) / view.k }; }
 
@@ -3202,7 +3212,7 @@
     stage.addEventListener('wheel', function (e) {
       var s = screen(e);
       if (e.ctrlKey || e.metaKey) { e.preventDefault(); zoomAt(view.k * Math.exp(-e.deltaY * 0.01), s.x, s.y); }
-      else if (view.k > fitK * 1.01) { e.preventDefault(); view.x -= e.deltaX; view.y -= e.deltaY; applyView(); }
+      else if (view.k > fillK * 1.01) { e.preventDefault(); view.x -= e.deltaX; view.y -= e.deltaY; applyView(); }
     }, { passive: false });
     var g0 = 1;
     stage.addEventListener('gesturestart', function (e) { e.preventDefault(); g0 = view.k; });
@@ -3223,7 +3233,7 @@
       if (e.target.closest('.paint-solid')) { st.solid = !st.solid; $('.paint-solid').setAttribute('aria-checked', st.solid ? 'true' : 'false'); if (st.tool !== 'shape') setTool('shape'); return; }
       if (e.target.closest('.paint-mirror')) { st.mirror = !st.mirror; $('.paint-mirror').setAttribute('aria-pressed', st.mirror ? 'true' : 'false'); guide.hidden = !st.mirror; return; }
       var z = e.target.closest('[data-zoom]');
-      if (z) { var cx = stage.clientWidth / 2, cy = stage.clientHeight / 2; if (z.dataset.zoom === 'fit') fit(); else zoomAt(view.k * (z.dataset.zoom === 'in' ? 1.25 : 1 / 1.25), cx, cy); return; }
+      if (z) { var cx = stage.clientWidth / 2, cy = stage.clientHeight / 2; if (z.dataset.zoom === 'fit') fit(); else zoomStep(z.dataset.zoom === 'in' ? 1 : -1); return; }
       var sa = e.target.closest('[data-sel]'); if (sa) { selAction(sa.dataset.sel); return; }
       var le = e.target.closest('[data-layer-eye]'); if (le) { var L = layers[+le.dataset.layerEye]; L.visible = !L.visible; mount(); layerPanel(true); autosave(); return; }
       var ln = e.target.closest('[data-layer]');
@@ -3443,8 +3453,8 @@
         else if (k === 'x') { var c1 = st.color; setColor(st.color2); setColor2(c1); }
         else if (k === '[') setSize(st.size - (st.size > 10 ? 4 : 1));
         else if (k === ']') setSize(st.size + (st.size >= 10 ? 4 : 1));
-        else if (k === '+' || k === '=') zoomAt(view.k * 1.25, stage.clientWidth / 2, stage.clientHeight / 2);
-        else if (k === '-') zoomAt(view.k / 1.25, stage.clientWidth / 2, stage.clientHeight / 2);
+        else if (k === '+' || k === '=') zoomStep(1);
+        else if (k === '-') zoomStep(-1);
         else if (k === '0') fit();
       },
       keyup: function (e) { if (e.key === ' ') letGoOfSpace(); else if (e.key === 'Alt') stage.classList.remove('picking'); }
