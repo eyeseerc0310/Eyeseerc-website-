@@ -1547,3 +1547,25 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .dr .dr-adjust { left: auto; right: calc(100% + 10px); }
 .dr .paint-right .paint-open { cursor: pointer; }
 @media (max-width: 560px) { .dr .dr-adjust { right: calc(100% + 6px); } }
+/* the pointer shows what a drag will do: size (at a corner), turn (just outside one), move (inside) */
+.dr .dr-stage[data-hover="nwse"] { cursor: nwse-resize; }
+.dr .dr-stage[data-hover="nesw"] { cursor: nesw-resize; }
+.dr .dr-stage[data-hover="ew"] { cursor: ew-resize; }
+.dr .dr-stage[data-hover="ns"] { cursor: ns-resize; }
+.dr .dr-stage[data-hover="move"] { cursor: move; }
+.dr .dr-stage[data-hover="turn"] {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg stroke='%23fff' stroke-width='4'%3E%3Cpath d='M18.5 12a6.5 6.5 0 1 1-1.9-4.6'/%3E%3Cpath d='M17.5 3.5v4h-4'/%3E%3C/g%3E%3Cg stroke='%23000' stroke-width='1.8'%3E%3Cpath d='M18.5 12a6.5 6.5 0 1 1-1.9-4.6'/%3E%3Cpath d='M17.5 3.5v4h-4'/%3E%3C/g%3E%3C/svg%3E") 12 12, alias;
+}
+/* LEVELS */
+.dr-levels .lv-hist { display: block; width: 100%; height: 90px; margin: .2rem 0 .15rem; background: rgba(0, 0, 0, .18); color: var(--menu-link); }
+.lv-track { position: relative; height: 14px; cursor: ew-resize; touch-action: none; }
+.lv-track i {
+  position: absolute; top: 2px; width: 0; height: 0; translate: -50% 0;
+  border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid #808080;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, .7));
+}
+.lv-track i.lv-b { border-bottom-color: #000; }
+.lv-track i.lv-w { border-bottom-color: #fff; filter: drop-shadow(0 0 1px rgba(0, 0, 0, .8)); }
+.lv-nums { display: flex; justify-content: space-between; font-size: .6rem; font-variant-numeric: tabular-nums; margin: .1rem 0 .4rem; }
+.lv-sub { font-size: .54rem; letter-spacing: .15em; margin-top: .2rem; }
+.lv-grad { height: 9px; margin-top: .3rem; background: linear-gradient(to right, #000, #fff); border: 1px solid var(--menu-line); }
