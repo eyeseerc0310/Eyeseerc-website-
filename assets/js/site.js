@@ -3501,12 +3501,512 @@
   }
 
   function setup() {
-    var root = document.querySelector('main:not([aria-hidden]) .paint');
+    var root = document.querySelector('main:not([aria-hidden]) .paint:not(.dr)');
     if (root) init(root); else app = null;
   }
   window.addEventListener('resize', function () { if (app && document.contains(app.root)) app.fit(); });
   document.addEventListener('keydown', function (e) { if (app && document.contains(app.root)) app.key(e); });
   document.addEventListener('keyup', function (e) { if (app && document.contains(app.root)) app.keyup(e); });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+  document.addEventListener('pageswap:done', setup);
+})();
+
+// Darkroom: for making the black and white pieces on the Projects page. A
+// white frame the shape of those pieces (2210 x 2576, with a square window
+// 2106 across, 52 in from the top and sides) sits over a photo, which turns
+// black and white as it comes in. The photo moves and sizes under the frame;
+// ADJUST tones it (all of it, whatever's showing); the box and cutout
+// selections invert parts of the window. Nothing is ever painted onto the
+// photo: the frame, the photo's place, the tones and the inverted shapes are
+// all kept apart and put together fresh each time, so any of it can still
+// change (moving the photo leaves the inverted shapes where they are).
+(function () {
+  var FW = 2210, FH = 2576, WX = 52, WY = 52, WS = 2106, MAXSIDE = 2400;
+  var ADJ = [['exposure', 'Exposure', -100], ['contrast', 'Contrast', -100], ['brilliance', 'Brilliance', -100], ['highlights', 'Highlights', -100],
+    ['shadows', 'Shadows', -100], ['whites', 'Whites', -100], ['blacks', 'Blacks', -100], ['threshold', 'Threshold', 0], ['sharpen', 'Sharpen', 0],
+    ['clarity', 'Clarity', -100], ['grain', 'Grain', 0], ['vignette', 'Vignette', -100], ['fade', 'Fade', 0]];
+  var app = null;
+
+  function sstep(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+  // a soft copy of a grey picture (a box blur, one way then the other)
+  function blur1(g, w, h, r) {
+    var a = new Float32Array(w * h), b = new Float32Array(w * h), n = 2 * r + 1, x, y, s;
+    for (y = 0; y < h; y++) {
+      var row = y * w; s = 0;
+      for (x = -r; x <= r; x++) s += g[row + Math.min(w - 1, Math.max(0, x))];
+      for (x = 0; x < w; x++) { a[row + x] = s / n; s += g[row + Math.min(w - 1, x + r + 1)] - g[row + Math.max(0, x - r)]; }
+    }
+    for (x = 0; x < w; x++) {
+      s = 0;
+      for (y = -r; y <= r; y++) s += a[Math.min(h - 1, Math.max(0, y)) * w + x];
+      for (y = 0; y < h; y++) { b[y * w + x] = s / n; s += a[Math.min(h - 1, y + r + 1) * w + x] - a[Math.max(0, y - r) * w + x]; }
+    }
+    return b;
+  }
+
+  function init(root) {
+    if (root.dataset.ready) return;
+    root.dataset.ready = '1';
+    var $ = function (q) { return root.querySelector(q); };
+    var stage = $('.dr-stage'), piece = $('.dr-piece'), win = $('.dr-win'), wctx = win.getContext('2d');
+    var ghost = $('.dr-ghost'), gctx = ghost.getContext('2d'), selCv = $('.dr-sel'), sctx = selCv.getContext('2d');
+    var selbar = $('.paint-selbar'), selx = $('.paint-selx'), empty = $('.dr-empty'), scaleIn = $('.dr-scale');
+    var left = $('.paint-left'), right = $('.paint-right');
+    var DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+    // what makes the piece (everything that undo can step back through)
+    var st = { s: 1, ox: 0, oy: 0, rot: 0, flip: false, v: {}, inv: [] };
+    var src = null, G = null, SW = 0, SH = 0, proc = null, blurS = null, blurW = null;
+    var tool = 'move', sel = null, selMode = null, undo = [], redo = [];
+
+    // ---- the little label beside a tool (as on the drawing page) ----
+    var tip = document.createElement('div'), tipOn = null;
+    tip.className = 'paint-tip'; tip.setAttribute('aria-hidden', 'true'); document.body.appendChild(tip);
+    function hideTip() { tipOn = null; tip.classList.remove('on'); }
+    function showTip(e) {
+      if (e.pointerType === 'touch') return;
+      var b = e.target.closest('[data-tip]');
+      if (!b || e.buttons) { hideTip(); return; }
+      if (b !== tipOn) { tipOn = b; tip.textContent = b.dataset.tip; }
+      var w = tip.offsetWidth, h = tip.offsetHeight, x = e.clientX - 16 - w;
+      if (x < 8) x = Math.min(e.clientX + 18, document.documentElement.clientWidth - w - 8);
+      tip.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(Math.max(8, Math.min(e.clientY - h / 2, innerHeight - h - 8))) + 'px)';
+      tip.classList.add('on');
+    }
+    left.addEventListener('pointerover', showTip); left.addEventListener('pointermove', showTip);
+    left.addEventListener('pointerleave', hideTip); left.addEventListener('pointerdown', hideTip);
+
+    // ---- laying it out: the piece as big as the space allows ----
+    var box = { x: 0, y: 0, w: 0, h: 0 }; // the piece, on the stage
+    function layout() {
+      var sw = stage.clientWidth, sh = stage.clientHeight; if (!sw || !sh) return;
+      var k = Math.min(sw * 0.94 / FW, sh * 0.94 / FH);
+      box.w = FW * k; box.h = FH * k; box.x = (sw - box.w) / 2; box.y = (sh - box.h) / 2;
+      piece.style.width = box.w + 'px'; piece.style.height = box.h + 'px'; piece.style.left = box.x + 'px'; piece.style.top = box.y + 'px';
+      var ws = Math.round(WS * k * DPR);
+      if (win.width !== ws) { win.width = win.height = ws; }
+      [ghost, selCv].forEach(function (c) { c.width = Math.round(sw * DPR); c.height = Math.round(sh * DPR); c.style.width = sw + 'px'; c.style.height = sh + 'px'; });
+      draw(); drawSel();
+    }
+    // the window, on the stage (in CSS pixels)
+    function wbox() { var k = box.w / FW; return { x: box.x + WX * k, y: box.y + WY * k, s: WS * k }; }
+    // a pointer, in window units (the window is 1 across)
+    function wpos(e) { var r = stage.getBoundingClientRect(), w = wbox(); return { x: (e.clientX - r.left - w.x) / w.s, y: (e.clientY - r.top - w.y) / w.s }; }
+
+    // ---- the photo: in black and white ----
+    function load(file) {
+      if (!file || !/^image\//.test(file.type)) return;
+      var im = new Image();
+      im.onload = function () {
+        var k = Math.min(1, MAXSIDE / Math.max(im.naturalWidth, im.naturalHeight));
+        var w = Math.max(1, Math.round(im.naturalWidth * k)), h = Math.max(1, Math.round(im.naturalHeight * k));
+        var c = document.createElement('canvas'); c.width = w; c.height = h;
+        var x = c.getContext('2d'); x.drawImage(im, 0, 0, w, h);
+        var d = x.getImageData(0, 0, w, h).data, g = new Uint8ClampedArray(w * h);
+        for (var i = 0, j = 0; i < g.length; i++, j += 4) g[i] = 0.299 * d[j] + 0.587 * d[j + 1] + 0.114 * d[j + 2];
+        URL.revokeObjectURL(im.src);
+        remember();
+        setSource(g, w, h);
+        st.s = 1; st.ox = 0; st.oy = 0; st.rot = 0; st.flip = false;
+        process(); syncScale(); draw(); save();
+      };
+      im.src = URL.createObjectURL(file);
+    }
+    function setSource(g, w, h) {
+      G = g; SW = w; SH = h; blurS = blurW = null;
+      src = document.createElement('canvas'); src.width = w; src.height = h;
+      proc = document.createElement('canvas'); proc.width = w; proc.height = h;
+      empty.hidden = true;
+    }
+
+    // ---- ADJUST: the tones, worked out over the whole photo ----
+    function val(k) { return (st.v[k] || 0) / 100; }
+    function process() {
+      if (!G) return;
+      var ex = Math.pow(2, val('exposure') * 1.5), co = val('contrast'), hi = val('highlights'), sh = val('shadows'), wh = val('whites'), bl = val('blacks');
+      var fa = val('fade'), br = val('brilliance'), shp = val('sharpen') * 1.6, cl = val('clarity') * 0.7;
+      var lut = new Float32Array(256);
+      for (var i = 0; i < 256; i++) {
+        var x = i / 255 * ex;
+        x += sh * 0.3 * (1 - sstep(0, 0.55, x)) * (sh > 0 ? 1 - x : x);
+        x += hi * 0.3 * sstep(0.45, 1, x) * (hi > 0 ? 1 - x : x);
+        x += wh * 0.22 * sstep(0.55, 1.05, x);
+        x += bl * 0.16 * Math.pow(1 - Math.min(1, x), 3);
+        x = Math.max(0, Math.min(1, x));
+        if (br) x = Math.max(0, x + br * (0.45 * x * (1 - x) * (1 - x) - 0.25 * x * x * (1 - x)));
+        x = co >= 0 ? x + co * 0.9 * (x * x * (3 - 2 * x) - x) * 1.6 : 0.5 + (x - 0.5) * (1 + co * 0.6);
+        if (fa) x = x * (1 - fa * 0.22) + fa * 0.12;
+        lut[i] = Math.max(0, Math.min(255, x * 255));
+      }
+      if (shp && !blurS) blurS = blur1(G, SW, SH, 1);
+      if (cl && !blurW) blurW = blur1(G, SW, SH, Math.max(6, Math.round(Math.max(SW, SH) / 160)));
+      var img = new ImageData(SW, SH), o = img.data;
+      for (var p = 0, q = 0; p < G.length; p++, q += 4) {
+        var v = G[p];
+        if (shp) v += shp * (G[p] - blurS[p]);
+        if (cl) v += cl * (G[p] - blurW[p]);
+        v = lut[v < 0 ? 0 : v > 255 ? 255 : v | 0];
+        o[q] = o[q + 1] = o[q + 2] = v; o[q + 3] = 255;
+      }
+      proc.getContext('2d').putImageData(img, 0, 0);
+    }
+
+    // ---- putting the piece together (the window only; the frame is the
+    // white round it, which nothing can touch) ----
+    var grainTile = null;
+    function grainPattern(c) {
+      if (!grainTile) {
+        grainTile = document.createElement('canvas'); grainTile.width = grainTile.height = 256;
+        var x = grainTile.getContext('2d'), d = x.createImageData(256, 256);
+        for (var i = 0; i < d.data.length; i += 4) { var n = Math.random() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = n; d.data[i + 3] = 255; }
+        x.putImageData(d, 0, 0);
+      }
+      return c.createPattern(grainTile, 'repeat');
+    }
+    function shapePath(c, sh, n) {
+      c.beginPath();
+      if (sh.pts) sh.pts.forEach(function (q, i) { c[i ? 'lineTo' : 'moveTo'](q.x * n, q.y * n); });
+      else c.rect(sh.x * n, sh.y * n, sh.w * n, sh.h * n);
+      c.closePath();
+    }
+    function photoTransform(c, n) {
+      // (in window units, times n pixels across)
+      var ew = st.rot % 2 ? SH : SW, eh = st.rot % 2 ? SW : SH, k = Math.max(1 / ew, 1 / eh) * st.s;
+      c.setTransform(n, 0, 0, n, 0, 0);
+      c.translate(0.5 + st.ox, 0.5 + st.oy); c.rotate(st.rot * Math.PI / 2); if (st.flip) c.scale(-1, 1); c.scale(k, k);
+      c.translate(-SW / 2, -SH / 2);
+    }
+    function compose(c, n) {
+      c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+      c.fillStyle = '#fff'; c.fillRect(0, 0, n, n);
+      if (proc) { c.save(); photoTransform(c, n); c.imageSmoothingQuality = 'high'; c.drawImage(proc, 0, 0); c.restore(); }
+      var vg = val('vignette');
+      if (vg) {
+        var g = c.createRadialGradient(n / 2, n / 2, n * 0.22, n / 2, n / 2, n * 0.75), col = vg > 0 ? '0,0,0' : '255,255,255';
+        g.addColorStop(0, 'rgba(' + col + ',0)'); g.addColorStop(1, 'rgba(' + col + ',' + Math.abs(vg) * 0.85 + ')');
+        c.fillStyle = g; c.fillRect(0, 0, n, n);
+      }
+      var gr = val('grain');
+      if (gr) {
+        // (the grain is the same size on the screen and in the saved piece)
+        var pat = grainPattern(c); if (pat.setTransform) pat.setTransform(new DOMMatrix().scale(n / 1400));
+        c.globalAlpha = gr * 0.55; c.globalCompositeOperation = 'overlay'; c.fillStyle = pat; c.fillRect(0, 0, n, n);
+        c.globalAlpha = 1; c.globalCompositeOperation = 'source-over';
+      }
+      // threshold: everything pulled towards pure black or white (all the way
+      // at 100). It comes after the photo is sized and the grain is in, so the
+      // edges stay crisp and the grain breaks up into speckles
+      var th = val('threshold');
+      if (th) {
+        var img = c.getImageData(0, 0, n, n), d = img.data, bw = th >= 1 ? 0 : 0.5 * (1 - th);
+        var tl = new Uint8ClampedArray(256);
+        for (var i = 0; i < 256; i++) { var x = i / 255, h = bw ? sstep(0.5 - bw, 0.5 + bw, x) : (x >= 0.5 ? 1 : 0); tl[i] = (x * (1 - th) + th * h) * 255; }
+        for (var j = 0; j < d.length; j += 4) d[j] = d[j + 1] = d[j + 2] = tl[d[j]];
+        c.putImageData(img, 0, 0);
+      }
+      // the inverted shapes: where they overlap, they cancel out again
+      if (st.inv.length) {
+        var m = document.createElement('canvas'); m.width = m.height = n;
+        var mx = m.getContext('2d'); mx.fillStyle = '#fff';
+        st.inv.forEach(function (sh) { mx.globalCompositeOperation = 'xor'; shapePath(mx, sh, n); mx.fill(); });
+        c.globalCompositeOperation = 'difference'; c.drawImage(m, 0, 0);
+      }
+      c.restore();
+    }
+    var queued = false;
+    function draw() { if (queued) return; queued = true; requestAnimationFrame(function () { queued = false; compose(wctx, win.width); }); }
+    // while the photo moves, the rest of it shows faintly outside the window
+    var ghostOn = false, ghostTimer = 0;
+    function drawGhost() {
+      var n = wbox(), c = gctx;
+      c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, ghost.width, ghost.height);
+      if (!proc || !ghostOn) return;
+      c.save(); c.setTransform(n.s * DPR, 0, 0, n.s * DPR, n.x * DPR, n.y * DPR);
+      var ew = st.rot % 2 ? SH : SW, eh = st.rot % 2 ? SW : SH, k = Math.max(1 / ew, 1 / eh) * st.s;
+      c.translate(0.5 + st.ox, 0.5 + st.oy); c.rotate(st.rot * Math.PI / 2); if (st.flip) c.scale(-1, 1); c.scale(k, k); c.translate(-SW / 2, -SH / 2);
+      c.globalAlpha = 0.3; c.drawImage(proc, 0, 0); c.restore();
+      c.clearRect(n.x * DPR, n.y * DPR, n.s * DPR, n.s * DPR);
+    }
+    function ghostShow() { clearTimeout(ghostTimer); ghostOn = true; ghost.classList.add('on'); drawGhost(); }
+    function ghostHide() { clearTimeout(ghostTimer); ghostTimer = setTimeout(function () { ghost.classList.remove('on'); }, 250); }
+
+    // ---- undo / redo (it's all small: just the settings) ----
+    function snap() { return { st: JSON.parse(JSON.stringify(st)), G: G, SW: SW, SH: SH }; }
+    function remember() { undo.push(snap()); if (undo.length > 40) undo.shift(); redo = []; buttons(); }
+    function restore(sn) {
+      var srcChanged = sn.G !== G;
+      st = sn.st;
+      if (srcChanged) { if (sn.G) setSource(sn.G, sn.SW, sn.SH); else { G = null; src = proc = null; empty.hidden = false; } }
+      process(); syncScale(); syncSliders(); draw(); save();
+    }
+    function doUndo() { if (!undo.length) return; redo.push(snap()); restore(undo.pop()); buttons(); }
+    function doRedo() { if (!redo.length) return; undo.push(snap()); restore(redo.pop()); buttons(); }
+    function buttons() { $('[data-dract="undo"]').disabled = !undo.length; $('[data-dract="redo"]').disabled = !redo.length; }
+
+    // ---- selections: a box, or a shape drawn round ----
+    function drawSel() {
+      var c = sctx, n = wbox();
+      c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, selCv.width, selCv.height);
+      placeX();
+      if (!sel) return;
+      c.setTransform(DPR, 0, 0, DPR, 0, 0); c.translate(n.x, n.y);
+      var edge = function () { shapePath(c, sel, n.s); if (selMode === 'lasso') { /* still open */ } c.stroke(); };
+      c.lineWidth = 1; c.setLineDash([5, 4]); c.strokeStyle = '#000'; edge(); c.lineDashOffset = 4.5; c.strokeStyle = '#fff'; edge();
+    }
+    function placeX() {
+      if (!sel || selMode) { selx.hidden = true; return; }
+      var n = wbox(), bx = sel.pts ? Math.min.apply(null, sel.pts.map(function (q) { return q.x; })) : sel.x, by = sel.pts ? Math.min.apply(null, sel.pts.map(function (q) { return q.y; })) : sel.y;
+      selx.hidden = false;
+      selx.style.left = Math.round(Math.max(3, Math.min(stage.clientWidth - 25, n.x + bx * n.s - 11))) + 'px';
+      selx.style.top = Math.round(Math.max(3, Math.min(stage.clientHeight - 25, n.y + by * n.s - 11))) + 'px';
+    }
+    function clearSel() { sel = null; selMode = null; selbar.hidden = true; drawSel(); }
+    function inSel(p) {
+      if (!sel) return false;
+      if (!sel.pts) return p.x >= sel.x && p.x <= sel.x + sel.w && p.y >= sel.y && p.y <= sel.y + sel.h;
+      var inside = false, P = sel.pts;
+      for (var i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i].y > p.y) !== (P[j].y > p.y) && p.x < (P[j].x - P[i].x) * (p.y - P[i].y) / (P[j].y - P[i].y) + P[i].x) inside = !inside;
+      return inside;
+    }
+    function invert() {
+      // the selection, or the whole window when nothing's selected
+      remember();
+      st.inv.push(sel ? JSON.parse(JSON.stringify({ x: sel.x, y: sel.y, w: sel.w, h: sel.h, pts: sel.pts })) : { x: 0, y: 0, w: 1, h: 1 });
+      draw(); save();
+    }
+
+    // ---- tools ----
+    function setTool(t) {
+      tool = t;
+      Array.prototype.forEach.call(root.querySelectorAll('[data-drtool]'), function (b) { b.setAttribute('aria-pressed', b.dataset.drtool === t ? 'true' : 'false'); });
+      stage.dataset.drtool = t;
+    }
+    function syncScale() { scaleIn.value = Math.round(st.s * 100); scaleIn.previousElementSibling.textContent = scaleIn.value; }
+    // size the photo, keeping the point (px, py) in the window where it is
+    function scaleAt(s, px, py) {
+      s = Math.max(0.25, Math.min(4, s));
+      var f = s / st.s;
+      st.ox = px - 0.5 - (px - 0.5 - st.ox) * f; st.oy = py - 0.5 - (py - 0.5 - st.oy) * f; st.s = s;
+      syncScale(); draw(); if (ghostOn) drawGhost();
+    }
+
+    var pts = {}, drag = null, pinch = null;
+    stage.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('.paint-selbar, .paint-selx, .dr-empty')) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.preventDefault(); closePanels();
+      try { stage.setPointerCapture(e.pointerId); } catch (x) {}
+      if (e.isPrimary) { pts = {}; pinch = null; }
+      pts[e.pointerId] = { x: e.clientX, y: e.clientY, t: e.pointerType };
+      var ids = Object.keys(pts);
+      if (ids.length === 2 && pts[ids[0]].t === 'touch' && pts[ids[1]].t === 'touch' && proc) {
+        // two fingers: size the photo (and move it)
+        if (drag && drag.moved) ghostHide();
+        drag = null; if (selMode) { sel = null; selMode = null; drawSel(); }
+        var a = pts[ids[0]], b = pts[ids[1]], r = stage.getBoundingClientRect(), n = wbox();
+        if (!pinch) remember();
+        pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s: st.s, ox: st.ox, oy: st.oy, mx: ((a.x + b.x) / 2 - r.left - n.x) / n.s, my: ((a.y + b.y) / 2 - r.top - n.y) / n.s };
+        ghostShow(); return;
+      }
+      if (ids.length > 1) return;
+      var p = wpos(e);
+      if (tool === 'move') {
+        if (!proc) return;
+        drag = { p: p, ox: st.ox, oy: st.oy, moved: false };
+      } else {
+        clearSel();
+        selMode = tool === 'lasso' ? 'lasso' : 'box';
+        sel = tool === 'lasso' ? { pts: [p] } : { x: p.x, y: p.y, w: 0, h: 0, ax: p.x, ay: p.y };
+        drag = { p: p };
+      }
+    });
+    stage.addEventListener('pointermove', function (e) {
+      if (pts[e.pointerId]) { pts[e.pointerId].x = e.clientX; pts[e.pointerId].y = e.clientY; }
+      if (pinch) {
+        var ids = Object.keys(pts); if (ids.length < 2) return;
+        var a = pts[ids[0]], b = pts[ids[1]], r = stage.getBoundingClientRect(), n = wbox();
+        var d = Math.hypot(a.x - b.x, a.y - b.y) || 1, mx = ((a.x + b.x) / 2 - r.left - n.x) / n.s, my = ((a.y + b.y) / 2 - r.top - n.y) / n.s;
+        var s = Math.max(0.25, Math.min(4, pinch.s * d / pinch.d)), f = s / pinch.s;
+        st.s = s; st.ox = mx - 0.5 - (pinch.mx - 0.5 - pinch.ox) * f; st.oy = my - 0.5 - (pinch.my - 0.5 - pinch.oy) * f;
+        syncScale(); draw(); drawGhost(); return;
+      }
+      if (!drag || !pts[e.pointerId]) return;
+      var p = wpos(e);
+      if (tool === 'move') {
+        if (!drag.moved) { drag.moved = true; remember(); ghostShow(); }
+        st.ox = drag.ox + p.x - drag.p.x; st.oy = drag.oy + p.y - drag.p.y; draw(); drawGhost();
+      } else if (selMode === 'lasso') {
+        var l = sel.pts[sel.pts.length - 1]; if (Math.hypot(p.x - l.x, p.y - l.y) * wbox().s > 2) sel.pts.push(p); drawSel();
+      } else if (selMode === 'box') {
+        sel.x = Math.min(sel.ax, p.x); sel.y = Math.min(sel.ay, p.y); sel.w = Math.abs(p.x - sel.ax); sel.h = Math.abs(p.y - sel.ay); drawSel();
+      }
+    });
+    function up(e) {
+      delete pts[e.pointerId];
+      if (pinch) { if (Object.keys(pts).length < 2) { pinch = null; ghostHide(); save(); } return; }
+      if (!drag) return;
+      if (tool === 'move') { if (drag.moved) { ghostHide(); save(); } }
+      else {
+        var px = wbox().s;
+        var ok = sel && (sel.pts ? sel.pts.length > 2 : sel.w * px > 3 && sel.h * px > 3);
+        if (!ok) sel = null;
+        if (sel) { delete sel.ax; delete sel.ay; }
+        selMode = null; selbar.hidden = !sel; drawSel();
+      }
+      drag = null;
+    }
+    stage.addEventListener('pointerup', up);
+    stage.addEventListener('pointercancel', up);
+    // scrolling (or a trackpad pinch) sizes the photo around the pointer
+    stage.addEventListener('wheel', function (e) {
+      if (!proc) return;
+      e.preventDefault();
+      var p = wpos(e);
+      if (!ghostOn) remember();
+      ghostShow(); scaleAt(st.s * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0025)), p.x, p.y); ghostHide();
+      clearTimeout(stage.wheelSave); stage.wheelSave = setTimeout(save, 400);
+    }, { passive: false });
+    // Safari's trackpad pinch (on an iPad, a pinch with fingers fires these
+    // too, but there the two fingers above already do the work)
+    var g0 = 1, gOn = false;
+    stage.addEventListener('gesturestart', function (e) { e.preventDefault(); gOn = !pinch && Object.keys(pts).length < 2; if (!gOn || !proc) return; g0 = st.s; remember(); ghostShow(); });
+    stage.addEventListener('gesturechange', function (e) { e.preventDefault(); if (!gOn || !proc || pinch) return; var w = wbox(), r = stage.getBoundingClientRect(); scaleAt(g0 * e.scale, (e.clientX - r.left - w.x) / w.s, (e.clientY - r.top - w.y) / w.s); });
+    stage.addEventListener('gestureend', function () { if (!gOn) return; gOn = false; ghostHide(); save(); });
+    stage.addEventListener('contextmenu', function (e) { if (sel && inSel(wpos(e))) { e.preventDefault(); invert(); } });
+    // a photo dropped onto the page comes in too
+    stage.addEventListener('dragover', function (e) { e.preventDefault(); stage.classList.add('drop'); });
+    stage.addEventListener('dragleave', function () { stage.classList.remove('drop'); });
+    stage.addEventListener('drop', function (e) { e.preventDefault(); stage.classList.remove('drop'); load(e.dataTransfer && e.dataTransfer.files[0]); });
+    Array.prototype.forEach.call(root.querySelectorAll('input[type="file"]'), function (i) { i.addEventListener('change', function () { load(i.files && i.files[0]); i.value = ''; }); });
+    scaleIn.addEventListener('pointerdown', function () { if (proc) { remember(); ghostShow(); } });
+    scaleIn.addEventListener('input', function () { if (!proc) { syncScale(); return; } ghostShow(); scaleAt(+scaleIn.value / 100, 0.5, 0.5); });
+    scaleIn.addEventListener('change', function () { ghostHide(); save(); });
+
+    // ---- the ADJUST sliders (a panel beside the right-hand column) ----
+    var adjBox = document.createElement('div'), adjStart = null;
+    adjBox.className = 'paint-adjust dr-adjust'; adjBox.hidden = true;
+    adjBox.innerHTML = '<div class="pa-title">ADJUST <span>the photo</span></div><div class="pa-list">' + ADJ.map(function (a) {
+      return '<label class="pa-row" data-adj-row="' + a[0] + '"><span>' + a[1].toUpperCase() + '</span><output>0</output><input type="range" min="' + a[2] + '" max="100" step="1" value="0" data-adj="' + a[0] + '"></label>';
+    }).join('') + '</div><div class="pa-acts"><button type="button" data-adj-act="reset">RESET</button><button type="button" data-adj-act="done">DONE</button></div>';
+    right.appendChild(adjBox);
+    function syncSliders() { Array.prototype.forEach.call(adjBox.querySelectorAll('input'), function (i) { i.value = st.v[i.dataset.adj] || 0; i.previousElementSibling.textContent = i.value; }); }
+    function adjust(open) {
+      adjBox.hidden = !open; $('[data-dract="adjust"]').setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) { syncSliders(); var b = $('[data-dract="adjust"]'); adjBox.style.top = Math.max(0, Math.min(b.offsetTop - 40, right.clientHeight - adjBox.offsetHeight)) + 'px'; }
+    }
+    var pq = false;
+    adjBox.addEventListener('pointerdown', function (e) { if (e.target.closest('[data-adj]')) adjStart = JSON.stringify(st.v); });
+    adjBox.addEventListener('input', function (e) {
+      var i = e.target.closest('[data-adj]'); if (!i) return;
+      if (adjStart == null) adjStart = JSON.stringify(st.v);
+      st.v[i.dataset.adj] = +i.value; i.previousElementSibling.textContent = i.value;
+      if (pq) return; pq = true;
+      requestAnimationFrame(function () { pq = false; process(); draw(); });
+    });
+    adjBox.addEventListener('change', function () {
+      if (adjStart != null && adjStart !== JSON.stringify(st.v)) { var now = st.v; st.v = JSON.parse(adjStart); remember(); st.v = now; save(); }
+      adjStart = null;
+    });
+    adjBox.addEventListener('dblclick', function (e) {
+      var row = e.target.closest('[data-adj-row]'); if (!row) return;
+      var k = row.querySelector('input').dataset.adj; if (!st.v[k]) return;
+      remember(); st.v[k] = 0; syncSliders(); process(); draw(); save();
+    });
+
+    // ---- saving: the whole piece, frame and all ----
+    var saveMenu = document.createElement('div');
+    saveMenu.className = 'paint-savemenu'; saveMenu.hidden = true;
+    saveMenu.innerHTML = '<button type="button" data-drsave="png">PNG</button><button type="button" data-drsave="jpeg">JPEG</button>';
+    right.appendChild(saveMenu);
+    function savePanel(open) {
+      saveMenu.hidden = !open; var b = $('[data-dract="save"]'); b.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) saveMenu.style.top = Math.max(0, Math.min(b.offsetTop + b.offsetHeight - saveMenu.offsetHeight, right.clientHeight - saveMenu.offsetHeight)) + 'px';
+    }
+    function closePanels() { adjust(false); savePanel(false); }
+    function download(type) {
+      var out = document.createElement('canvas'); out.width = FW; out.height = FH;
+      var c = out.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, FW, FH);
+      var w = document.createElement('canvas'); w.width = w.height = WS; compose(w.getContext('2d'), WS);
+      c.drawImage(w, WX, WY);
+      out.toBlob(function (blob) {
+        if (!blob) return;
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'eyeseerc-piece.' + (type === 'jpeg' ? 'jpg' : 'png');
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+      }, type === 'jpeg' ? 'image/jpeg' : 'image/png', 0.95);
+    }
+
+    // ---- the buttons ----
+    root.addEventListener('click', function (e) {
+      var t = e.target.closest('button[data-drtool]'); if (t) { setTool(t.dataset.drtool); return; } // (the stage carries data-drtool too, for its cursor)
+      if (e.target.closest('.paint-selx')) { clearSel(); return; }
+      var s = e.target.closest('[data-drsel]'); if (s) { if (s.dataset.drsel === 'invert') invert(); else clearSel(); return; }
+      var sv = e.target.closest('[data-drsave]'); if (sv) { savePanel(false); download(sv.dataset.drsave); return; }
+      var aa = e.target.closest('[data-adj-act]');
+      if (aa) { if (aa.dataset.adjAct === 'reset' && Object.keys(st.v).some(function (k) { return st.v[k]; })) { remember(); st.v = {}; syncSliders(); process(); draw(); save(); } else if (aa.dataset.adjAct === 'done') adjust(false); return; }
+      var a = e.target.closest('[data-dract]'); if (!a) return;
+      var k = a.dataset.dract;
+      if (k === 'invert') invert();
+      else if (k === 'undo') doUndo();
+      else if (k === 'redo') doRedo();
+      else if (k === 'adjust') { savePanel(false); adjust(adjBox.hidden); }
+      else if (k === 'save') { adjust(false); savePanel(saveMenu.hidden); }
+      else if (proc && k === 'rotate') { remember(); st.rot = (st.rot + 1) % 4; draw(); save(); }
+      else if (proc && k === 'flip') { remember(); st.flip = !st.flip; draw(); save(); }
+      else if (proc && k === 'fit') { remember(); st.s = 1; st.ox = st.oy = 0; syncScale(); draw(); save(); }
+    });
+    document.addEventListener('pointerdown', function (e) {
+      if (!document.contains(root)) return;
+      if (!adjBox.hidden && !e.target.closest('.dr-adjust, [data-dract="adjust"]')) adjust(false);
+      if (!saveMenu.hidden && !e.target.closest('.paint-savemenu, [data-dract="save"]')) savePanel(false);
+    }, true);
+
+    // ---- kept in the browser, so it's still there next time ----
+    var saveTimer = 0;
+    function db(fn) {
+      try {
+        var r = indexedDB.open('eyeseerc-darkroom', 1);
+        r.onupgradeneeded = function () { r.result.createObjectStore('s'); };
+        r.onsuccess = function () { try { fn(r.result.transaction('s', 'readwrite').objectStore('s')); } catch (x) {} };
+      } catch (x) {}
+    }
+    function save() { clearTimeout(saveTimer); saveTimer = setTimeout(storeNow, 600); }
+    function storeNow() {
+      var rec = { st: st, SW: SW, SH: SH, G: G ? G.buffer.slice(0) : null };
+      db(function (os) { os.put(rec, 'piece'); });
+    }
+    function restoreSaved() {
+      db(function (os) {
+        var g = os.get('piece');
+        g.onsuccess = function () {
+          var d = g.result; if (!d || G) return;
+          if (d.G) setSource(new Uint8ClampedArray(d.G), d.SW, d.SH);
+          st = d.st || st; process(); syncScale(); draw();
+        };
+      });
+    }
+
+    setTool('move'); buttons(); layout(); restoreSaved();
+    app = {
+      root: root, layout: layout,
+      key: function (e) {
+        var k = e.key.toLowerCase(), mod = e.metaKey || e.ctrlKey;
+        if (e.target && /input|textarea|select/i.test(e.target.tagName || '') && e.target.type !== 'range') return;
+        if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) doRedo(); else doUndo(); return; }
+        if (mod && k === 'y') { e.preventDefault(); doRedo(); return; }
+        if (mod && k === 'a') { e.preventDefault(); sel = { x: 0, y: 0, w: 1, h: 1 }; selbar.hidden = false; drawSel(); return; }
+        if (mod || e.altKey) return;
+        if (k === 'escape') { closePanels(); clearSel(); return; }
+        if (k === 'v') setTool('move'); else if (k === 'm') setTool('select'); else if (k === 'q') setTool('lasso');
+        else if (k === 'i') invert();
+        else if (k === 'a') adjust(adjBox.hidden);
+      }
+    };
+    document.addEventListener('pageswap:start', function gone() { document.removeEventListener('pageswap:start', gone); tip.remove(); if (saveTimer) { clearTimeout(saveTimer); storeNow(); } });
+  }
+
+  function setup() { var r = document.querySelector('main:not([aria-hidden]) .dr'); if (r) init(r); else app = null; }
+  window.addEventListener('resize', function () { if (app && document.contains(app.root)) app.layout(); });
+  document.addEventListener('keydown', function (e) { if (app && document.contains(app.root)) app.key(e); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
   document.addEventListener('pageswap:done', setup);
 })();
