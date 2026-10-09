@@ -3574,6 +3574,8 @@
     }
     left.addEventListener('pointerover', showTip); left.addEventListener('pointermove', showTip);
     left.addEventListener('pointerleave', hideTip); left.addEventListener('pointerdown', hideTip);
+    right.addEventListener('pointerover', showTip); right.addEventListener('pointermove', showTip);
+    right.addEventListener('pointerleave', hideTip); right.addEventListener('pointerdown', hideTip);
 
     // ---- laying it out: the piece as big as the space allows ----
     var box = { x: 0, y: 0, w: 0, h: 0 }; // the piece, on the stage
@@ -3898,6 +3900,7 @@
     }
     function exitT() {
       if (!tmode) return;
+      turnTip.classList.remove('on');
       tmode = false; tdrag = null; selbar.hidden = true; selbar.classList.remove('t-mode');
       ghostHide(); drawSel(); save();
     }
@@ -3940,6 +3943,11 @@
     }
 
     var pts = {}, drag = null, pinch = null, sdrag = null;
+    var turnTip = document.createElement('div');
+    turnTip.className = 'dr-turn'; turnTip.setAttribute('aria-hidden', 'true');
+    turnTip.innerHTML = '<svg viewBox="0 0 24 24"><path d="M18.5 12a6.5 6.5 0 1 1-1.9-4.6"/><path d="M17.5 3.5v4h-4"/></svg>';
+    stage.appendChild(turnTip);
+    stage.addEventListener('pointerleave', function () { turnTip.classList.remove('on'); stage.dataset.hover = ''; });
     stage.addEventListener('pointerdown', function (e) {
       if (e.target.closest('.paint-selbar, .paint-selx, .dr-empty')) return;
       if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -3962,7 +3970,7 @@
       var z = zone(p, e.pointerType);
       if (tmode) {
         if (z && z.k === 'scale') { remember(); tdrag = { a: z.q[(z.i + 2) % 4], c: z.q[z.i], s: st.s, cx: 0.5 + st.ox, cy: 0.5 + st.oy }; }
-        else if (z && z.k === 'turn') { remember(); tdrag = { turn: true, cx: 0.5 + st.ox, cy: 0.5 + st.oy, a0: Math.atan2(p.y - 0.5 - st.oy, p.x - 0.5 - st.ox), ang: st.ang || 0 }; }
+        else if (z && z.k === 'turn') { remember(); turnTip.classList.remove('on'); tdrag = { turn: true, cx: 0.5 + st.ox, cy: 0.5 + st.oy, a0: Math.atan2(p.y - 0.5 - st.oy, p.x - 0.5 - st.ox), ang: st.ang || 0 }; }
         else if (z && z.k === 'move') drag = { p: p, ox: st.ox, oy: st.oy, moved: false, t: true };
         else exitT();
         return;
@@ -3993,7 +4001,14 @@
         st.ox = mx + (vx * cs - vy * sn) * f - 0.5; st.oy = my + (vx * sn + vy * cs) * f - 0.5;
         syncScale(); draw(); drawGhost(); if (tmode) drawSel(); return;
       }
-      if (!Object.keys(pts).length && e.pointerType === 'mouse' && proc !== undefined) stage.dataset.hover = cursorFor(zone(wpos(e), 'mouse'));
+      if (!Object.keys(pts).length && e.pointerType === 'mouse') {
+        var hz = zone(wpos(e), 'mouse'), hr = stage.getBoundingClientRect();
+        stage.dataset.hover = cursorFor(hz);
+        // (a little curved arrow pops up beside the pointer where it can turn
+        // the photo: a pointer can't always show a cursor of its own)
+        turnTip.classList.toggle('on', !!hz && hz.k === 'turn');
+        if (hz && hz.k === 'turn') turnTip.style.transform = 'translate(' + (e.clientX - hr.left + 12) + 'px,' + (e.clientY - hr.top + 10) + 'px)';
+      }
       if (sdrag && pts[e.pointerId]) {
         var sp = wpos(e), o = sdrag.sel;
         if (sdrag.move) {
@@ -4296,7 +4311,7 @@
       else if (k === 'save') { adjust(false); savePanel(saveMenu.hidden); }
       else if (proc && k === 'rotate') { remember(); st.rot = (st.rot + 1) % 4; draw(); drawSel(); if (ghostOn) drawGhost(); save(); }
       else if (proc && k === 'flip') { remember(); st.flip = !st.flip; draw(); drawSel(); if (ghostOn) drawGhost(); save(); }
-      else if (proc && k === 'fit') { remember(); st.s = 1; st.ox = st.oy = 0; st.ang = 0; syncScale(); draw(); enterT(); }
+      else if (proc && k === 'fit') { if (tmode) exitT(); else enterT(); } // (selects the photo, just as it is)
     });
     document.addEventListener('pointerdown', function (e) {
       if (!document.contains(root)) return;

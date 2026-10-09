@@ -1571,3 +1571,12 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .lv-grad { height: 9px; margin-top: .3rem; background: linear-gradient(to right, #000, #fff); border: 1px solid var(--menu-line); }
 /* CURVES */
 .dr-curves .cv-graph { display: block; width: 100%; margin: .25rem 0 .1rem; touch-action: none; cursor: crosshair; }
+/* the little curved arrow by the pointer, where a drag turns the photo */
+.dr-turn {
+  position: absolute; left: 0; top: 0; z-index: 5; width: 26px; height: 26px; border-radius: 50%; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; color: #141414; box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+  opacity: 0; scale: .6; transition: opacity .18s cubic-bezier(.45, 0, .55, 1), scale .18s cubic-bezier(.45, 0, .55, 1);
+}
+.dr-turn.on { opacity: 1; scale: 1; }
+.dr-turn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

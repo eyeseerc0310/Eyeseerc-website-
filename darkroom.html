@@ -36,8 +36,8 @@ description: "Make a black and white piece in the white frame"
   </div>
   <div class="paint-bar paint-right" role="toolbar" aria-label="Photo and actions">
     <div class="paint-group" role="group" aria-label="Photo">
-      <label class="paint-open" title="Upload a photo"><input type="file" accept="image/*" aria-label="Upload a photo"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="1.5"/><path d="M3.5 16l5-5 4 4 2.5-2.5L20.5 18"/><circle cx="15.5" cy="9" r="1.5"/></svg></label>
-      <button type="button" data-dract="fit" aria-label="Fit the photo to the window" title="Fit the photo to the window"><svg viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="1"/><path d="M8 10V8h2M14 8h2v2M16 14v2h-2M10 16H8v-2"/></svg></button>
+      <label class="paint-open" data-tip="Add a photo: it comes in black and white, filling the window. (You can drop one on the page too)"><input type="file" accept="image/*" aria-label="Upload a photo"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="1.5"/><path d="M3.5 16l5-5 4 4 2.5-2.5L20.5 18"/><circle cx="15.5" cy="9" r="1.5"/></svg></label>
+      <button type="button" data-dract="fit" aria-label="Select the photo" data-tip="Select the photo: drag a corner to size it, just outside a corner to turn it, or inside to move it. Tap outside the box when it's right"><svg viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="1"/><path d="M8 10V8h2M14 8h2v2M16 14v2h-2M10 16H8v-2"/></svg></button>
     </div>
     <div class="paint-sliders">
       <label>SCALE <output>100</output><input type="range" class="dr-scale" min="25" max="400" value="100" step="1" aria-label="Scale"></label>
