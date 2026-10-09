@@ -1569,3 +1569,5 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .lv-nums { display: flex; justify-content: space-between; font-size: .6rem; font-variant-numeric: tabular-nums; margin: .1rem 0 .4rem; }
 .lv-sub { font-size: .54rem; letter-spacing: .15em; margin-top: .2rem; }
 .lv-grad { height: 9px; margin-top: .3rem; background: linear-gradient(to right, #000, #fff); border: 1px solid var(--menu-line); }
+/* CURVES */
+.dr-curves .cv-graph { display: block; width: 100%; margin: .25rem 0 .1rem; touch-action: none; cursor: crosshair; }

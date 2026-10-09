@@ -3623,15 +3623,40 @@
     // LEVELS: black, mid (gamma x 100) and white in, black and white out
     var LV = { lb: 0, lg: 100, lw: 255, ob: 0, ow: 255 };
     function lv(k) { return st.v[k] != null ? st.v[k] : LV[k]; }
-    function changed() { return Object.keys(st.v).some(function (k) { return st.v[k] !== (k in LV ? LV[k] : 0); }); }
+    function changed() { return Object.keys(st.v).some(function (k) { return k === 'curve' ? !!st.v.curve : st.v[k] !== (k in LV ? LV[k] : 0); }); }
+    // CURVES: points (in 0-255) joined by a smooth curve that never doubles
+    // back (monotone cubic); 256 values out of it
+    function curveLut(P) {
+      var n = P.length, d = [], m = [], out = new Float32Array(256), i;
+      for (i = 0; i < n - 1; i++) d[i] = (P[i + 1][1] - P[i][1]) / Math.max(1e-6, P[i + 1][0] - P[i][0]);
+      m[0] = d[0]; m[n - 1] = d[n - 2];
+      for (i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+      for (i = 0; i < n - 1; i++) {
+        if (!d[i]) { m[i] = m[i + 1] = 0; continue; }
+        var a = m[i] / d[i], b = m[i + 1] / d[i], h = a * a + b * b;
+        if (h > 9) { var t = 3 / Math.sqrt(h); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+      }
+      for (var x = 0, k = 0; x < 256; x++) {
+        if (x <= P[0][0]) { out[x] = P[0][1]; continue; }
+        if (x >= P[n - 1][0]) { out[x] = P[n - 1][1]; continue; }
+        while (k < n - 2 && x > P[k + 1][0]) k++;
+        var x0 = P[k][0], x1 = P[k + 1][0], hh = x1 - x0, u = (x - x0) / hh, u2 = u * u, u3 = u2 * u;
+        out[x] = (2 * u3 - 3 * u2 + 1) * P[k][1] + (u3 - 2 * u2 + u) * hh * m[k] + (-2 * u3 + 3 * u2) * P[k + 1][1] + (u3 - u2) * hh * m[k + 1];
+      }
+      for (x = 0; x < 256; x++) out[x] = Math.max(0, Math.min(255, out[x]));
+      return out;
+    }
+    function curvePts() { return st.v.curve || [[0, 0], [255, 255]]; }
     function process() {
       if (!G) return;
       var ex = Math.pow(2, val('exposure') * 1.5), co = val('contrast'), hi = val('highlights'), sh = val('shadows'), wh = val('whites'), bl = val('blacks');
       var fa = val('fade'), br = val('brilliance'), shp = val('sharpen') * 1.6, cl = val('clarity') * 0.7;
       var lut = new Float32Array(256), lb = lv('lb'), lw = lv('lw'), lg = lv('lg') / 100, ob = lv('ob'), ow = lv('ow');
+      var cl8 = st.v.curve ? curveLut(st.v.curve) : null;
       for (var i = 0; i < 256; i++) {
         var x = Math.max(0, Math.min(1, (i - lb) / Math.max(1, lw - lb)));
         x = Math.pow(x, 1 / lg); x = (ob + x * (ow - ob)) / 255;
+        if (cl8) { var cx = x * 255, c0 = Math.min(254, Math.floor(cx)), cf = cx - c0; x = (cl8[c0] * (1 - cf) + cl8[c0 + 1] * cf) / 255; } // (then the curve)
         x *= ex;
         x += sh * 0.3 * (1 - sstep(0, 0.55, x)) * (sh > 0 ? 1 - x : x);
         x += hi * 0.3 * sstep(0.45, 1, x) * (hi > 0 ? 1 - x : x);
@@ -3689,7 +3714,7 @@
         }
       }
       G = g; blurS = blurW = null; st.v = {}; st.inv = [];
-      process(); syncSliders(); syncLevels(); draw(); save();
+      process(); syncSliders(); syncLevels(); drawCurve(); draw(); save();
     }
 
     // ---- putting the piece together (the window only; the frame is the
@@ -3781,7 +3806,7 @@
       var srcChanged = sn.G !== G;
       st = sn.st;
       if (srcChanged) { if (sn.G) setSource(sn.G, sn.SW, sn.SH); else { G = null; src = proc = null; empty.hidden = false; } }
-      process(); syncScale(); syncSliders(); syncLevels(); draw(); drawSel(); save();
+      process(); syncScale(); syncSliders(); syncLevels(); drawCurve(); draw(); drawSel(); save();
     }
     function doUndo() { exitT(); if (!undo.length) return; redo.push(snap()); restore(undo.pop()); buttons(); }
     function doRedo() { if (!redo.length) return; undo.push(snap()); restore(redo.pop()); buttons(); }
@@ -4140,6 +4165,85 @@
       tr.addEventListener('pointermove', mv); tr.addEventListener('pointerup', done); tr.addEventListener('pointercancel', done);
     });
 
+    // ---- CURVES: tap the line to add a point, drag points to bend it;
+    // double-tap a point (or drag it off the graph) to take it away ----
+    var cvBox = document.createElement('div'), cvStart = null;
+    cvBox.className = 'paint-adjust dr-adjust dr-curves'; cvBox.hidden = true;
+    cvBox.innerHTML = '<div class="pa-title">CURVES</div><canvas class="cv-graph" aria-label="Curve"></canvas>' +
+      '<div class="pa-acts"><button type="button" data-adj-act="reset">RESET</button><button type="button" data-adj-act="done">DONE</button></div>';
+    right.appendChild(cvBox);
+    var cv = cvBox.querySelector('.cv-graph'), hist = null, CP = 7;
+    function cvSize() { var w = cv.clientWidth || 200, h = Math.round(w * 0.8); cv.style.height = h + 'px'; if (cv.width !== Math.round(w * DPR)) { cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR); } return { w: w, h: h }; }
+    function drawCurve() {
+      if (cvBox.hidden) return;
+      var sz = cvSize(), c = cv.getContext('2d'), W2 = sz.w - 2 * CP, H2 = sz.h - 2 * CP, P = curvePts();
+      c.setTransform(DPR, 0, 0, DPR, 0, 0); c.clearRect(0, 0, sz.w, sz.h); c.translate(CP, CP); // (a margin, so the end points show whole)
+      c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(0, 0, W2, H2);
+      // the photo's tones, faintly underneath
+      if (hist) { c.fillStyle = 'rgba(255,255,255,.16)'; for (var i = 0; i < 256; i++) { var v = hist[i] * H2 * 0.9; c.fillRect(i / 256 * W2, H2 - v, W2 / 256 + 0.5, v); } }
+      c.strokeStyle = 'rgba(255,255,255,.22)'; c.lineWidth = 1;
+      for (var g = 1; g < 4; g++) { c.beginPath(); c.moveTo(g * W2 / 4, 0); c.lineTo(g * W2 / 4, H2); c.moveTo(0, g * H2 / 4); c.lineTo(W2, g * H2 / 4); c.stroke(); }
+      c.strokeRect(0.5, 0.5, W2 - 1, H2 - 1);
+      var L = curveLut(P);
+      c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath();
+      for (var x = 0; x < 256; x++) c[x ? 'lineTo' : 'moveTo'](x / 255 * W2, H2 - L[x] / 255 * H2);
+      c.stroke();
+      P.forEach(function (q) { c.beginPath(); c.arc(q[0] / 255 * W2, H2 - q[1] / 255 * H2, 5, 0, Math.PI * 2); c.fillStyle = '#2f7fd6'; c.fill(); c.lineWidth = 2; c.strokeStyle = '#fff'; c.stroke(); });
+    }
+    function curves(open) {
+      if (!open && !cvBox.hidden) { cvBox.hidden = true; bake(); }
+      cvBox.hidden = !open; $('[data-dract="curves"]').setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        hist = null;
+        if (G) { var h = new Float32Array(256), i, mx = 0; for (i = 0; i < G.length; i += 3) h[G[i]]++; var sorted = Array.prototype.slice.call(h).sort(function (a, b) { return a - b; }); mx = sorted[250] || 1; for (i = 0; i < 256; i++) h[i] = Math.min(1, h[i] / mx); hist = h; }
+        var b = $('[data-dract="curves"]'); cvBox.style.top = Math.max(0, Math.min(b.offsetTop - 40, right.clientHeight - cvBox.offsetHeight)) + 'px';
+        drawCurve();
+      }
+    }
+    function setCurve(P) {
+      // (back to a straight line: no curve at all)
+      st.v.curve = P.length === 2 && P[0][0] === 0 && P[0][1] === 0 && P[1][0] === 255 && P[1][1] === 255 ? undefined : P;
+      if (!st.v.curve) delete st.v.curve;
+      drawCurve();
+      if (cvq) return; cvq = true;
+      requestAnimationFrame(function () { cvq = false; process(); draw(); });
+    }
+    var cvq = false, cvLastTap = 0;
+    cv.addEventListener('pointerdown', function (e) {
+      if (!G) return;
+      e.preventDefault();
+      var r0 = cv.getBoundingClientRect(), r = { left: r0.left + CP, top: r0.top + CP, width: r0.width - 2 * CP, height: r0.height - 2 * CP, bottom: r0.bottom - CP };
+      var at = function (ev) { return [Math.max(0, Math.min(255, (ev.clientX - r.left) / r.width * 255)), Math.max(0, Math.min(255, (1 - (ev.clientY - r.top) / r.height) * 255))]; };
+      var P = curvePts().map(function (q) { return q.slice(); }), a = at(e), hit = -1, best = 1e9;
+      P.forEach(function (q, i) { var d = Math.hypot((q[0] - a[0]) / 255 * r.width, (q[1] - a[1]) / 255 * r.height); if (d < best) { best = d; hit = i; } });
+      cvStart = JSON.stringify(st.v);
+      var now = Date.now();
+      if (best <= 14 && now - cvLastTap < 350 && hit > 0 && hit < P.length - 1) { P.splice(hit, 1); setCurve(P); cvLastTap = 0; finish(); return; } // double-tap: gone
+      cvLastTap = now;
+      if (best > 14) {
+        // a new point, on the line where it was tapped
+        var L = curveLut(P), nx = Math.round(a[0]);
+        if (P.some(function (q) { return Math.abs(q[0] - nx) < 4; })) return;
+        P.push([nx, Math.round(L[nx])]); P.sort(function (x, y) { return x[0] - y[0]; });
+        hit = P.findIndex(function (q) { return q[0] === nx; });
+      }
+      try { cv.setPointerCapture(e.pointerId); } catch (x) {}
+      var off = false;
+      function mv(ev) {
+        var q = at(ev), end = hit === 0 || hit === P.length - 1, Q = P.map(function (x) { return x.slice(); });
+        // dragged well off the graph: the point goes (but never the two ends)
+        off = !end && (ev.clientY < r.top - 30 || ev.clientY > r.bottom + 30);
+        var lo = hit > 0 ? P[hit - 1][0] + 2 : 0, hi = hit < P.length - 1 ? P[hit + 1][0] - 2 : 255;
+        Q[hit] = [hit === 0 ? Math.min(Math.round(q[0]), P[1][0] - 2) : hit === P.length - 1 ? Math.max(Math.round(q[0]), P[hit - 1][0] + 2) : Math.round(Math.max(lo, Math.min(hi, q[0]))), Math.round(q[1])];
+        if (off) Q.splice(hit, 1);
+        setCurve(Q);
+      }
+      function up() { cv.removeEventListener('pointermove', mv); cv.removeEventListener('pointerup', up); cv.removeEventListener('pointercancel', up); finish(); }
+      function finish() { if (cvStart !== JSON.stringify(st.v)) { var nv = st.v; st.v = JSON.parse(cvStart); remember(); st.v = nv; save(); } }
+      if (best > 14) setCurve(P);
+      cv.addEventListener('pointermove', mv); cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    });
+
     // ---- saving: the whole piece, frame and all ----
     var saveMenu = document.createElement('div');
     saveMenu.className = 'paint-savemenu'; saveMenu.hidden = true;
@@ -4149,7 +4253,7 @@
       saveMenu.hidden = !open; var b = $('[data-dract="save"]'); b.setAttribute('aria-expanded', open ? 'true' : 'false');
       if (open) saveMenu.style.top = Math.max(0, Math.min(b.offsetTop + b.offsetHeight - saveMenu.offsetHeight, right.clientHeight - saveMenu.offsetHeight)) + 'px';
     }
-    function closePanels() { adjust(false); levels(false); savePanel(false); }
+    function closePanels() { adjust(false); levels(false); curves(false); savePanel(false); }
     function download(type) {
       var out = document.createElement('canvas'); out.width = FW; out.height = FH;
       var c = out.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, FW, FH);
@@ -4170,8 +4274,8 @@
       var sv = e.target.closest('[data-drsave]'); if (sv) { savePanel(false); download(sv.dataset.drsave); return; }
       var aa = e.target.closest('[data-adj-act]');
       if (aa) {
-        if (aa.dataset.adjAct === 'reset' && changed()) { remember(); st.v = {}; syncSliders(); syncLevels(); process(); draw(); save(); }
-        else if (aa.dataset.adjAct === 'done') { adjust(false); levels(false); }
+        if (aa.dataset.adjAct === 'reset' && changed()) { remember(); st.v = {}; syncSliders(); syncLevels(); drawCurve(); process(); draw(); save(); }
+        else if (aa.dataset.adjAct === 'done') { adjust(false); levels(false); curves(false); }
         return;
       }
       var a = e.target.closest('[data-dract]'); if (!a) return;
@@ -4179,8 +4283,9 @@
       if (k === 'invert') invert();
       else if (k === 'undo') doUndo();
       else if (k === 'redo') doRedo();
-      else if (k === 'adjust') { savePanel(false); levels(false); adjust(adjBox.hidden); }
-      else if (k === 'levels') { savePanel(false); adjust(false); levels(lvBox.hidden); }
+      else if (k === 'adjust') { savePanel(false); levels(false); curves(false); adjust(adjBox.hidden); }
+      else if (k === 'levels') { savePanel(false); adjust(false); curves(false); levels(lvBox.hidden); }
+      else if (k === 'curves') { savePanel(false); adjust(false); levels(false); curves(cvBox.hidden); }
       else if (k === 'save') { adjust(false); savePanel(saveMenu.hidden); }
       else if (proc && k === 'rotate') { remember(); st.rot = (st.rot + 1) % 4; draw(); drawSel(); if (ghostOn) drawGhost(); save(); }
       else if (proc && k === 'flip') { remember(); st.flip = !st.flip; draw(); drawSel(); if (ghostOn) drawGhost(); save(); }
@@ -4190,6 +4295,7 @@
       if (!document.contains(root)) return;
       if (!adjBox.hidden && !e.target.closest('.dr-adjust, [data-dract="adjust"]')) adjust(false);
       if (!lvBox.hidden && !e.target.closest('.dr-levels, [data-dract="levels"]')) levels(false);
+      if (!cvBox.hidden && !e.target.closest('.dr-curves, [data-dract="curves"]')) curves(false);
       if (!saveMenu.hidden && !e.target.closest('.paint-savemenu, [data-dract="save"]')) savePanel(false);
     }, true);
 
@@ -4233,6 +4339,7 @@
         else if (k === 'i') invert();
         else if (k === 'a') adjust(adjBox.hidden);
         else if (k === 'l') levels(lvBox.hidden);
+        else if (k === 'c') curves(cvBox.hidden);
       }
     };
     document.addEventListener('pageswap:start', function gone() { document.removeEventListener('pageswap:start', gone); tip.remove(); if (saveTimer) { clearTimeout(saveTimer); storeNow(); } });
