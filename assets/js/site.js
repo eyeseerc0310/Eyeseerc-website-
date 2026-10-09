@@ -4312,6 +4312,14 @@
       else if (proc && k === 'rotate') { remember(); st.rot = (st.rot + 1) % 4; draw(); drawSel(); if (ghostOn) drawGhost(); save(); }
       else if (proc && k === 'flip') { remember(); st.flip = !st.flip; draw(); drawSel(); if (ghostOn) drawGhost(); save(); }
       else if (proc && k === 'fit') { if (tmode) exitT(); else enterT(); } // (selects the photo, just as it is)
+      else if (proc && k === 'clear') {
+        // the photo goes (and everything done to it); undo brings it back
+        closePanels(); exitT(); clearSel(); remember();
+        G = null; src = proc = null; blurS = blurW = null; SW = SH = 0;
+        st = { s: 1, ox: 0, oy: 0, rot: 0, ang: 0, flip: false, v: {}, inv: [] };
+        empty.hidden = false; ghostOn = false; ghost.classList.remove('on');
+        syncScale(); syncSliders(); syncLevels(); draw(); drawGhost(); save();
+      }
     });
     document.addEventListener('pointerdown', function (e) {
       if (!document.contains(root)) return;
