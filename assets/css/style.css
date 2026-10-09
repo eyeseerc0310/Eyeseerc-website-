@@ -89,8 +89,9 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem var(--edge);
-  position: sticky;
-  top: 0;
+  /* TRYING OUT: the header stays at the top of the page and scrolls away
+     with it (it used to follow down the page: position: sticky; top: 0) */
+  position: relative;
   z-index: 10;
   border-bottom: 1px solid var(--line);
 }
@@ -1083,7 +1084,9 @@ section.show { position: relative; height: 100vh; height: 100svh; background: #0
      header, so it can never lag behind it on a fast scroll); only the photo
      inside it moves with the scrolling */
   .show-band {
-    display: block; position: fixed; top: 0; left: 0; right: 0; height: var(--hdr, 0px);
+    /* (TRYING OUT the header that scrolls away: the strip goes with it;
+       position: fixed when the header follows down the page) */
+    display: block; position: absolute; top: 0; left: 0; right: 0; height: var(--hdr, 0px);
     overflow: hidden; z-index: 1; /* (over the photo itself, which can drift up under the header) */
   }
   .show-lens {
