@@ -1571,3 +1571,22 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 }
 .dr-turn.on { opacity: 1; scale: 1; }
 .dr-turn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* ADJUSTMENTS: ADJUST, LEVELS and CURVES as tabs along the top */
+.dr-tabs { display: flex; gap: 2px; margin: -.1rem 0 .6rem; border-bottom: 1px solid var(--menu-line); }
+.paint .dr-tabs button {
+  flex: 1; width: auto; height: 28px; border: 0; border-radius: 0; padding: 0; background: none;
+  font-size: .56rem; letter-spacing: .16em; color: var(--menu-link); opacity: .6; position: relative;
+}
+.paint .dr-tabs button:hover { opacity: .9; background: none; border-color: transparent; }
+.paint .dr-tabs button[aria-selected="true"] { opacity: 1; color: var(--text); }
+.paint .dr-tabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 12%; right: 12%; bottom: -1px; height: 1px; background: currentColor; }
+.dr-all .dr-tab-body > .pa-title, .dr-all .dr-tab-body > .pa-acts { display: none; }
+.dr-all { width: 250px; }
+/* the button's longer name, a touch tighter */
+@media (min-width: 561px) {
+  .dr .paint-right [data-dract="adjust"] span { letter-spacing: .08em; font-size: .58rem; }
+  .dr .paint-right [data-dract="adjust"] svg { display: none; }
+}
+/* holding space: a hand that grabs */
+.dr .dr-stage.space { cursor: grab; }
+.dr .dr-stage.grabbing { cursor: grabbing; }

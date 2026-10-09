@@ -3549,7 +3549,7 @@
     var $ = function (q) { return root.querySelector(q); };
     var stage = $('.dr-stage'), piece = $('.dr-piece'), win = $('.dr-win'), wctx = win.getContext('2d');
     var ghost = $('.dr-ghost'), gctx = ghost.getContext('2d'), selCv = $('.dr-sel'), sctx = selCv.getContext('2d');
-    var selbar = $('.paint-selbar'), selx = $('.paint-selx'), empty = $('.dr-empty'), scaleIn = $('.dr-scale');
+    var selbar = $('.paint-selbar'), selx = $('.paint-selx'), empty = $('.dr-empty'), scaleIn = $('.dr-scale'), turnIn = $('.dr-turnin');
     var left = $('.paint-left'), right = $('.paint-right');
     var DPR = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -3933,7 +3933,16 @@
       Array.prototype.forEach.call(root.querySelectorAll('[data-drtool]'), function (b) { b.setAttribute('aria-pressed', b.dataset.drtool === t ? 'true' : 'false'); });
       stage.dataset.drtool = t;
     }
-    function syncScale() { scaleIn.value = Math.round(st.s * 100); scaleIn.previousElementSibling.textContent = scaleIn.value; }
+    function syncScale() {
+      scaleIn.value = Math.round(st.s * 100); scaleIn.previousElementSibling.textContent = scaleIn.value;
+      var a = (((st.ang || 0) % 360) + 540) % 360 - 180; turnIn.value = Math.round(a); turnIn.previousElementSibling.textContent = Math.round(a) + '°';
+    }
+    // turn to angle a, round the middle of the window (the photo swings round it)
+    function turnTo(a) {
+      var d = (a - (st.ang || 0)) * Math.PI / 180, cs = Math.cos(d), sn = Math.sin(d);
+      var x = st.ox, y = st.oy; st.ox = x * cs - y * sn; st.oy = x * sn + y * cs; st.ang = a;
+      syncScale(); draw(); if (ghostOn) drawGhost(); if (tmode) drawSel();
+    }
     // size the photo, keeping the point (px, py) in the window where it is
     function scaleAt(s, px, py) {
       s = Math.max(0.25, Math.min(4, s));
@@ -3943,6 +3952,25 @@
     }
 
     var pts = {}, drag = null, pinch = null, sdrag = null;
+    var spaceDown = false, sgrab = null, lastP = null;
+    function grabStart() {
+      if (!lastP || tmode && !proc) return;
+      if (sel && !selMode && inSel(lastP)) sgrab = { sel: JSON.parse(JSON.stringify(sel)), p: lastP };
+      else if (proc) { remember(); sgrab = { p: lastP, ox: st.ox, oy: st.oy }; ghostShow(); }
+      if (sgrab) { stage.classList.add('grabbing'); turnTip.classList.remove('on'); }
+    }
+    function grabMove() {
+      var dx = lastP.x - sgrab.p.x, dy = lastP.y - sgrab.p.y;
+      if (sgrab.sel) { var o = sgrab.sel; if (o.pts) sel.pts = o.pts.map(function (q) { return { x: q.x + dx, y: q.y + dy }; }); else { sel.x = o.x + dx; sel.y = o.y + dy; } drawSel(); }
+      else { st.ox = sgrab.ox + dx; st.oy = sgrab.oy + dy; draw(); drawGhost(); if (tmode) drawSel(); }
+    }
+    function grabEnd() {
+      spaceDown = false; stage.classList.remove('space', 'grabbing');
+      if (!sgrab) return;
+      if (!sgrab.sel) { if (!tmode) ghostHide(); save(); }
+      sgrab = null;
+    }
+    window.addEventListener('blur', grabEnd);
     var turnTip = document.createElement('div');
     turnTip.className = 'dr-turn'; turnTip.setAttribute('aria-hidden', 'true');
     turnTip.innerHTML = '<svg viewBox="0 0 24 24"><path d="M18.5 12a6.5 6.5 0 1 1-1.9-4.6"/><path d="M17.5 3.5v4h-4"/></svg>';
@@ -4001,6 +4029,8 @@
         st.ox = mx + (vx * cs - vy * sn) * f - 0.5; st.oy = my + (vx * sn + vy * cs) * f - 0.5;
         syncScale(); draw(); drawGhost(); if (tmode) drawSel(); return;
       }
+      if (e.pointerType === 'mouse' || (e.pointerType === 'pen' && !e.buttons)) lastP = wpos(e);
+      if (spaceDown && !e.buttons) { if (!sgrab) grabStart(); if (sgrab) { grabMove(); return; } }
       if (!Object.keys(pts).length && e.pointerType === 'mouse') {
         var hz = zone(wpos(e), 'mouse'), hr = stage.getBoundingClientRect();
         stage.dataset.hover = cursorFor(hz);
@@ -4028,7 +4058,7 @@
         // turning round the middle (shift: in steps of 15 degrees)
         var tp = wpos(e), ang = tdrag.ang + (Math.atan2(tp.y - tdrag.cy, tp.x - tdrag.cx) - tdrag.a0) * 180 / Math.PI;
         if (e.shiftKey) ang = Math.round(ang / 15) * 15;
-        st.ang = ang; draw(); drawGhost(); drawSel(); return;
+        st.ang = ang; syncScale(); draw(); drawGhost(); drawSel(); return;
       }
       if (tdrag && pts[e.pointerId]) {
         var q = wpos(e), a = tdrag.a, f = Math.hypot(q.x - a.x, q.y - a.y) / (Math.hypot(tdrag.c.x - a.x, tdrag.c.y - a.y) || 1);
@@ -4092,6 +4122,9 @@
     scaleIn.addEventListener('pointerdown', function () { if (proc) { remember(); ghostShow(); } });
     scaleIn.addEventListener('input', function () { if (!proc) { syncScale(); return; } ghostShow(); scaleAt(+scaleIn.value / 100, 0.5, 0.5); });
     scaleIn.addEventListener('change', function () { if (!tmode) ghostHide(); save(); });
+    turnIn.addEventListener('pointerdown', function () { if (proc) { remember(); ghostShow(); } });
+    turnIn.addEventListener('input', function () { if (!proc) { syncScale(); return; } ghostShow(); turnTo(+turnIn.value); });
+    turnIn.addEventListener('change', function () { if (!tmode) ghostHide(); save(); });
 
     // ---- the ADJUST sliders (a panel beside the right-hand column) ----
     var adjBox = document.createElement('div'), adjStart = null;
@@ -4101,11 +4134,7 @@
     }).join('') + '</div><div class="pa-acts"><button type="button" data-adj-act="reset">RESET</button><button type="button" data-adj-act="done">DONE</button></div>';
     right.appendChild(adjBox);
     function syncSliders() { Array.prototype.forEach.call(adjBox.querySelectorAll('input'), function (i) { i.value = st.v[i.dataset.adj] || 0; i.previousElementSibling.textContent = i.value; }); }
-    function adjust(open) {
-      if (!open && !adjBox.hidden) { adjBox.hidden = true; bake(); }
-      adjBox.hidden = !open; $('[data-dract="adjust"]').setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open) { syncSliders(); var b = $('[data-dract="adjust"]'); adjBox.style.top = Math.max(0, Math.min(b.offsetTop - 40, right.clientHeight - adjBox.offsetHeight)) + 'px'; }
-    }
+    function adjust(open) { panel(open, 'adjust'); }
     var pq = false;
     adjBox.addEventListener('pointerdown', function (e) { if (e.target.closest('[data-adj]')) adjStart = JSON.stringify(st.v); });
     adjBox.addEventListener('input', function (e) {
@@ -4153,11 +4182,7 @@
       x.fillStyle = getComputedStyle(lvBox).color || '#ddd';
       for (i = 0; i < 256; i++) { var v = Math.min(1, h[i] / top) * 100; x.fillRect(i, 100 - v, 1, v); }
     }
-    function levels(open) {
-      if (!open && !lvBox.hidden) { lvBox.hidden = true; bake(); }
-      lvBox.hidden = !open; $('[data-dract="levels"]').setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open) { histogram(); syncLevels(); var b = $('[data-dract="levels"]'); lvBox.style.top = Math.max(0, Math.min(b.offsetTop - 40, right.clientHeight - lvBox.offsetHeight)) + 'px'; }
-    }
+    function levels(open) { panel(open, 'levels'); }
     var lvq = false;
     lvBox.addEventListener('pointerdown', function (e) {
       var tr = e.target.closest('.lv-track'); if (!tr || !G) return;
@@ -4211,15 +4236,10 @@
       c.stroke();
       P.forEach(function (q) { c.beginPath(); c.arc(q[0] / 255 * W2, H2 - q[1] / 255 * H2, 5, 0, Math.PI * 2); c.fillStyle = '#2f7fd6'; c.fill(); c.lineWidth = 2; c.strokeStyle = '#fff'; c.stroke(); });
     }
-    function curves(open) {
-      if (!open && !cvBox.hidden) { cvBox.hidden = true; bake(); }
-      cvBox.hidden = !open; $('[data-dract="curves"]').setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open) {
-        hist = null;
-        if (G) { var h = new Float32Array(256), i, mx = 0; for (i = 0; i < G.length; i += 3) h[G[i]]++; var sorted = Array.prototype.slice.call(h).sort(function (a, b) { return a - b; }); mx = sorted[250] || 1; for (i = 0; i < 256; i++) h[i] = Math.min(1, h[i] / mx); hist = h; }
-        var b = $('[data-dract="curves"]'); cvBox.style.top = Math.max(0, Math.min(b.offsetTop - 40, right.clientHeight - cvBox.offsetHeight)) + 'px';
-        drawCurve();
-      }
+    function curves(open) { panel(open, 'curves'); }
+    function curvesHist() {
+      hist = null;
+      if (G) { var h = new Float32Array(256), i, mx = 0; for (i = 0; i < G.length; i += 3) h[G[i]]++; var sorted = Array.prototype.slice.call(h).sort(function (a, b) { return a - b; }); mx = sorted[250] || 1; for (i = 0; i < 256; i++) h[i] = Math.min(1, h[i] / mx); hist = h; }
     }
     function setCurve(P) {
       // (back to a straight line: no curve at all)
@@ -4266,6 +4286,28 @@
       cv.addEventListener('pointermove', mv); cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
     });
 
+    // ---- ADJUSTMENTS: one panel, with ADJUST, LEVELS and CURVES as tabs
+    // along its top (switching tabs keeps what's been done; DONE, or tapping
+    // away, commits the lot) ----
+    var allBox = document.createElement('div'), tab = 'adjust', TABS = [['adjust', 'ADJUST'], ['levels', 'LEVELS'], ['curves', 'CURVES']];
+    allBox.className = 'paint-adjust dr-adjust dr-all'; allBox.hidden = true;
+    allBox.innerHTML = '<div class="pa-title">ADJUSTMENTS</div><div class="dr-tabs" role="tablist">' +
+      TABS.map(function (t) { return '<button type="button" role="tab" data-drtab="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
+      '</div><div class="dr-tab-wrap"></div><div class="pa-acts"><button type="button" data-adj-act="reset">RESET</button><button type="button" data-adj-act="done">DONE</button></div>';
+    right.appendChild(allBox);
+    [adjBox, lvBox, cvBox].forEach(function (b, i) { b.className = b.className.replace('paint-adjust dr-adjust', 'dr-tab-body'); b.dataset.tab = TABS[i][0]; allBox.querySelector('.dr-tab-wrap').appendChild(b); });
+    function panel(open, t) {
+      var btn = $('[data-dract="adjust"]');
+      if (!open) { if (!allBox.hidden) { allBox.hidden = true; bake(); } btn.setAttribute('aria-expanded', 'false'); return; }
+      if (t) tab = t;
+      allBox.hidden = false; btn.setAttribute('aria-expanded', 'true');
+      [adjBox, lvBox, cvBox].forEach(function (b) { b.hidden = b.dataset.tab !== tab; });
+      Array.prototype.forEach.call(allBox.querySelectorAll('[data-drtab]'), function (b) { b.setAttribute('aria-selected', b.dataset.drtab === tab ? 'true' : 'false'); });
+      if (tab === 'adjust') syncSliders(); else if (tab === 'levels') { histogram(); syncLevels(); } else { curvesHist(); drawCurve(); }
+      allBox.style.top = Math.max(0, Math.min(btn.offsetTop - 40, right.clientHeight - allBox.offsetHeight)) + 'px';
+    }
+    function toggleTab(t) { panel(allBox.hidden || tab !== t, t); }
+
     // ---- saving: the whole piece, frame and all ----
     var saveMenu = document.createElement('div');
     saveMenu.className = 'paint-savemenu'; saveMenu.hidden = true;
@@ -4291,6 +4333,7 @@
     // ---- the buttons ----
     root.addEventListener('click', function (e) {
       var t = e.target.closest('button[data-drtool]'); if (t) { setTool(t.dataset.drtool); return; } // (the stage carries data-drtool too, for its cursor)
+      var tb = e.target.closest('[data-drtab]'); if (tb) { panel(true, tb.dataset.drtab); return; }
       if (e.target.closest('.paint-selx')) { clearSel(); return; }
       var s = e.target.closest('[data-drsel]'); if (s) { if (s.dataset.drsel === 'invert') invert(); else if (tmode) exitT(); else clearSel(); return; }
       var sv = e.target.closest('[data-drsave]'); if (sv) { savePanel(false); download(sv.dataset.drsave); return; }
@@ -4305,9 +4348,7 @@
       if (k === 'invert') invert();
       else if (k === 'undo') doUndo();
       else if (k === 'redo') doRedo();
-      else if (k === 'adjust') { savePanel(false); levels(false); curves(false); adjust(adjBox.hidden); }
-      else if (k === 'levels') { savePanel(false); adjust(false); curves(false); levels(lvBox.hidden); }
-      else if (k === 'curves') { savePanel(false); adjust(false); levels(false); curves(cvBox.hidden); }
+      else if (k === 'adjust') { savePanel(false); panel(allBox.hidden); }
       else if (k === 'save') { adjust(false); savePanel(saveMenu.hidden); }
       else if (proc && k === 'rotate') { remember(); st.rot = (st.rot + 1) % 4; draw(); drawSel(); if (ghostOn) drawGhost(); save(); }
       else if (proc && k === 'flip') { remember(); st.flip = !st.flip; draw(); drawSel(); if (ghostOn) drawGhost(); save(); }
@@ -4323,9 +4364,7 @@
     });
     document.addEventListener('pointerdown', function (e) {
       if (!document.contains(root)) return;
-      if (!adjBox.hidden && !e.target.closest('.dr-adjust, [data-dract="adjust"]')) adjust(false);
-      if (!lvBox.hidden && !e.target.closest('.dr-levels, [data-dract="levels"]')) levels(false);
-      if (!cvBox.hidden && !e.target.closest('.dr-curves, [data-dract="curves"]')) curves(false);
+      if (!allBox.hidden && !e.target.closest('.dr-all, [data-dract="adjust"]')) panel(false);
       if (!saveMenu.hidden && !e.target.closest('.paint-savemenu, [data-dract="save"]')) savePanel(false);
     }, true);
 
@@ -4357,6 +4396,7 @@
     setTool('move'); buttons(); layout(); restoreSaved();
     app = {
       root: root, layout: layout,
+      keyup: function (e) { if (e.key === ' ') grabEnd(); },
       key: function (e) {
         var k = e.key.toLowerCase(), mod = e.metaKey || e.ctrlKey;
         if (e.target && /input|textarea|select/i.test(e.target.tagName || '') && e.target.type !== 'range') return;
@@ -4364,12 +4404,14 @@
         if (mod && k === 'y') { e.preventDefault(); doRedo(); return; }
         if (mod && k === 'a') { e.preventDefault(); sel = { x: 0, y: 0, w: 1, h: 1 }; selbar.hidden = false; drawSel(); return; }
         if (mod || e.altKey) return;
+        // (space never scrolls the page here: held down, it grabs)
+        if (k === ' ') { e.preventDefault(); if (!spaceDown) { spaceDown = true; stage.classList.add('space'); grabStart(); } return; }
         if (k === 'escape' || (k === 'enter' && tmode)) { closePanels(); exitT(); clearSel(); return; }
         if (k === 'v') setTool('move'); else if (k === 'm') setTool('select'); else if (k === 'q') setTool('lasso');
         else if (k === 'i') invert();
-        else if (k === 'a') adjust(adjBox.hidden);
-        else if (k === 'l') levels(lvBox.hidden);
-        else if (k === 'c') curves(cvBox.hidden);
+        else if (k === 'a') toggleTab('adjust');
+        else if (k === 'l') toggleTab('levels');
+        else if (k === 'c') toggleTab('curves');
       }
     };
     document.addEventListener('pageswap:start', function gone() { document.removeEventListener('pageswap:start', gone); tip.remove(); if (saveTimer) { clearTimeout(saveTimer); storeNow(); } });
@@ -4378,6 +4420,7 @@
   function setup() { var r = document.querySelector('main:not([aria-hidden]) .dr'); if (r) init(r); else app = null; }
   window.addEventListener('resize', function () { if (app && document.contains(app.root)) app.layout(); });
   document.addEventListener('keydown', function (e) { if (app && document.contains(app.root)) app.key(e); });
+  document.addEventListener('keyup', function (e) { if (app && document.contains(app.root) && app.keyup) app.keyup(e); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
   document.addEventListener('pageswap:done', setup);
 })();

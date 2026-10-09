@@ -44,13 +44,12 @@ description: "Make a black and white piece in the white frame"
     </div>
     <div class="paint-sliders">
       <label>SCALE <output>100</output><input type="range" class="dr-scale" min="25" max="400" value="100" step="1" aria-label="Scale"></label>
+      <label>TURN <output>0°</output><input type="range" class="dr-turnin" min="-180" max="180" value="0" step="1" aria-label="Turn"></label>
     </div>
     <div class="paint-group" role="group" aria-label="Actions">
       <button type="button" data-dract="undo" aria-label="Undo (Ctrl+Z)" title="Undo (Ctrl+Z)" disabled><svg viewBox="0 0 24 24"><path d="M9 7L4.5 11.5 9 16"/><path d="M5 11.5h9.5a5 5 0 0 1 0 10H11"/></svg></button>
       <button type="button" data-dract="redo" aria-label="Redo (Ctrl+Y)" title="Redo (Ctrl+Y)" disabled><svg viewBox="0 0 24 24"><path d="M15 7l4.5 4.5L15 16"/><path d="M19 11.5H9.5a5 5 0 0 0 0 10H13"/></svg></button>
-      <button type="button" data-dract="adjust" class="paint-layers-btn" aria-expanded="false" aria-label="Adjust (A)" title="Adjust (A)"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg><span>ADJUST</span></button>
-      <button type="button" data-dract="levels" class="paint-layers-btn" aria-expanded="false" aria-label="Levels (L)" title="Levels (L)"><svg viewBox="0 0 24 24"><path d="M3.5 19.5h17"/><path d="M5 19.5v-3M8 19.5v-7M11 19.5v-11M14 19.5v-8M17 19.5v-5M20 19.5v-2"/></svg><span>LEVELS</span></button>
-      <button type="button" data-dract="curves" class="paint-layers-btn" aria-expanded="false" aria-label="Curves (C)" title="Curves (C)"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="1" opacity=".5"/><path d="M4 20c5-1 6-8 8-9s4 0 8-7"/></svg><span>CURVES</span></button>
+      <button type="button" data-dract="adjust" class="paint-layers-btn" aria-expanded="false" aria-label="Adjustments (A)" data-tip="Adjustments (A): ADJUST, LEVELS and CURVES, as tabs. DONE (or tapping away) sets them in the photo"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/></svg><span>ADJUSTMENTS</span></button>
       <button type="button" data-dract="save" class="paint-save" aria-expanded="false" aria-label="Save" title="Save the piece (PNG or JPEG)"><svg viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/></svg><span>SAVE</span></button>
     </div>
   </div>
