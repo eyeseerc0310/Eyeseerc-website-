@@ -1209,6 +1209,13 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .paint .paint-zoom button { width: 30px; height: 28px; font-size: 1rem; color: var(--menu-link); border: 0; border-radius: 0; }
 .paint .paint-zoom button.paint-zoom-val { width: auto; min-width: 3.4rem; padding: 0 .4rem; font-size: .62rem; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
 .paint .paint-zoom button:hover { color: var(--text); background: rgba(var(--glow), .15); }
+/* (above SAVE, in the right-hand column) */
+.paint-right .paint-zoom {
+  position: static; grid-column: 1 / -1; justify-content: space-between;
+  background: none; border-color: var(--line); -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.paint .paint-right .paint-zoom button { width: 26px; height: 30px; }
+.paint .paint-right .paint-zoom button.paint-zoom-val { flex: 1; min-width: 0; padding: 0; font-size: .58rem; letter-spacing: .06em; }
 /* what you can do with a selection */
 .paint-selbar {
   position: absolute; left: 50%; top: 8px; z-index: 3; transform: translateX(-50%);
