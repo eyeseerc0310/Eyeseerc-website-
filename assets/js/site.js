@@ -1905,7 +1905,9 @@
   // the magnifying strip behind the header stays with the header as the
   // page scrolls (the photo slides through it)
   function lens() {
-    if (root && document.contains(root)) root.style.setProperty('--s', document.body.scrollTop + 'px');
+    // (a header that scrolls away with the page takes the strip with it)
+    var pinned = header && getComputedStyle(header).position === 'sticky';
+    if (root && document.contains(root)) root.style.setProperty('--s', (pinned ? document.body.scrollTop : 0) + 'px');
   }
   document.body.addEventListener('scroll', lens, { passive: true });
   // the photos run up behind the see-through header: the page is pulled up by its height
@@ -2050,8 +2052,9 @@
       if (!sw || !sh) return;
       // ("100%" leaves a small margin round the picture, except on a phone,
       // where every bit of width counts; fillK just fills the space)
+      // (the first step in, which just fills the space, reads 110%)
       fillK = Math.min(sw / W, sh / H) * 0.99;
-      fitK = phoneLayout() ? fillK : fillK * 0.93;
+      fitK = phoneLayout() ? fillK : fillK / 1.1;
       view.k = fitK; view.x = (sw - W * fitK) / 2; view.y = (sh - H * fitK) / 2;
       applyView();
     }
