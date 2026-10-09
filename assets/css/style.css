@@ -1542,6 +1542,7 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .dr-ghost { opacity: 0; transition: opacity .25s cubic-bezier(.45, 0, .55, 1); }
 .dr-ghost.on { opacity: 1; transition-duration: .1s; }
 .dr .paint-selx, .dr .paint-selbar { z-index: 4; }
+.dr .paint-selbar.t-mode [data-drsel="invert"] { display: none; } /* (FIT's box: just DONE) */
 /* the sliders open to the left of the right-hand column */
 .dr .dr-adjust { left: auto; right: calc(100% + 10px); }
 .dr .paint-right .paint-open { cursor: pointer; }
