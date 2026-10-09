@@ -145,6 +145,15 @@ code { font-size: .9em; background: var(--line); padding: .1em .35em; border-rad
 }
 .theme-toggle:hover, .theme-toggle:focus-visible { transform: scale(1.1); outline: none; }
 .theme-toggle svg { width: 17px; height: 17px; display: block; }
+/* the light / dark switch and, beside it, the darkroom button (made to match) */
+.header-tools { display: flex; align-items: center; gap: .85rem; }
+.darkroom-link {
+  width: 17px; height: 17px; display: flex; align-items: center; justify-content: center;
+  color: var(--text); -webkit-tap-highlight-color: transparent;
+  transition: transform .25s ease, opacity .25s ease, color 1.5s ease;
+}
+.darkroom-link:hover, .darkroom-link:focus-visible { transform: scale(1.1); outline: none; }
+.darkroom-link svg { width: 17px; height: 17px; display: block; }
 .theme-toggle .icon-sun { display: none; }
 :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
 :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
@@ -266,7 +275,7 @@ html.theme-fading body *:not(section.show *), html.theme-fading body *:not(secti
      the right, the two buttons the same distance from their edges */
   .site-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
   .header-actions { display: contents; }
-  .theme-toggle { grid-column: 1; grid-row: 1; justify-self: start; }
+  .header-tools { grid-column: 1; grid-row: 1; justify-self: start; }
   .brand { grid-column: 2; grid-row: 1; justify-self: center; }
   .nav-toggle { grid-column: 3; grid-row: 1; justify-self: end; }
 }
@@ -276,10 +285,10 @@ html.theme-fading body *:not(section.show *), html.theme-fading body *:not(secti
 @media (min-width: 761px) {
   .site-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding-top: 1.85rem; padding-bottom: 1.85rem; }
   .header-actions { display: contents; }
-  .theme-toggle { grid-column: 1; grid-row: 1; justify-self: start; }
+  .header-tools { grid-column: 1; grid-row: 1; justify-self: start; gap: 1.1rem; }
   .brand { grid-column: 2; grid-row: 1; justify-self: center; font-size: 2.6rem; }
   .nav-toggle { grid-column: 3; grid-row: 1; justify-self: end; }
-  .theme-toggle, .theme-toggle svg { width: 22px; height: 22px; }
+  .theme-toggle, .theme-toggle svg, .darkroom-link, .darkroom-link svg { width: 22px; height: 22px; }
   .nav-toggle .bars { width: 28px; height: 18px; }
   .nav-toggle .bars span { height: 1.7px; }
   .nav-toggle .bars span:nth-child(2) { top: 8px; }
@@ -1509,3 +1518,31 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 }
 .pj-paint svg { width: 26px; height: 26px; display: block; }
 .pj-paint:hover, .pj-paint:focus-visible { transform: scale(1.1); outline: none; }
+
+/* ---------- Darkroom: making the black and white pieces ---------- */
+.dr .dr-stage { flex: 1 1 auto; aspect-ratio: auto; max-width: none; cursor: grab; }
+.dr .dr-stage[data-drtool="select"], .dr .dr-stage[data-drtool="lasso"] { cursor: crosshair; }
+.dr .dr-stage.drop { outline: 2px dashed var(--text); outline-offset: -8px; }
+/* the piece: a white frame (it's only ever white) round the square window */
+.dr-piece { position: absolute; background: #fff; box-shadow: 0 2px 14px rgba(0, 0, 0, .25); }
+.dr-win, .dr-empty {
+  position: absolute; left: calc(52 / 2210 * 100%); top: calc(52 / 2576 * 100%);
+  width: calc(2106 / 2210 * 100%); height: calc(2106 / 2576 * 100%); display: block;
+}
+.dr-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem;
+  background: #ececec; color: #3d3b37; cursor: pointer; text-align: center;
+  font-size: .72rem; letter-spacing: .26em; padding-left: .26em; transition: background .25s ease;
+}
+.dr-empty:hover { background: #e2e2e2; }
+.dr-empty[hidden] { display: none; }
+.dr-empty small { font-size: .6rem; letter-spacing: .12em; opacity: .6; }
+.dr-empty input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.dr-ghost, .dr-sel { position: absolute; left: 0; top: 0; pointer-events: none; }
+.dr-ghost { opacity: 0; transition: opacity .25s cubic-bezier(.45, 0, .55, 1); }
+.dr-ghost.on { opacity: 1; transition-duration: .1s; }
+.dr .paint-selx, .dr .paint-selbar { z-index: 4; }
+/* the sliders open to the left of the right-hand column */
+.dr .dr-adjust { left: auto; right: calc(100% + 10px); }
+.dr .paint-right .paint-open { cursor: pointer; }
+@media (max-width: 560px) { .dr .dr-adjust { right: calc(100% + 6px); } }

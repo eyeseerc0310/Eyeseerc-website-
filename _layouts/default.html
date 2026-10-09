@@ -46,6 +46,7 @@
       {% include logo.html class="logo-small" %}
     </a>
     <div class="header-actions">
+      <span class="header-tools">
       <button class="theme-toggle" type="button" aria-label="Switch to dark mode">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="10.94" stroke-width="2.12"/>
@@ -55,6 +56,9 @@
           </g>
         </svg>
       </button>
+      {% comment %} the darkroom (for making the black and white pieces), drawn like the light / dark switch {% endcomment %}
+      <a class="darkroom-link" href="{{ '/darkroom/' | relative_url }}" aria-label="Darkroom" title="Darkroom">{% include darkroom-icon.html %}</a>
+      </span>
       <span class="header-right">
         {% comment %} cart: only shows up once something has been added {% endcomment %}
         <a class="cart-link" href="{{ '/cart/' | relative_url }}" aria-label="Cart" hidden>
