@@ -3624,26 +3624,32 @@
     var LV = { lb: 0, lg: 100, lw: 255, ob: 0, ow: 255 };
     function lv(k) { return st.v[k] != null ? st.v[k] : LV[k]; }
     function changed() { return Object.keys(st.v).some(function (k) { return k === 'curve' ? !!st.v.curve : st.v[k] !== (k in LV ? LV[k] : 0); }); }
-    // CURVES: points (in 0-255) joined by a smooth curve that never doubles
-    // back (monotone cubic); 256 values out of it
-    function curveLut(P) {
-      var n = P.length, d = [], m = [], out = new Float32Array(256), i;
-      for (i = 0; i < n - 1; i++) d[i] = (P[i + 1][1] - P[i][1]) / Math.max(1e-6, P[i + 1][0] - P[i][0]);
-      m[0] = d[0]; m[n - 1] = d[n - 2];
-      for (i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
-      for (i = 0; i < n - 1; i++) {
-        if (!d[i]) { m[i] = m[i + 1] = 0; continue; }
-        var a = m[i] / d[i], b = m[i + 1] / d[i], h = a * a + b * b;
-        if (h > 9) { var t = 3 / Math.sqrt(h); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+    // CURVES: points (in 0-255) joined by a natural cubic spline. It's
+    // allowed to swing and overshoot (points can be dragged right past each
+    // other, and close ones make it whip about), which is half the fun; the
+    // tones just stop at pure black and pure white. 256 values out of it.
+    function curveLut(P0) {
+      var P = P0.map(function (q) { return [q[0], q[1]]; }).sort(function (a, b) { return a[0] - b[0]; });
+      for (var t = 1; t < P.length; t++) if (P[t][0] - P[t - 1][0] < 0.5) P[t][0] = P[t - 1][0] + 0.5; // (two at the same place: a hair apart)
+      var n = P.length, out = new Float32Array(256), i, x;
+      if (n < 3) {
+        for (x = 0; x < 256; x++) { var u0 = (x - P[0][0]) / Math.max(0.5, P[1][0] - P[0][0]); out[x] = Math.max(0, Math.min(255, x <= P[0][0] ? P[0][1] : x >= P[1][0] ? P[1][1] : P[0][1] + (P[1][1] - P[0][1]) * u0)); }
+        return out;
       }
-      for (var x = 0, k = 0; x < 256; x++) {
-        if (x <= P[0][0]) { out[x] = P[0][1]; continue; }
-        if (x >= P[n - 1][0]) { out[x] = P[n - 1][1]; continue; }
-        while (k < n - 2 && x > P[k + 1][0]) k++;
-        var x0 = P[k][0], x1 = P[k + 1][0], hh = x1 - x0, u = (x - x0) / hh, u2 = u * u, u3 = u2 * u;
-        out[x] = (2 * u3 - 3 * u2 + 1) * P[k][1] + (u3 - 2 * u2 + u) * hh * m[k] + (-2 * u3 + 3 * u2) * P[k + 1][1] + (u3 - u2) * hh * m[k + 1];
+      // second derivatives (natural ends), by the usual tridiagonal sweep
+      var h = [], al = [], l = [1], mu = [0], z = [0], c = new Array(n).fill(0);
+      for (i = 0; i < n - 1; i++) h[i] = P[i + 1][0] - P[i][0];
+      for (i = 1; i < n - 1; i++) al[i] = 3 / h[i] * (P[i + 1][1] - P[i][1]) - 3 / h[i - 1] * (P[i][1] - P[i - 1][1]);
+      for (i = 1; i < n - 1; i++) { l[i] = 2 * (P[i + 1][0] - P[i - 1][0]) - h[i - 1] * mu[i - 1]; mu[i] = h[i] / l[i]; z[i] = (al[i] - h[i - 1] * z[i - 1]) / l[i]; }
+      var bb = [], dd = [];
+      for (i = n - 2; i >= 0; i--) { c[i] = (i ? z[i] : 0) - (i ? mu[i] * c[i + 1] : 0); bb[i] = (P[i + 1][1] - P[i][1]) / h[i] - h[i] * (c[i + 1] + 2 * c[i]) / 3; dd[i] = (c[i + 1] - c[i]) / (3 * h[i]); }
+      for (x = 0, i = 0; x < 256; x++) {
+        var y;
+        if (x <= P[0][0]) y = P[0][1];
+        else if (x >= P[n - 1][0]) y = P[n - 1][1];
+        else { while (i < n - 2 && x > P[i + 1][0]) i++; var dx = x - P[i][0]; y = P[i][1] + bb[i] * dx + c[i] * dx * dx + dd[i] * dx * dx * dx; }
+        out[x] = Math.max(0, Math.min(255, y));
       }
-      for (x = 0; x < 256; x++) out[x] = Math.max(0, Math.min(255, out[x]));
       return out;
     }
     function curvePts() { return st.v.curve || [[0, 0], [255, 255]]; }
@@ -4218,24 +4224,25 @@
       P.forEach(function (q, i) { var d = Math.hypot((q[0] - a[0]) / 255 * r.width, (q[1] - a[1]) / 255 * r.height); if (d < best) { best = d; hit = i; } });
       cvStart = JSON.stringify(st.v);
       var now = Date.now();
-      if (best <= 14 && now - cvLastTap < 350 && hit > 0 && hit < P.length - 1) { P.splice(hit, 1); setCurve(P); cvLastTap = 0; finish(); return; } // double-tap: gone
+      if (best <= 14 && now - cvLastTap < 350 && P.length > 2) { P.splice(hit, 1); setCurve(P); cvLastTap = 0; finish(); return; } // double-tap: gone
       cvLastTap = now;
       if (best > 14) {
         // a new point, on the line where it was tapped
         var L = curveLut(P), nx = Math.round(a[0]);
-        if (P.some(function (q) { return Math.abs(q[0] - nx) < 4; })) return;
+        if (P.some(function (q) { return q[0] === nx; })) nx = Math.min(255, nx + 1);
         P.push([nx, Math.round(L[nx])]); P.sort(function (x, y) { return x[0] - y[0]; });
-        hit = P.findIndex(function (q) { return q[0] === nx; });
+        hit = P.findIndex(function (q) { return q[0] === nx && q[1] === Math.round(L[nx]); });
       }
       try { cv.setPointerCapture(e.pointerId); } catch (x) {}
       var off = false;
       function mv(ev) {
-        var q = at(ev), end = hit === 0 || hit === P.length - 1, Q = P.map(function (x) { return x.slice(); });
-        // dragged well off the graph: the point goes (but never the two ends)
-        off = !end && (ev.clientY < r.top - 30 || ev.clientY > r.bottom + 30);
-        var lo = hit > 0 ? P[hit - 1][0] + 2 : 0, hi = hit < P.length - 1 ? P[hit + 1][0] - 2 : 255;
-        Q[hit] = [hit === 0 ? Math.min(Math.round(q[0]), P[1][0] - 2) : hit === P.length - 1 ? Math.max(Math.round(q[0]), P[hit - 1][0] + 2) : Math.round(Math.max(lo, Math.min(hi, q[0]))), Math.round(q[1])];
+        // a point goes wherever it's dragged, even right past the others
+        // (dragged well off the graph, it goes, as long as two are left)
+        var q = at(ev), Q = P.map(function (x) { return x.slice(); });
+        off = P.length > 2 && (ev.clientY < r.top - 30 || ev.clientY > r.bottom + 30);
+        Q[hit] = [Math.round(q[0]), Math.round(q[1])];
         if (off) Q.splice(hit, 1);
+        Q.sort(function (a, b) { return a[0] - b[0]; });
         setCurve(Q);
       }
       function up() { cv.removeEventListener('pointermove', mv); cv.removeEventListener('pointerup', up); cv.removeEventListener('pointercancel', up); finish(); }
