@@ -1366,7 +1366,8 @@
           }
           if (nav) {
             Array.prototype.forEach.call(nav.querySelectorAll('a'), function (a) {
-              a.classList.toggle('active', new URL(a.href, location.href).pathname === location.pathname);
+              var au = new URL(a.href, location.href);
+              a.classList.toggle('active', !au.hash && au.pathname === location.pathname); // (ABOUT, a part of home, isn't a page of its own)
             });
           }
           document.dispatchEvent(new Event('pageswap:done'));
@@ -1389,6 +1390,9 @@
         old.setAttribute('aria-hidden', 'true');
         old.insertAdjacentElement('afterend', main);
         document.body.scrollTop = scrollY || 0;
+        // (a link to part of the new page, like /#about: straight to that part)
+        var part = !scrollY && url.hash && main.querySelector('[id="' + url.hash.slice(1).replace(/"/g, '') + '"]');
+        if (part) document.body.scrollTop = part.getBoundingClientRect().top - document.body.getBoundingClientRect().top + document.body.scrollTop;
         update();
         var finish = function () { old.remove(); busy = false; };
         if (old.animate) {
@@ -1409,6 +1413,16 @@
     var url = new URL(a.href, location.href);
     // the EYESEERC name on the page it leads to (home): do nothing, no reload
     if (a.classList.contains('brand') && url.origin === location.origin && samePage(url) && !url.hash) { e.preventDefault(); return; }
+    // a link to a part of this same page (ABOUT, from the home page): a smooth scroll down to it
+    if (url.origin === location.origin && samePage(url) && url.hash) {
+      var here = document.getElementById(url.hash.slice(1));
+      if (here && document.querySelector('main:not([aria-hidden])').contains(here)) {
+        e.preventDefault(); closeMenu();
+        here.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        try { history.replaceState(history.state, '', url.hash); } catch (x) {}
+        return;
+      }
+    }
     if (url.origin !== location.origin || samePage(url)) return;
     if (/\.(jpe?g|png|gif|webp|pdf)$/i.test(url.pathname)) return;
     e.preventDefault();

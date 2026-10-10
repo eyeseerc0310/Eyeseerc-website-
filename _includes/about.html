@@ -1,6 +1,5 @@
----
-layout: default
----
+{% comment %} ABOUT (at the bottom of the home page): the photo of you, the bio
+   (written in _includes/about-bio.md) and the moving strip of photos {% endcomment %}
 <section class="hero">
   <div class="hero-photo">
     {% comment %}
@@ -17,7 +16,8 @@ layout: default
          onerror="this.onerror=null;this.src='{{ '/images/profile-placeholder.svg' | relative_url }}';">
   </div>
   <div class="hero-text">
-    <div class="bio">{{ content }}</div>
+    {% capture bio %}{% include about-bio.md %}{% endcapture %}
+    <div class="bio">{{ bio | markdownify }}</div>
   </div>
 </section>
 {% if site.data.strip and site.data.strip.size > 0 %}

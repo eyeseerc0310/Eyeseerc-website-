@@ -1590,3 +1590,7 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 /* holding space: a hand that grabs */
 .dr .dr-stage.space { cursor: grab; }
 .dr .dr-stage.grabbing { cursor: grabbing; }
+/* ABOUT, at the bottom of the home page: the photo beside the bio (filling
+   one screen on computers and iPads), then the moving strip */
+.home-about { display: flex; flex-direction: column; overflow: clip; border-top: 1px solid var(--line); scroll-margin-top: 0; }
+@media (min-width: 761px) { .home-about { min-height: 100vh; min-height: 100svh; } .home-about .hero { flex: 1 0 auto; } .home-about .hero-photo { min-height: 0; } }
