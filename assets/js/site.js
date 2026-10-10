@@ -3947,54 +3947,71 @@
       draw(); save();
     }
 
-    // ---- CHAOS: a random mix of the things in the pieces (a checkerboard or
-    // diamond pattern inverted, a crossed-up curve, threshold, grain, a few
-    // inverted shapes). Tap again for another mix in its place (it doesn't
-    // pile up); undo takes it all back. Nothing's set in the photo: it can
-    // all still be tweaked ----
-    var chaosLive = false, chaosBase = null;
-    function rnd(a, b) { return a + Math.random() * (b - a); }
+    // ---- CHAOS: one to three moves picked at random from the things in the
+    // pieces (inverted shapes, a band, half the photo flipped, a few checkers,
+    // a bent curve), sometimes with a light touch on the tones. Tap again for
+    // another in its place (it doesn't pile up, and never leads with the same
+    // move twice running); undo takes it all back. Nothing's set in the photo ----
+    var chaosLive = false, chaosBase = null, chaosLast = '';
+    // (properly random: the browser's own random source, not a repeatable one)
+    function rnd(a, b) {
+      var r = Math.random();
+      try { var u = new Uint32Array(1); crypto.getRandomValues(u); r = u[0] / 4294967296; } catch (x) {}
+      return a + r * (b - a);
+    }
+    function pick(list) { return list[Math.floor(rnd(0, list.length))]; }
     function chaos() {
       if (!proc) return;
       exitT();
       if (chaosLive && chaosBase) { st = JSON.parse(JSON.stringify(chaosBase)); }
       else { remember(); chaosBase = JSON.parse(JSON.stringify(st)); }
-      var back = pm().inverse(), toPhoto = function (pts) { return { ph: 1, pts: pts.map(function (q) { var r = back.transformPoint(new DOMPoint(q.x, q.y)); return { x: r.x, y: r.y }; }) }; };
-      var did = 0;
-      // a checkerboard (square, or turned into diamonds, or at a slant)
-      if (Math.random() < 0.7) {
-        var cells = Math.round(rnd(3, 9)), cs = 1 / cells, ang = [0, 45, 45, rnd(-30, 30)][Math.floor(rnd(0, 4))] * Math.PI / 180;
-        var ca = Math.cos(ang), sa = Math.sin(ang), rot = function (x, y) { return { x: 0.5 + (x - 0.5) * ca - (y - 0.5) * sa, y: 0.5 + (x - 0.5) * sa + (y - 0.5) * ca }; };
-        var ox = rnd(0, cs), oy = rnd(0, cs);
-        for (var i = -cells; i < cells * 2; i++) for (var j = -cells; j < cells * 2; j++) {
-          if ((i + j) % 2) continue;
-          var x0 = i * cs + ox, y0 = j * cs + oy;
-          var q = [rot(x0, y0), rot(x0 + cs, y0), rot(x0 + cs, y0 + cs), rot(x0, y0 + cs)];
-          if (q.every(function (r) { return r.x < -0.1 || r.x > 1.1 || r.y < -0.1 || r.y > 1.1; })) continue;
-          st.inv.push(toPhoto(q));
+      var back = pm().inverse(), add = function (pts) { st.inv.push({ ph: 1, pts: pts.map(function (q) { var r = back.transformPoint(new DOMPoint(q.x, q.y)); return { x: r.x, y: r.y }; }) }); };
+      var turn = function (q, c, a) { var ca = Math.cos(a), sa = Math.sin(a); return { x: c.x + (q.x - c.x) * ca - (q.y - c.y) * sa, y: c.y + (q.x - c.x) * sa + (q.y - c.y) * ca }; };
+      var MOVES = {
+        // one or two shapes (a circle, an oval, a triangle or a ragged polygon)
+        shapes: function () {
+          for (var k = rnd(0, 1) < 0.65 ? 1 : 2; k > 0; k--) {
+            var w = rnd(0.2, 0.6), h = rnd(0, 1) < 0.5 ? w : rnd(0.2, 0.65), b = { x: rnd(-0.05, 1.05 - w), y: rnd(-0.05, 1.05 - h), w: w, h: h }, kind = pick(['ellipse', 'ellipse', 'triangle', 'poly']);
+            if (kind === 'poly') { var c = { x: b.x + w / 2, y: b.y + h / 2 }, n = Math.floor(rnd(4, 7)), P = []; for (var i = 0; i < n; i++) { var a = i / n * Math.PI * 2 + rnd(-0.4, 0.4), rr = rnd(0.55, 1); P.push({ x: c.x + Math.cos(a) * w / 2 * rr, y: c.y + Math.sin(a) * h / 2 * rr }); } add(P); }
+            else { var pts = shapePts(b, kind), ang = rnd(-0.6, 0.6), cc = { x: b.x + w / 2, y: b.y + h / 2 }; add(pts.map(function (q) { return turn(q, cc, ang); })); }
+          }
+        },
+        // a stripe right across (level, upright or at a slant)
+        band: function () {
+          var t = rnd(0.06, 0.3), y = rnd(0.1, 0.9 - t), a = pick([0, Math.PI / 2, rnd(-0.8, 0.8)]), c = { x: 0.5, y: 0.5 };
+          add([{ x: -0.5, y: y }, { x: 1.5, y: y }, { x: 1.5, y: y + t }, { x: -0.5, y: y + t }].map(function (q) { return turn(q, c, a); }));
+        },
+        // half of it flipped, along a line at any angle
+        split: function () {
+          var a = rnd(0, Math.PI * 2), c = { x: rnd(0.3, 0.7), y: rnd(0.3, 0.7) };
+          add([{ x: c.x - 2, y: c.y }, { x: c.x + 2, y: c.y }, { x: c.x + 2, y: c.y + 2 }, { x: c.x - 2, y: c.y + 2 }].map(function (q) { return turn(q, c, a); }));
+        },
+        // a few checkers (small, and often just in one patch)
+        checker: function () {
+          var cells = Math.floor(rnd(2, 5)), patch = rnd(0, 1) < 0.6, bx = patch ? rnd(0, 0.5) : 0, by = patch ? rnd(0, 0.5) : 0, bw = patch ? rnd(0.3, 0.6) : 1, cs = bw / cells, a = pick([0, Math.PI / 4]), c = { x: bx + bw / 2, y: by + bw / 2 };
+          for (var i = 0; i < cells; i++) for (var j = 0; j < cells; j++) { if ((i + j) % 2) continue; var x0 = bx + i * cs, y0 = by + j * cs; add([{ x: x0, y: y0 }, { x: x0 + cs, y: y0 }, { x: x0 + cs, y: y0 + cs }, { x: x0, y: y0 + cs }].map(function (q) { return turn(q, c, a); })); }
+        },
+        // the tones bent (a curve with a crossed point or two, not too wild)
+        curve: function () {
+          var P = [[0, Math.round(rnd(0, 40))], [255, Math.round(rnd(200, 255))]];
+          for (var k = Math.floor(rnd(1, 3)); k > 0; k--) P.push([Math.round(rnd(50, 205)), Math.round(rnd(20, 235))]);
+          st.v.curve = P.sort(function (a, b) { return a[0] - b[0]; });
         }
-        did++;
+      };
+      // one to three moves, never leading with the same one twice in a row
+      var names = Object.keys(MOVES), want = rnd(0, 1) < 0.45 ? 1 : rnd(0, 1) < 0.8 ? 2 : 3, chosen = [];
+      var weight = { shapes: 3, band: 2, split: 2, checker: 1, curve: 2 };
+      while (chosen.length < want) {
+        var bag = []; names.forEach(function (n) { if (chosen.indexOf(n) < 0 && !(chosen.length === 0 && n === chaosLast)) for (var w2 = 0; w2 < weight[n]; w2++) bag.push(n); });
+        if (!bag.length) break;
+        chosen.push(pick(bag));
       }
-      // a few inverted shapes (circles and triangles)
-      if (Math.random() < 0.45) {
-        for (var k = Math.floor(rnd(1, 4)); k > 0; k--) {
-          var w = rnd(0.15, 0.55), h = Math.random() < 0.5 ? w : rnd(0.15, 0.6), b = { x: rnd(-0.1, 0.9 - w / 2), y: rnd(-0.1, 0.9 - h / 2), w: w, h: h };
-          st.inv.push(toPhoto(shapePts(b, Math.random() < 0.65 ? 'ellipse' : 'triangle')));
-        }
-        did++;
-      }
-      // a curve with its points crossed (the metallic, broken tones)
-      if (Math.random() < 0.6 || !did) {
-        var P = [[0, Math.round(rnd(0, 80))]];
-        for (var c2 = Math.floor(rnd(2, 4)); c2 > 0; c2--) P.push([Math.round(rnd(20, 235)), Math.round(rnd(0, 255))]);
-        P.push([255, Math.round(rnd(150, 255))]);
-        st.v.curve = P.sort(function (a, b) { return a[0] - b[0]; });
-        did++;
-      }
-      if (Math.random() < 0.65) st.v.threshold = Math.round(rnd(55, 100));
-      if (Math.random() < 0.45) st.v.grain = Math.round(rnd(10, 55));
-      if (Math.random() < 0.35) st.v.clarity = Math.round(rnd(20, 80));
-      if (Math.random() < 0.3) st.v.contrast = Math.round(rnd(10, 60));
+      chaosLast = chosen[0];
+      chosen.forEach(function (n) { MOVES[n](); });
+      // and sometimes a light touch on the tones
+      if (rnd(0, 1) < 0.35) st.v.threshold = Math.round(rnd(30, 75));
+      if (rnd(0, 1) < 0.3) st.v.grain = Math.round(rnd(8, 30));
+      if (rnd(0, 1) < 0.25) st.v.contrast = Math.round(rnd(10, 40));
       process(); syncScale(); syncSliders(); syncLevels(); drawCurve(); draw(); save();
       chaosLive = true;
     }
