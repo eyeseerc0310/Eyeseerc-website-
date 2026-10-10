@@ -1,5 +1,5 @@
-{% comment %} ABOUT (at the bottom of the home page): the photo of you, the bio
-   (written in _includes/about-bio.md) and the moving strip of photos {% endcomment %}
+{% comment %} ABOUT (at the bottom of the home page): the photo of you, and the bio
+   (written in _includes/about-bio.md) {% endcomment %}
 <section class="hero">
   <div class="hero-photo">
     {% comment %}
@@ -20,19 +20,3 @@
     <div class="bio">{{ bio | markdownify }}</div>
   </div>
 </section>
-{% if site.data.strip and site.data.strip.size > 0 %}
-{% comment %} the photos are listed twice so the loop joins up seamlessly {% endcomment %}
-<section class="strip" aria-label="Photography">
-  <div class="strip-window">
-  <div class="strip-track">
-    {% for round in (1..2) %}
-    {% for item in site.data.strip %}
-    <a class="strip-item" href="{{ item.link | relative_url }}"{% if round == 2 %} aria-hidden="true" tabindex="-1"{% endif %}>
-      <img src="{{ item.image | relative_url }}" alt="" width="390" height="260" decoding="async" draggable="false">
-    </a>
-    {% endfor %}
-    {% endfor %}
-  </div>
-  </div>
-</section>
-{% endif %}

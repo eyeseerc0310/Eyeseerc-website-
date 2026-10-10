@@ -1591,7 +1591,7 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 .dr .dr-stage.space { cursor: grab; }
 .dr .dr-stage.grabbing { cursor: grabbing; }
 /* ABOUT, at the bottom of the home page: a smaller photo of you (uncropped),
-   centred with room around it, the bio underneath, then the moving strip */
+   centred with room around it, the bio underneath */
 .home-about { display: flex; flex-direction: column; overflow: clip; border-top: 1px solid var(--line); scroll-margin-top: 0; }
 .home-about .hero { display: flex; flex-direction: column; align-items: center; padding-top: clamp(2.5rem, 7vh, 5rem); }
 .home-about .hero-photo {
