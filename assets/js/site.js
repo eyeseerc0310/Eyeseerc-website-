@@ -3809,7 +3809,7 @@
 
     // ---- undo / redo (it's all small: just the settings) ----
     function snap() { return { st: JSON.parse(JSON.stringify(st)), G: G, SW: SW, SH: SH }; }
-    function remember() { undo.push(snap()); if (undo.length > 40) undo.shift(); redo = []; buttons(); }
+    function remember() { undo.push(snap()); if (undo.length > 40) undo.shift(); redo = []; buttons(); chaosLive = false; }
     function restore(sn) {
       var srcChanged = sn.G !== G;
       st = sn.st;
@@ -3837,7 +3837,14 @@
       }
       if (!sel) return;
       c.setTransform(DPR, 0, 0, DPR, 0, 0); c.translate(n.x, n.y);
-      var edge = function () { shapePath(c, sel, n.s); c.stroke(); };
+      var edge = function () {
+        if (selMode === 'poly') {
+          c.beginPath(); sel.pts.forEach(function (q, i) { c[i ? 'lineTo' : 'moveTo'](q.x * n.s, q.y * n.s); });
+          if (polyHover) c.lineTo(polyHover.x * n.s, polyHover.y * n.s);
+          c.stroke(); return;
+        }
+        shapePath(c, sel, n.s); c.stroke();
+      };
       c.lineWidth = 1; c.setLineDash([5, 4]); c.strokeStyle = '#000'; edge(); c.lineDashOffset = 4.5; c.strokeStyle = '#fff'; edge();
       if (!selMode) {
         // a handle on each corner: drag one to size the selection
@@ -3888,6 +3895,20 @@
       selx.style.top = Math.round(Math.max(3, Math.min(stage.clientHeight - 25, n.y + by * n.s - 11))) + 'px';
     }
     function clearSel() { sel = null; selMode = null; selbar.hidden = !tmode; drawSel(); }
+    // the shapes, as points round a box (an ellipse is many little sides)
+    function shapePts(b, kind) {
+      if (kind === 'triangle') return [{ x: b.x + b.w / 2, y: b.y }, { x: b.x + b.w, y: b.y + b.h }, { x: b.x, y: b.y + b.h }];
+      var out = [], cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      for (var i = 0; i < 72; i++) { var a = i / 72 * Math.PI * 2; out.push({ x: cx + Math.cos(a) * b.w / 2, y: cy + Math.sin(a) * b.h / 2 }); }
+      return out;
+    }
+    var polyHover = null;
+    function closePoly() {
+      if (selMode !== 'poly') return;
+      selMode = null; polyHover = null;
+      if (sel.pts.length < 3) sel = null;
+      selbar.hidden = !sel; drawSel();
+    }
     // FIT: the photo goes back to filling the window, with a box round it:
     // drag a corner to size it (the opposite corner stays put), drag inside
     // to move it; a tap outside the box (or DONE) and it's set
@@ -3926,9 +3947,61 @@
       draw(); save();
     }
 
+    // ---- CHAOS: a random mix of the things in the pieces (a checkerboard or
+    // diamond pattern inverted, a crossed-up curve, threshold, grain, a few
+    // inverted shapes). Tap again for another mix in its place (it doesn't
+    // pile up); undo takes it all back. Nothing's set in the photo: it can
+    // all still be tweaked ----
+    var chaosLive = false, chaosBase = null;
+    function rnd(a, b) { return a + Math.random() * (b - a); }
+    function chaos() {
+      if (!proc) return;
+      exitT();
+      if (chaosLive && chaosBase) { st = JSON.parse(JSON.stringify(chaosBase)); }
+      else { remember(); chaosBase = JSON.parse(JSON.stringify(st)); }
+      var back = pm().inverse(), toPhoto = function (pts) { return { ph: 1, pts: pts.map(function (q) { var r = back.transformPoint(new DOMPoint(q.x, q.y)); return { x: r.x, y: r.y }; }) }; };
+      var did = 0;
+      // a checkerboard (square, or turned into diamonds, or at a slant)
+      if (Math.random() < 0.7) {
+        var cells = Math.round(rnd(3, 9)), cs = 1 / cells, ang = [0, 45, 45, rnd(-30, 30)][Math.floor(rnd(0, 4))] * Math.PI / 180;
+        var ca = Math.cos(ang), sa = Math.sin(ang), rot = function (x, y) { return { x: 0.5 + (x - 0.5) * ca - (y - 0.5) * sa, y: 0.5 + (x - 0.5) * sa + (y - 0.5) * ca }; };
+        var ox = rnd(0, cs), oy = rnd(0, cs);
+        for (var i = -cells; i < cells * 2; i++) for (var j = -cells; j < cells * 2; j++) {
+          if ((i + j) % 2) continue;
+          var x0 = i * cs + ox, y0 = j * cs + oy;
+          var q = [rot(x0, y0), rot(x0 + cs, y0), rot(x0 + cs, y0 + cs), rot(x0, y0 + cs)];
+          if (q.every(function (r) { return r.x < -0.1 || r.x > 1.1 || r.y < -0.1 || r.y > 1.1; })) continue;
+          st.inv.push(toPhoto(q));
+        }
+        did++;
+      }
+      // a few inverted shapes (circles and triangles)
+      if (Math.random() < 0.45) {
+        for (var k = Math.floor(rnd(1, 4)); k > 0; k--) {
+          var w = rnd(0.15, 0.55), h = Math.random() < 0.5 ? w : rnd(0.15, 0.6), b = { x: rnd(-0.1, 0.9 - w / 2), y: rnd(-0.1, 0.9 - h / 2), w: w, h: h };
+          st.inv.push(toPhoto(shapePts(b, Math.random() < 0.65 ? 'ellipse' : 'triangle')));
+        }
+        did++;
+      }
+      // a curve with its points crossed (the metallic, broken tones)
+      if (Math.random() < 0.6 || !did) {
+        var P = [[0, Math.round(rnd(0, 80))]];
+        for (var c2 = Math.floor(rnd(2, 4)); c2 > 0; c2--) P.push([Math.round(rnd(20, 235)), Math.round(rnd(0, 255))]);
+        P.push([255, Math.round(rnd(150, 255))]);
+        st.v.curve = P.sort(function (a, b) { return a[0] - b[0]; });
+        did++;
+      }
+      if (Math.random() < 0.65) st.v.threshold = Math.round(rnd(55, 100));
+      if (Math.random() < 0.45) st.v.grain = Math.round(rnd(10, 55));
+      if (Math.random() < 0.35) st.v.clarity = Math.round(rnd(20, 80));
+      if (Math.random() < 0.3) st.v.contrast = Math.round(rnd(10, 60));
+      process(); syncScale(); syncSliders(); syncLevels(); drawCurve(); draw(); save();
+      chaosLive = true;
+    }
+
     // ---- tools ----
     function setTool(t) {
-      exitT();
+      exitT(); if (selMode === 'poly') closePoly();
       tool = t;
       Array.prototype.forEach.call(root.querySelectorAll('[data-drtool]'), function (b) { b.setAttribute('aria-pressed', b.dataset.drtool === t ? 'true' : 'false'); });
       stage.dataset.drtool = t;
@@ -4009,13 +4082,23 @@
       if (tool === 'move') {
         if (!proc) return;
         drag = { p: p, ox: st.ox, oy: st.oy, moved: false };
+      } else if (tool === 'poly') {
+        // POLYGON: a point at each click; click the first point again (or
+        // double-click, or Enter) to close it
+        if (selMode === 'poly') {
+          var f0 = sel.pts[0], ws = wbox().s;
+          if (sel.pts.length > 2 && Math.hypot(p.x - f0.x, p.y - f0.y) * ws < 12) closePoly();
+          else sel.pts.push(p);
+        } else { clearSel(); selMode = 'poly'; sel = { pts: [p] }; polyHover = p; }
+        drawSel();
       } else {
         clearSel();
-        selMode = tool === 'lasso' ? 'lasso' : 'box';
+        selMode = tool === 'lasso' ? 'lasso' : tool === 'select' ? 'box' : 'shape';
         sel = tool === 'lasso' ? { pts: [p] } : { x: p.x, y: p.y, w: 0, h: 0, ax: p.x, ay: p.y };
         drag = { p: p };
       }
     });
+    stage.addEventListener('dblclick', function () { if (selMode === 'poly') { if (sel.pts.length > 3) sel.pts.pop(); closePoly(); } });
     stage.addEventListener('pointermove', function (e) {
       if (pts[e.pointerId]) { pts[e.pointerId].x = e.clientX; pts[e.pointerId].y = e.clientY; }
       if (pinch) {
@@ -4030,6 +4113,7 @@
         syncScale(); draw(); drawGhost(); if (tmode) drawSel(); return;
       }
       if (e.pointerType === 'mouse' || (e.pointerType === 'pen' && !e.buttons)) lastP = wpos(e);
+      if (selMode === 'poly' && !e.buttons) { polyHover = wpos(e); drawSel(); }
       if (spaceDown && !e.buttons) { if (!sgrab) grabStart(); if (sgrab) { grabMove(); return; } }
       if (!Object.keys(pts).length && e.pointerType === 'mouse') {
         var hz = zone(wpos(e), 'mouse'), hr = stage.getBoundingClientRect();
@@ -4073,10 +4157,12 @@
         st.ox = drag.ox + p.x - drag.p.x; st.oy = drag.oy + p.y - drag.p.y; draw(); drawGhost(); if (tmode) drawSel();
       } else if (selMode === 'lasso') {
         var l = sel.pts[sel.pts.length - 1]; if (Math.hypot(p.x - l.x, p.y - l.y) * wbox().s > 2) sel.pts.push(p); drawSel();
-      } else if (selMode === 'box') {
+      } else if (selMode === 'box' || selMode === 'shape') {
         var bw2 = Math.abs(p.x - sel.ax), bh2 = Math.abs(p.y - sel.ay);
-        if (e.shiftKey) bw2 = bh2 = Math.max(bw2, bh2); // (shift: a perfect square)
-        sel.x = p.x < sel.ax ? sel.ax - bw2 : sel.ax; sel.y = p.y < sel.ay ? sel.ay - bh2 : sel.ay; sel.w = bw2; sel.h = bh2; drawSel();
+        if (e.shiftKey) bw2 = bh2 = Math.max(bw2, bh2); // (shift: a perfect square, circle or even triangle)
+        sel.x = p.x < sel.ax ? sel.ax - bw2 : sel.ax; sel.y = p.y < sel.ay ? sel.ay - bh2 : sel.ay; sel.w = bw2; sel.h = bh2;
+        if (selMode === 'shape') sel.pts = shapePts(sel, tool);
+        drawSel();
       }
     });
     function up(e) {
@@ -4089,9 +4175,9 @@
       if (tool === 'move') { if (drag.moved) { ghostHide(); save(); } }
       else {
         var px = wbox().s;
-        var ok = sel && (sel.pts ? sel.pts.length > 2 : sel.w * px > 3 && sel.h * px > 3);
+        var ok = sel && (selMode === 'shape' ? sel.w * px > 3 && sel.h * px > 3 : sel.pts ? sel.pts.length > 2 : sel.w * px > 3 && sel.h * px > 3);
         if (!ok) sel = null;
-        if (sel) { delete sel.ax; delete sel.ay; }
+        if (sel) { delete sel.ax; delete sel.ay; if (sel.pts) { delete sel.x; delete sel.y; delete sel.w; delete sel.h; } }
         selMode = null; selbar.hidden = !sel; drawSel();
       }
       drag = null;
@@ -4346,6 +4432,7 @@
       var a = e.target.closest('[data-dract]'); if (!a) return;
       var k = a.dataset.dract;
       if (k === 'invert') invert();
+      else if (k === 'chaos') chaos();
       else if (k === 'undo') doUndo();
       else if (k === 'redo') doRedo();
       else if (k === 'adjust') { savePanel(false); panel(allBox.hidden); }
@@ -4406,8 +4493,11 @@
         if (mod || e.altKey) return;
         // (space never scrolls the page here: held down, it grabs)
         if (k === ' ') { e.preventDefault(); if (!spaceDown) { spaceDown = true; stage.classList.add('space'); grabStart(); } return; }
+        if (k === 'enter' && selMode === 'poly') { closePoly(); return; }
         if (k === 'escape' || (k === 'enter' && tmode)) { closePanels(); exitT(); clearSel(); return; }
         if (k === 'v') setTool('move'); else if (k === 'm') setTool('select'); else if (k === 'q') setTool('lasso');
+        else if (k === 'e') setTool('ellipse'); else if (k === 't') setTool('triangle'); else if (k === 'p') setTool('poly');
+        else if (k === 'x') chaos();
         else if (k === 'i') invert();
         else if (k === 'a') toggleTab('adjust');
         else if (k === 'l') toggleTab('levels');

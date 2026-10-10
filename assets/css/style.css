@@ -1512,7 +1512,7 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 
 /* ---------- Darkroom: making the black and white pieces ---------- */
 .dr .dr-stage { flex: 1 1 auto; aspect-ratio: auto; max-width: none; cursor: grab; }
-.dr .dr-stage[data-drtool="select"], .dr .dr-stage[data-drtool="lasso"] { cursor: crosshair; }
+.dr .dr-stage[data-drtool="select"], .dr .dr-stage[data-drtool="lasso"], .dr .dr-stage[data-drtool="ellipse"], .dr .dr-stage[data-drtool="triangle"], .dr .dr-stage[data-drtool="poly"] { cursor: crosshair; }
 .dr .dr-stage.drop { outline: 2px dashed var(--text); outline-offset: -8px; }
 /* the piece: a white frame (it's only ever white) round the square window */
 .dr-piece { position: absolute; background: #fff; box-shadow: 0 2px 14px rgba(0, 0, 0, .25); }
