@@ -62,3 +62,4 @@ exclude:
   - Gemfile.lock
   - vendor
   - tools
+  - CLAUDE.md
