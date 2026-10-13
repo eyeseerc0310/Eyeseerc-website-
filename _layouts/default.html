@@ -75,7 +75,7 @@
       {% assign nav = "/|HOME,/photography/|PHOTOGRAPHY,/projects/|PROJECTS,/shop/|SHOP" | split: "," %}
       {% for item in nav %}
         {% assign parts = item | split: "|" %}
-        <a href="{{ parts[0] | relative_url }}"{% if page.url == parts[0] %} class="active"{% endif %}><span class="nav-num">0{{ forloop.index }}</span><span class="nav-name">{{ parts[1] }}</span></a>
+        <a href="{{ parts[0] | relative_url }}"{% if page.url == parts[0] %} class="active"{% endif %}><span class="nav-name">{{ parts[1] }}</span></a>
       {% endfor %}
       </div>
       <div class="nav-foot">
