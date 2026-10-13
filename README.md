@@ -95,7 +95,8 @@ Until then, Check out just says "Checkout opens soon."
 2. On GitHub go to **Settings → Pages**.
 3. Under **Build and deployment → Source**, choose **GitHub Actions**.
 4. Wait ~2 minutes. Your site is live at
-   `https://eyeseerc0310.github.io/Eyeseerc-website-/`
+   `https://eyeseerc.com/` (the custom domain, set in Settings → Pages;
+   DNS is at Cloudflare, every record "DNS only")
 
 > Free GitHub Pages sites require the repository to be **public**
 > (or a paid GitHub plan for private repos).

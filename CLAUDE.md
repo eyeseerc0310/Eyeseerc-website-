@@ -1,7 +1,9 @@
 # EYESEERC site — notes for Claude
 
 Jekyll photography portfolio, deployed to GitHub Pages from `main`:
-https://eyeseerc0310.github.io/Eyeseerc-website-/
+https://eyeseerc.com/ (custom domain; DNS at Cloudflare, records "DNS only").
+The old https://eyeseerc0310.github.io/Eyeseerc-website-/ forwards there.
+Links use `relative_url`; the deploy sets the base path, so never hard-code it.
 
 ## Ship every change
 1. Build + check with Playwright (phone 390, iPad 820, desktop 1440).
