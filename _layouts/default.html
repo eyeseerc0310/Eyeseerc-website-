@@ -16,6 +16,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}?v={{ site.time | date: '%s' }}">
   <script>
+    // always the secure address: someone who types eyeseerc.com lands on
+    // http://, so send them straight on to https:// (GitHub's "Enforce HTTPS"
+    // does the same on its side once it's switched on)
+    if (location.protocol === 'http:' && /(^|\.)eyeseerc\.com$/.test(location.hostname)) location.replace('https://' + location.host + location.pathname + location.search + location.hash);
     // apply the saved light/dark choice before the page draws (no flash)
     // (the site opens in dark mode unless this visitor has switched to light)
     var savedTheme = null;
