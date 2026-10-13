@@ -1780,6 +1780,38 @@
   setup();
 })();
 
+// Arriving on a page: its title, buttons and photos rise gently into place,
+// one after another, as they come into view (a photo further down rises when
+// it's scrolled to). Photos of the other kind (B&W while COLOR shows) are left
+// to the COLOR / B&W slide. Skipped for anyone who prefers less motion, and
+// when a photo is about to open full screen (?open=).
+(function () {
+  if (!('IntersectionObserver' in window)) return;
+  var calm = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var io = new IntersectionObserver(function (entries) {
+    var n = 0;
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var el = e.target; io.unobserve(el);
+      el.style.setProperty('--rv-delay', Math.min(n++, 8) * 0.07 + 's');
+      requestAnimationFrame(function () { el.classList.add('rv-in'); });
+      setTimeout(function () { el.classList.remove('rv', 'rv-in'); el.style.removeProperty('--rv-delay'); }, 1700);
+    });
+  }, { rootMargin: '0px 0px -6% 0px' });
+  function setup() {
+    if (calm.matches || /[?&]open=/.test(location.search)) return;
+    var main = document.querySelector('main:not([aria-hidden])');
+    if (!main) return;
+    var els = main.querySelectorAll('.page-title, .gallery-filter, .grid-size, .gallery-item, .shop-item, .cart, .home-about .hero-photo, .home-about .bio');
+    Array.prototype.forEach.call(els, function (el) {
+      if (el.closest('.is-filtered-out') || el.classList.contains('rv')) return;
+      el.classList.add('rv'); io.observe(el);
+    });
+  }
+  setup();
+  document.addEventListener('pageswap:done', setup);
+})();
+
 // Soft-focus loading: each photo with a tiny blurred preview behind it
 // (class "soft") fades in sharp over the preview once it has loaded.
 // Photos that are already there (cached) show at once.

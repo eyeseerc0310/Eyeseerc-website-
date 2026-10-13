@@ -28,6 +28,9 @@
   --glow: 255, 255, 255; /* hover glow colour (r, g, b) */
   /* soft shadow under photos on the page, falling to the bottom right */
   --photo-shadow: 3px 4px 7px rgba(0, 0, 0, .32), 1px 2px 2px rgba(0, 0, 0, .14);
+  /* the site's motion: slow-fast-slow, and a gentler version for hovers */
+  --ease: cubic-bezier(.65, 0, .35, 1);
+  --ease-soft: cubic-bezier(.45, 0, .55, 1);
 }
 /* Dark mode: the site's colours inverted (photos are left untouched).
    Switched on with the moon button in the menu. */
@@ -77,7 +80,12 @@ body {
   font-family: var(--sans);
   font-weight: 300;
   line-height: 1.7;
+  /* thin type stays crisp (most noticeable light-on-dark) */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
+::selection { background: var(--text); color: var(--bg); }
 body > * { flex-shrink: 0; } /* header, page and footer keep their full height */
 img { max-width: 100%; display: block; }
 a { color: inherit; }
@@ -447,8 +455,10 @@ html.theme-fading body *:not(section.show *), html.theme-fading body *:not(secti
 /* ---------- Gallery ---------- */
 .gallery { columns: 3 320px; column-gap: 1rem; }
 .gallery-item { margin: 0 0 1rem; break-inside: avoid; overflow: hidden; }
-.gallery-item img { width: 100%; height: auto; transition: transform .5s ease, opacity .3s; }
+.gallery-item img { width: 100%; height: auto; transition: transform .9s var(--ease-soft), opacity .5s var(--ease-soft); }
 .gallery-item a:hover img { transform: scale(1.03); opacity: .92; }
+/* the title under a photo brightens along with it */
+.gallery-item:hover .gallery-title { color: var(--text); }
 
 /* Grid style: 3 photos per row with generous space between them, row after
    row. Every tile is the 3:2 full-frame shape; the whole photo shows when
@@ -477,6 +487,7 @@ html.theme-fading body *:not(section.show *), html.theme-fading body *:not(secti
   letter-spacing: .14em;
   padding-left: .14em; /* balances the space letter-spacing leaves after the last letter, so it sits truly centred */
   color: var(--muted);
+  transition: color .5s var(--ease-soft);
 }
 @media (max-width: 700px) { .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* phones: two photos per row, a little closer together, with smaller titles */
@@ -703,21 +714,23 @@ a.shop-photo[href]:hover { transform: scale(1.04); z-index: 1; }
 /* ---------- Footer ---------- */
 .site-footer {
   border-top: 1px solid var(--line);
-  padding: 2rem clamp(1rem, 4vw, 3rem);
+  padding: 2.4rem clamp(1rem, 4vw, 3rem) 2.2rem;
   text-align: center;
   color: var(--muted);
-  font-size: .8rem;
+  font-size: .74rem;
+  letter-spacing: .06em;
 }
+.site-footer p { margin: 0; }
 /* a small copy of the spinning blue mark at the end of the copyright line
    (the line is centred with it included) */
 .footer-mark-wrap { display: inline-block; vertical-align: middle; margin-left: .55em; perspective: 300px; }
 .footer-mark { display: block; height: 1.45em; width: auto; animation: mark-spin 5s linear infinite; backface-visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .footer-mark { animation: none; } }
 /* Instagram / YouTube buttons */
-.social { display: flex; justify-content: center; gap: 1.1rem; margin-bottom: .9rem; }
-.social-btn { color: var(--text); opacity: .8; display: inline-flex; transition: opacity .2s ease, transform .2s ease; }
+.social { display: flex; justify-content: center; gap: 1.4rem; margin-bottom: 1.1rem; }
+.social-btn { color: var(--text); opacity: .75; display: inline-flex; transition: opacity .35s var(--ease-soft), transform .35s var(--ease-soft); }
 .social-btn:hover, .social-btn:focus-visible { opacity: 1; transform: scale(1.12); outline: none; }
-.social-btn svg { width: 22px; height: 22px; display: block; }
+.social-btn svg { width: 20px; height: 20px; display: block; }
 
 /* ---------- 404 page ---------- */
 /* 404: the spinning blue mark, NOTHING HERE and links back into the site */
@@ -1590,13 +1603,28 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 /* holding space: a hand that grabs */
 .dr .dr-stage.space { cursor: grab; }
 .dr .dr-stage.grabbing { cursor: grabbing; }
-/* ABOUT, at the bottom of the home page: a smaller photo of you (uncropped),
-   centred with room around it, the bio underneath */
+/* ABOUT, at the bottom of the home page: its title (like every page's),
+   a smaller photo of you (uncropped) centred with room around it, and the
+   bio underneath at a comfortable reading width */
 .home-about { display: flex; flex-direction: column; overflow: clip; border-top: 1px solid var(--line); scroll-margin-top: 0; }
-.home-about .hero { display: flex; flex-direction: column; align-items: center; padding-top: clamp(2.5rem, 7vh, 5rem); }
+.home-about .hero { display: flex; flex-direction: column; align-items: center; padding: clamp(2.5rem, 7vh, 4.5rem) clamp(1rem, 4vw, 3rem) 0; }
+.home-about .page-title { margin-bottom: clamp(1.75rem, 4vh, 2.5rem); }
 .home-about .hero-photo {
   width: min(75vw, 30rem); height: auto; min-height: 0; flex: none;
+  box-shadow: var(--photo-shadow);
 }
 /* the whole photo, uncropped, just smaller */
 .home-about .hero-photo img { position: relative; inset: auto; display: block; width: 100%; height: auto; object-fit: contain; }
-.home-about .hero-text { align-self: center; width: 100%; padding: clamp(1.75rem, 4vw, 3rem) clamp(1.25rem, 5vw, 3rem) clamp(2rem, 5vw, 3.5rem); }
+.home-about .hero-text { align-self: center; width: 100%; max-width: 36rem; padding: clamp(1.75rem, 4vw, 2.75rem) 0 clamp(2.5rem, 6vw, 4rem); }
+
+/* Arriving on the page (and scrolling down it): titles, buttons and photos
+   rise gently into place, one after another, slow-fast-slow. Only what's
+   on the page when it opens; nothing moves for anyone who prefers less motion. */
+.rv { opacity: 0; translate: 0 14px; }
+.rv.rv-in {
+  opacity: 1; translate: 0 0;
+  transition: opacity .9s var(--ease), translate .9s var(--ease);
+  transition-delay: var(--rv-delay, 0s);
+}
+/* keyboard focus on photos: a fine line around them */
+.gallery-item a:focus-visible, .shop-photo:focus-visible { outline: 1px solid var(--text); outline-offset: 5px; }
