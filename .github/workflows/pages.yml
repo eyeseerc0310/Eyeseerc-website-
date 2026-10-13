@@ -27,7 +27,9 @@ jobs:
           bundler-cache: true
       - id: pages
         uses: actions/configure-pages@v5
-      - run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+      # the site lives at the root of its own domain (eyeseerc.com), so links
+      # are built from "/" (not from the github.io/Eyeseerc-website-/ path)
+      - run: bundle exec jekyll build --baseurl ""
         env:
           JEKYLL_ENV: production
       - uses: actions/upload-pages-artifact@v3
