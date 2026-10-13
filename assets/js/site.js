@@ -1804,7 +1804,7 @@
     if (calm.matches || /[?&]open=/.test(location.search)) return;
     var main = document.querySelector('main:not([aria-hidden])');
     if (!main) return;
-    var els = main.querySelectorAll('.page-index, .page-title, .page-head-tools, main > .gallery-filter, .gallery-item, .shop-item, .cart, .home-about .hero-photo, .home-about .hero-text');
+    var els = main.querySelectorAll('.page-title, .page-head-tools, main > .gallery-filter, .gallery-item, .shop-item, .cart, .home-about .hero-photo, .home-about .hero-text');
     Array.prototype.forEach.call(els, function (el) {
       if (el.closest('.is-filtered-out') || el.classList.contains('rv')) return;
       el.classList.add('rv'); io.observe(el);
