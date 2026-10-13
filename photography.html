@@ -5,9 +5,16 @@ permalink: /photography/
 tight_top: true
 description: "Photography by {{ site.title }}"
 ---
-<h1 class="page-title">PHOTOGRAPHY</h1>
-<div class="gallery-filter" role="group" aria-label="Show">
-  <button type="button" data-filter="color" aria-pressed="true">COLOR</button>
-  <button type="button" data-filter="bw" aria-pressed="false">B&amp;W</button>
-</div>
+<header class="page-head">
+  <div class="page-head-text">
+    <p class="page-index">01</p>
+    <h1 class="page-title">PHOTOGRAPHY</h1>
+  </div>
+  <div class="page-head-tools">
+    <div class="gallery-filter" role="group" aria-label="Show">
+      <button type="button" data-filter="color" aria-pressed="true">COLOR</button>
+      <button type="button" data-filter="bw" aria-pressed="false">B&amp;W</button>
+    </div>
+  </div>
+</header>
 {% include gallery.html folder="photography" style="grid" show_kind="color" titles=true %}

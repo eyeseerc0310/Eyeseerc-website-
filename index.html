@@ -36,7 +36,10 @@ slides:
   <button class="show-next" type="button" aria-label="Next photo"><svg viewBox="0 0 24 48" aria-hidden="true"><path d="M6 4l12 20L6 44"/></svg></button>
   <div class="show-bar">
     {% assign first = page.slides | first %}
-    <a class="show-title" href="{{ first.link | relative_url }}">{{ first.title }}</a>
+    <div class="show-caption">
+      {% assign n_slides = page.slides.size %}<span class="show-count"><b>01</b> / {% if n_slides < 10 %}0{% endif %}{{ n_slides }}</span>
+      <a class="show-title" href="{{ first.link | relative_url }}">{{ first.title }}</a>
+    </div>
     <div class="show-dots">
       {% for s in page.slides %}<button class="show-dot{% if forloop.first %} now{% endif %}" type="button" aria-label="Photo {{ forloop.index }}"><i></i></button>{% endfor %}
     </div>

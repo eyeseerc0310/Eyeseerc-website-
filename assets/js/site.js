@@ -1365,7 +1365,7 @@
             history.pushState({ y: 0 }, '', url.href);
           }
           if (nav) {
-            Array.prototype.forEach.call(nav.querySelectorAll('a'), function (a) {
+            Array.prototype.forEach.call(document.querySelectorAll('.site-nav a, .header-links a, .footer-nav a'), function (a) {
               var au = new URL(a.href, location.href);
               a.classList.toggle('active', !au.hash && au.pathname === location.pathname); // (ABOUT, a part of home, isn't a page of its own)
             });
@@ -1802,7 +1802,7 @@
     if (calm.matches || /[?&]open=/.test(location.search)) return;
     var main = document.querySelector('main:not([aria-hidden])');
     if (!main) return;
-    var els = main.querySelectorAll('.page-title, .gallery-filter, .grid-size, .gallery-item, .shop-item, .cart, .home-about .hero-photo, .home-about .bio');
+    var els = main.querySelectorAll('.page-index, .page-title, .page-head-tools, .gallery-item, .shop-item, .cart, .home-about .hero-photo, .home-about .hero-text');
     Array.prototype.forEach.call(els, function (el) {
       if (el.closest('.is-filtered-out') || el.classList.contains('rv')) return;
       el.classList.add('rv'); io.observe(el);
@@ -1902,6 +1902,7 @@
         // of a longer old name painted behind a shorter new one
         var t = old.cloneNode(false);
         t.textContent = next.dataset.title; t.href = next.dataset.link;
+        var num = root && root.querySelector('.show-count b'); if (num) num.textContent = (n < 9 ? '0' : '') + (n + 1);
         if (old.parentNode) old.parentNode.replaceChild(t, old);
         title = t; void t.offsetWidth;
         t.classList.remove('out');

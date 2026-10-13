@@ -45,6 +45,13 @@
       </span>
       {% include logo.html class="logo-small" %}
     </a>
+    {% comment %} computers: the pages listed across the left of the header (phones and iPads use the menu button) {% endcomment %}
+    <nav class="header-links" aria-label="Pages">
+      {% assign links = "/photography/|PHOTOGRAPHY,/projects/|PROJECTS,/shop/|SHOP" | split: "," %}
+      {% for item in links %}{% assign parts = item | split: "|" %}
+      <a href="{{ parts[0] | relative_url }}"{% if page.url == parts[0] %} class="active"{% endif %}>{{ parts[1] }}</a>
+      {% endfor %}
+    </nav>
     <div class="header-actions">
       <button class="theme-toggle" type="button" aria-label="Switch to dark mode">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -82,24 +89,30 @@
   </main>
 
   <footer class="site-footer">
-    <div class="social">
-      {% if site.instagram and site.instagram != "" %}
-      <a class="social-btn" href="https://www.instagram.com/{{ site.instagram }}/" target="_blank" rel="noopener" aria-label="EYESEERC on Instagram">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r=".6" fill="currentColor" stroke="none"/></svg>
-      </a>
-      {% endif %}
-      {% if site.email and site.email != "" %}
-      <a class="social-btn" href="{{ '/404.html' | relative_url }}" aria-label="Email">{% comment %} email is switched off for now: this goes to the 404 page. To turn it back on, use href="mailto:{{ site.email }}" {% endcomment %}
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M3.5 7l8.5 6.2L20.5 7"/></svg>
-      </a>
-      {% endif %}
-      {% if site.youtube and site.youtube != "" %}
-      <a class="social-btn" href="https://www.youtube.com/@{{ site.youtube }}" target="_blank" rel="noopener" aria-label="EYESEERC on YouTube">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10.2 9.3v5.4l4.6-2.7z" fill="currentColor"/></svg>
-      </a>
-      {% endif %}
+    <div class="footer-top">
+      <a class="footer-brand" href="{{ '/' | relative_url }}"><span>{{ site.title }}</span>{% if site.subtitle and site.subtitle != "" %}<small>{{ site.subtitle }}</small>{% endif %}</a>
+      <nav class="footer-nav" aria-label="Pages">
+        {% for item in links %}{% assign parts = item | split: "|" %}<a href="{{ parts[0] | relative_url }}"{% if page.url == parts[0] %} class="active"{% endif %}>{{ parts[1] }}</a>{% endfor %}
+      </nav>
+      <div class="social">
+        {% if site.instagram and site.instagram != "" %}
+        <a class="social-btn" href="https://www.instagram.com/{{ site.instagram }}/" target="_blank" rel="noopener" aria-label="EYESEERC on Instagram">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r=".6" fill="currentColor" stroke="none"/></svg>
+        </a>
+        {% endif %}
+        {% if site.email and site.email != "" %}
+        <a class="social-btn" href="{{ '/404.html' | relative_url }}" aria-label="Email">{% comment %} email is switched off for now: this goes to the 404 page. To turn it back on, use href="mailto:{{ site.email }}" {% endcomment %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M3.5 7l8.5 6.2L20.5 7"/></svg>
+        </a>
+        {% endif %}
+        {% if site.youtube and site.youtube != "" %}
+        <a class="social-btn" href="https://www.youtube.com/@{{ site.youtube }}" target="_blank" rel="noopener" aria-label="EYESEERC on YouTube">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5.5" width="19" height="13" rx="4"/><path d="M10.2 9.3v5.4l4.6-2.7z" fill="currentColor"/></svg>
+        </a>
+        {% endif %}
+      </div>
     </div>
-    <p>&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.{% comment %} the spinning mark opens the (hidden) drawing page, on the 5th click in a row {% endcomment %}<a class="footer-mark-wrap" href="{{ '/draw/' | relative_url }}" aria-label="Draw" title="Draw"><img class="footer-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392" draggable="false"></a></p>
+    <p class="footer-legal">&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.{% comment %} the spinning mark opens the (hidden) drawing page, on the 5th click in a row {% endcomment %}<a class="footer-mark-wrap" href="{{ '/draw/' | relative_url }}" aria-label="Draw" title="Draw"><img class="footer-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392" draggable="false"></a></p>
   </footer>
 
   <script>window.SHOP = { store: {{ site.shopify_store | jsonify }}, currency: {{ site.currency | jsonify }}, sizes: {{ site.print_sizes | jsonify }}, papers: {{ site.print_papers | jsonify }} };</script>
