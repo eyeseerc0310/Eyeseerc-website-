@@ -50,6 +50,8 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') setOpen(false);
   });
+  // scrolling the page closes it (the menu button scrolls away with the header)
+  document.body.addEventListener('scroll', function () { if (nav.classList.contains('open')) setOpen(false); }, { passive: true });
 
   // With a mouse or trackpad (computers, and iPads with a trackpad), open when
   // the pointer moves over the menu icon and close shortly after it leaves
@@ -1365,7 +1367,7 @@
             history.pushState({ y: 0 }, '', url.href);
           }
           if (nav) {
-            Array.prototype.forEach.call(document.querySelectorAll('.site-nav a, .header-links a, .footer-nav a'), function (a) {
+            Array.prototype.forEach.call(document.querySelectorAll('.nav-links a'), function (a) {
               var au = new URL(a.href, location.href);
               a.classList.toggle('active', !au.hash && au.pathname === location.pathname); // (ABOUT, a part of home, isn't a page of its own)
             });
@@ -1802,7 +1804,7 @@
     if (calm.matches || /[?&]open=/.test(location.search)) return;
     var main = document.querySelector('main:not([aria-hidden])');
     if (!main) return;
-    var els = main.querySelectorAll('.page-index, .page-title, .page-head-tools, .gallery-item, .shop-item, .cart, .home-about .hero-photo, .home-about .hero-text');
+    var els = main.querySelectorAll('.page-index, .page-title, .page-head-tools, main > .gallery-filter, .gallery-item, .shop-item, .cart, .home-about .hero-photo, .home-about .hero-text');
     Array.prototype.forEach.call(els, function (el) {
       if (el.closest('.is-filtered-out') || el.classList.contains('rv')) return;
       el.classList.add('rv'); io.observe(el);
