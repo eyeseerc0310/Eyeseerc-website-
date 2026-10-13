@@ -24,8 +24,10 @@
       {% if photo.path contains "/black-and-white/" %}{% assign kind = "bw" %}{% elsif photo.path contains "/color/" %}{% assign kind = "color" %}
       {% elsif photo.path contains "/digital/" %}{% assign kind = "digital" %}{% elsif photo.path contains "/physical/" %}{% assign kind = "physical" %}{% endif %}
       {% if include.titles %}
-        {% if kind == "bw" %}{% assign bw_n = bw_n | plus: 1 %}{% assign caption = "B&W ARCHIVE #" | append: bw_n %}
-        {% else %}{% assign color_n = color_n | plus: 1 %}{% assign caption = "COLOR ARCHIVE #" | append: color_n %}{% endif %}
+        {% if kind == "bw" %}{% assign bw_n = bw_n | plus: 1 %}{% assign cap_name = "B&W ARCHIVE" %}{% assign cap_n = bw_n %}
+        {% else %}{% assign color_n = color_n | plus: 1 %}{% assign cap_name = "COLOR ARCHIVE" %}{% assign cap_n = color_n %}{% endif %}
+        {% assign caption = cap_name | append: " #" | append: cap_n %}
+        {% if cap_n < 10 %}{% assign cap_num = cap_n | prepend: "0" %}{% else %}{% assign cap_num = cap_n %}{% endif %}
       {% endif %}
       {% comment %} digital_caption: the name shown in the photo viewer for every digital piece (e.g. ???) {% endcomment %}
       {% if include.digital_caption and kind == "digital" %}{% assign caption = include.digital_caption %}{% endif %}
@@ -36,7 +38,7 @@
         <a href="{{ photo.path | relative_url }}" data-lightbox data-caption="{{ caption | escape }}"{% if soft %} class="soft" style="--soft: url({{ soft.src }})"{% endif %}>
           <img src="{{ photo.path | relative_url }}" alt="{{ caption | escape }}" loading="lazy"{% if soft %} width="{{ soft.w }}" height="{{ soft.h }}"{% endif %}>
         </a>
-        {% if include.titles %}<figcaption class="gallery-title">{{ caption | escape }}</figcaption>{% endif %}
+        {% if include.titles %}<figcaption class="gallery-title"><span>{{ cap_name | escape }}</span><span class="gallery-num">{{ cap_num }}</span></figcaption>{% endif %}
       </figure>
     {% endif %}
   {% endfor %}

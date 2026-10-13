@@ -4,12 +4,19 @@ title: "SHOP"
 permalink: /shop/
 tight_top: true
 ---
-<h1 class="page-title">SHOP</h1>
+<header class="page-head">
+  <div class="page-head-text">
+    <p class="page-index">03</p>
+    <h1 class="page-title">SHOP</h1>
+  </div>
+  <div class="page-head-tools">
 <div class="gallery-filter" role="group" aria-label="Show">
   <button type="button" data-filter="prints" aria-pressed="true">PRINTS</button>
   {% comment %} data-soon: not open yet; clicking it just gives the line a shake {% endcomment %}
   <button type="button" data-filter="shirts" aria-pressed="false" data-soon aria-disabled="true">SHIRTS<span class="soon-note">COMING SOON</span></button>
 </div>
+  </div>
+</header>
 
 {% comment %}
   Items come from _data/shop.yml, three to a row. Every print gets the same
@@ -56,8 +63,9 @@ tight_top: true
         </a>
         {% endif %}
       </div>
-      <figcaption class="shop-price">
-        {% if item.sold_out %}Sold out{% elsif sized %}From {{ site.currency }}{{ first_size.price }}{% elsif item.price %}{{ site.currency }}{{ item.price }}{% endif %}
+      <figcaption class="shop-meta">
+        <span class="shop-name">{{ item.title | default: 'Print' }}</span>
+        <span class="shop-price">{% if item.sold_out %}Sold out{% elsif sized %}From {{ site.currency }}{{ first_size.price }}{% elsif item.price %}{{ site.currency }}{{ item.price }}{% endif %}</span>
       </figcaption>
       {% unless item.sold_out %}{% if sized %}
       {% comment %} from the page: the smallest size (other sizes are picked in the details box) {% endcomment %}
