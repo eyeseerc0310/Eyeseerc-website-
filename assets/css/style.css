@@ -21,6 +21,8 @@
   /* clean, thin line font (no serifs) used everywhere */
   --display: "Jost", "Helvetica Neue", Arial, sans-serif;
   --sans: "Jost", "Helvetica Neue", Arial, sans-serif;
+  /* a fine serif beside Jost, for the writing and the photos' names */
+  --serif: "Cormorant Garamond", "Cormorant", Garamond, "Times New Roman", serif;
   /* drop-down menu */
   --menu-bg: rgba(226, 226, 226, .95);
   --menu-line: rgba(120, 120, 120, .9);
@@ -1694,3 +1696,51 @@ a.footer-mark-wrap:hover .footer-mark { animation-duration: 2.2s; } /* spins a l
 }
 .footer-brand small { font-size: .2857em; letter-spacing: .8em; margin: .4em -.8em 0 0; white-space: nowrap; }
 .lb-foot .footer-brand { margin-bottom: 1rem; }
+
+/* ---- Hovering a photo: the whole photo (edges and shadow too) lifts a
+   little out of its place, rather than zooming inside its frame ---- */
+.gallery-item a { position: relative; transition: transform .7s var(--ease-soft), box-shadow .7s var(--ease-soft); }
+.gallery-item a:hover img { transform: none; opacity: 1; }
+@media (any-hover: hover) {
+  .gallery-item a:hover { transform: scale(1.035); z-index: 2; box-shadow: 8px 14px 30px rgba(0, 0, 0, .38), 2px 4px 8px rgba(0, 0, 0, .18); }
+  :root[data-theme="dark"] .gallery-item a:hover { box-shadow: 10px 16px 36px rgba(0, 0, 0, .7); }
+}
+
+/* ---- The serif: the about writing, and the photos' names (under the
+   photos, on the home slideshow, in the photo viewer and the shop box) ---- */
+.home-about .bio { font-family: var(--serif); font-weight: 400; }
+.home-about .bio p { font-size: 1.32rem; line-height: 1.6; }
+.home-about .bio p:first-child { font-size: clamp(1.5rem, 2.4vw, 2.05rem); line-height: 1.38; font-weight: 400; }
+.home-about .bio strong { font-weight: 500; }
+.gallery-title > span:first-child { font-family: var(--serif); font-weight: 500; font-size: 1.22em; letter-spacing: .14em; }
+.show-title { font-family: var(--serif); font-weight: 300; letter-spacing: .1em; font-size: clamp(1.7rem, 3.2vw, 3rem); }
+.lightbox-caption { font-family: var(--serif); font-size: 1.05rem; letter-spacing: .12em; }
+.lb-panel-title { font-family: var(--serif); }
+@media (max-width: 700px) {
+  .home-about .bio p { font-size: 1.12rem; }
+  .home-about .bio p:first-child { font-size: 1.42rem; }
+}
+
+/* ---- Back to the top: a small arrow in a see-through circle, fading in
+   at the bottom once the header has scrolled away ---- */
+.to-top {
+  position: fixed; left: 50%; bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); z-index: 30;
+  width: 42px; height: 42px; margin-left: -21px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; cursor: pointer; color: var(--text);
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0; translate: 0 10px; pointer-events: none; visibility: hidden;
+  transition: opacity .6s var(--ease), translate .6s var(--ease), visibility 0s linear .6s, background-color .4s var(--ease-soft);
+}
+.to-top.show { opacity: 1; translate: 0 0; pointer-events: auto; visibility: visible; transition: opacity .6s var(--ease), translate .6s var(--ease), visibility 0s, background-color .4s var(--ease-soft); }
+.to-top svg { width: 18px; height: 18px; display: block; transition: translate .5s var(--ease); }
+@media (any-hover: hover) {
+  .to-top:hover { background: color-mix(in srgb, var(--bg) 70%, transparent); }
+  .to-top:hover svg { translate: 0 -2px; }
+}
+.to-top:focus-visible { outline: 1px solid var(--text); outline-offset: 3px; }
+/* (not over the open menu) */
+body:has(.site-nav.open) .to-top { opacity: 0; pointer-events: none; }
