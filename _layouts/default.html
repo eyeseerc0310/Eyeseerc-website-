@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" href="{{ '/images/apple-touch-icon.png' | relative_url }}?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}?v={{ site.time | date: '%s' }}">
   <script>
     // always the secure address: someone who types eyeseerc.com lands on
@@ -83,7 +83,7 @@
       {% assign nav = "/|HOME,/photography/|PHOTOGRAPHY,/projects/|PROJECTS,/shop/|SHOP" | split: "," %}
       {% for item in nav %}
         {% assign parts = item | split: "|" %}
-        <a href="{{ parts[0] | relative_url }}"{% if page.url == parts[0] %} class="active"{% endif %}><span class="nav-name">{{ parts[1] }}</span></a>
+        <a href="{{ parts[0] | relative_url }}"{% if page.url == parts[0] or page.shop_item and parts[0] == "/shop/" %} class="active"{% endif %}><span class="nav-name">{{ parts[1] }}</span></a>
       {% endfor %}
       </div>
       <div class="nav-foot">
@@ -135,6 +135,10 @@
     <p>&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.{% comment %} the spinning mark opens the (hidden) drawing page, on the 5th click in a row {% endcomment %}<a class="footer-mark-wrap" href="{{ '/draw/' | relative_url }}" aria-label="Draw" title="Draw"><img class="footer-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392" draggable="false"></a></p>
   </footer>
 
+  {% comment %} back to the top: fades in at the bottom once the header has scrolled away {% endcomment %}
+  <button class="to-top" type="button" aria-label="Back to top" tabindex="-1">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 18.5V6M6.5 11.5 12 6l5.5 5.5"/></svg>
+  </button>
   <script>window.SHOP = { store: {{ site.shopify_store | jsonify }}, currency: {{ site.currency | jsonify }}, sizes: {{ site.print_sizes | jsonify }}, papers: {{ site.print_papers | jsonify }} };</script>
   <script src="{{ '/assets/js/site.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
 </body>

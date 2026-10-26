@@ -25,8 +25,15 @@ Links use `relative_url` (base path is "": the workflow builds for the domain ro
   bio text in `_includes/about-bio.md`).
 - `photography.html`, `projects.html`, `shop.html` (+ `_data/shop.yml`), `cart.html`.
 - `_includes/gallery.html` — every photo grid; photos come from `photos/<folder>/`.
+- `tools/make_blur.py` — soft previews + grid-size copies (`thumbs/640|1280/…`,
+  gitignored) listed in `_data/blur.yml`; the Pages workflow runs it on every
+  publish. Run it locally before building. Thumbs live outside `/photos/` on
+  purpose (the grids list everything under `/photos/<folder>/`).
+- Shop body is `_includes/shop-page.html`; `_plugins/shop_pages.rb` makes
+  `/shop/<title-slug>/` for each item, which opens that item.
 - `assets/css/style.css` — sections marked `/* ---------- Name ---------- */`;
-  theme tokens and motion (`--ease`, `--ease-soft`) at the top.
+  theme tokens, fonts (`--sans` Jost, `--serif` Cormorant Garamond) and
+  motion (`--ease`, `--ease-soft`) at the top.
 - `assets/js/site.js` — one IIFE per feature, each with a header comment.
   Page swaps fire `pageswap:start` / `pageswap:done`.
   Paint (`/draw/`, 5 clicks on the footer mark) and Darkroom (`/darkroom/`,

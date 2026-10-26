@@ -500,7 +500,18 @@
 
   function show(i) {
     index = (i + links.length) % links.length;
-    img.src = links[index].href;
+    // the grid shows a smaller copy: put that up straight away (it's already
+    // loaded), then swap in the full photo the moment it has arrived
+    var full = links[index].href, tile = links[index].querySelector('img');
+    var quick = !box.classList.contains('shop-mode') && tile && tile.complete && tile.naturalWidth &&
+      tile.currentSrc && tile.currentSrc !== full ? tile.currentSrc : null;
+    img.src = quick || full;
+    if (quick) {
+      var at = index, pre = new Image();
+      pre.src = full;
+      var swap = function () { if (index === at && links[at] && links[at].href === full && img.src === quick) img.src = full; };
+      if (pre.decode) pre.decode().then(swap, function () {}); else pre.onload = swap;
+    }
     img.alt = links[index].dataset.caption || '';
     caption.textContent = links[index].dataset.caption || '';
   }
@@ -785,6 +796,7 @@
   function close() {
     if (sliding) return;
     resetZoom(false);
+    if (box.classList.contains('shop-mode') && links[0]) itemAddress(links[0], false);
     if (box.classList.contains('shop-mode')) {
       if (raf) { cancelAnimationFrame(raf); raf = null; }
       panel.style.opacity = 0; panel.style.pointerEvents = 'none';
@@ -823,6 +835,16 @@
     }
   }
 
+  // a shop item, while it's open, has its own address (eyeseerc.com/shop/forest/)
+  // and name in the tab, so it can be shared; closing it goes back to /shop/
+  function itemAddress(link, on) {
+    var grid = link.closest('[data-shop-url]');
+    if (!grid || !link.dataset.slug) return;
+    var url = grid.dataset.shopUrl + (on ? link.dataset.slug + '/' : '') + location.hash;
+    try { history.replaceState(history.state, '', url); } catch (e) {}
+    var site = document.title.split(' \u00b7 ').pop();
+    document.title = (on ? link.dataset.title || 'Print' : 'SHOP') + ' \u00b7 ' + site;
+  }
   // only browse the photos currently shown (e.g. just COLOR or just B&W)
   document.addEventListener('click', function (e) {
     var link = e.target.closest && e.target.closest('[data-lightbox]');
@@ -844,6 +866,7 @@
       links = [link]; // shop items open on their own: no browsing
       buildPanel(link);
       setupDeck(link);
+      itemAddress(link, true);
     } else {
       panel.innerHTML = ''; panel.style.width = ''; img.style.transform = ''; geo = null;
       setupDeck(null);
@@ -1186,8 +1209,8 @@
 // Two-way switches: COLOR / B&W on the Photography page and PRINTS / SHIRTS
 // on the Shop page. One kind shows at a time; the first button is the
 // default and the other one is remembered in the address (e.g. #bw).
-// Switching slides: the line under the buttons glides across to the one
-// tapped, and the photos slide off the screen while the others slide in.
+// Switching: the line under the buttons glides across to the one tapped,
+// and the photos dissolve away while the others settle into place.
 (function () {
   var busy = false;
   function currentBar() { return document.querySelector('main:not([aria-hidden]) .gallery-filter'); }
@@ -1214,23 +1237,12 @@
     line.style.width = Math.max(0, b.offsetWidth - spacing) + 'px';
     if (instant) { void line.offsetWidth; line.style.transition = ''; }
   }
-  // what moves: the photo grid / shop grid (or a lone "coming soon" note)
-  function movers() {
-    var set = [];
-    Array.prototype.forEach.call(document.querySelectorAll('main:not([aria-hidden]) [data-kind]'), function (it) {
-      var el = it.parentElement && it.parentElement.tagName !== 'MAIN' ? it.parentElement : it;
-      if (set.indexOf(el) < 0) set.push(el);
-    });
-    return set;
-  }
   function apply(kind, animate) {
     var bar = currentBar();
     if (!bar) return;
     var buttons = Array.prototype.slice.call(bar.querySelectorAll('button'));
     if (!kind) kind = buttons[0].dataset.filter;
     var before = pressedKind(bar);
-    var from = buttons.findIndex(function (b) { return b.dataset.filter === before; });
-    var to = buttons.findIndex(function (b) { return b.dataset.filter === kind; });
     buttons.forEach(function (b) {
       b.setAttribute('aria-pressed', b.dataset.filter === kind ? 'true' : 'false');
     });
@@ -1242,28 +1254,41 @@
         it.classList.toggle('is-filtered-out', it.dataset.kind !== kind);
       });
     }
-    var els = movers();
-    if (!animate || before === kind || !els.length || !els[0].animate) { swap(); return; }
-    // later button: everything slides left; earlier button: slides right.
-    // The whole move follows one smooth speed curve: it starts slowly, picks
-    // up speed as the old photos leave and the new ones arrive, then eases
-    // gently to a stop (the two halves of an ease-in-out).
-    var dir = to > from ? 1 : -1;
-    var off = window.innerWidth;
-    busy = true;
-    var outs = els.map(function (el) {
-      return el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(' + (-dir * off) + 'px)' }],
-        { duration: 400, easing: 'cubic-bezier(.32, 0, .67, 0)', fill: 'forwards' });
-    });
-    outs[0].onfinish = function () {
-      swap();
-      var ins = movers().map(function (el) {
-        return el.animate([{ transform: 'translateX(' + (dir * off) + 'px)' }, { transform: 'translateX(0)' }],
-          { duration: 400, easing: 'cubic-bezier(.33, 1, .68, 1)' });
+    // the photos on screen dissolve (softening and lifting away one after
+    // another), then the other set settles into place the same way, rising
+    // and sharpening, one after another; all slow-fast-slow. Photos off the
+    // screen just swap.
+    function onScreen() {
+      return Array.prototype.filter.call(document.querySelectorAll('main:not([aria-hidden]) [data-kind]:not(.is-filtered-out)'), function (el) {
+        var r = el.getBoundingClientRect();
+        return r.width && r.bottom > 0 && r.top < window.innerHeight;
       });
+    }
+    var ease = 'cubic-bezier(.65, 0, .35, 1)';
+    var leaving = onScreen();
+    if (!animate || before === kind || !leaving.length || !leaving[0].animate) { swap(); return; }
+    busy = true;
+    var done = function () { busy = false; };
+    var outs = leaving.map(function (el, i) {
+      return el.animate([
+        { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+        { opacity: 0, transform: 'translateY(-12px) scale(.985)', filter: 'blur(5px)' }
+      ], { duration: 420, delay: Math.min(i, 8) * 30, easing: ease, fill: 'forwards' });
+    });
+    var last = outs[outs.length - 1];
+    last.oncancel = done;
+    last.onfinish = function () {
+      swap();
       outs.forEach(function (a) { a.cancel(); });
-      var done = function () { busy = false; };
-      if (ins.length) { ins[0].onfinish = done; ins[0].oncancel = done; } else done();
+      var ins = onScreen().map(function (el, i) {
+        return el.animate([
+          { opacity: 0, transform: 'translateY(22px) scale(.985)', filter: 'blur(5px)' },
+          { opacity: 1, transform: 'none', filter: 'blur(0px)' }
+        ], { duration: 900, delay: Math.min(i, 10) * 70, easing: ease, fill: 'backwards' });
+      });
+      if (!ins.length) { done(); return; }
+      ins[ins.length - 1].onfinish = done;
+      ins[ins.length - 1].oncancel = done;
     };
   }
   // a button that isn't open yet (COMING SOON): the line stays where it is
@@ -1369,7 +1394,7 @@
           if (nav) {
             Array.prototype.forEach.call(document.querySelectorAll('.nav-links a'), function (a) {
               var au = new URL(a.href, location.href);
-              a.classList.toggle('active', !au.hash && au.pathname === location.pathname); // (ABOUT, a part of home, isn't a page of its own)
+              a.classList.toggle('active', !au.hash && (au.pathname === location.pathname || (au.pathname.length > 1 && /\/shop\/$/.test(au.pathname) && location.pathname.indexOf(au.pathname) === 0))); // (ABOUT, a part of home, isn't a page of its own)
             });
           }
           document.dispatchEvent(new Event('pageswap:done'));
@@ -1686,6 +1711,31 @@
 })();
 
 
+// Arriving at a print's own address (eyeseerc.com/shop/forest/): the shop
+// page settles in, then that print opens, just as if it had been clicked.
+(function () {
+  function openPrint(e) {
+    var grid = document.querySelector('main:not([aria-hidden]) .shop[data-open]');
+    if (!grid) return;
+    var link = grid.querySelector('[data-slug="' + grid.dataset.open.replace(/"/g, '') + '"]');
+    grid.removeAttribute('data-open');
+    if (!link) return;
+    var here = location.pathname;
+    function go() {
+      setTimeout(function () {
+        if (!link.isConnected || location.pathname !== here || document.querySelector('.lightbox.open')) return;
+        link.scrollIntoView({ block: 'center' });
+        link.click();
+      }, e ? 1150 : 600);
+    }
+    // (on a first visit, after the logo screen)
+    if (document.documentElement.classList.contains('splash')) document.addEventListener('splashdone', go, { once: true });
+    else go();
+  }
+  document.addEventListener('pageswap:done', openPrint);
+  openPrint();
+})();
+
 // Arriving with ?open=<photo file> (the moving strip on the home page):
 // the page (and its Color / B&W tab) fades in first, already scrolled to
 // that photo; then, after a short pause, the photo opens full screen. The
@@ -1812,6 +1862,45 @@
   }
   setup();
   document.addEventListener('pageswap:done', setup);
+})();
+
+// Back to the top: once the header has scrolled away, a small arrow fades in
+// at the bottom of the screen; tapping it glides the page back up,
+// slow-fast-slow (a quicker glide for a shorter way). Scrolling by hand
+// meanwhile takes over at once.
+(function () {
+  var btn = document.querySelector('.to-top');
+  if (!btn) return;
+  var scroller = document.body, header = document.querySelector('.site-header'), raf = null;
+  var foot = document.querySelector('.site-footer');
+  function update() {
+    var past = scroller.scrollTop > (header ? header.offsetHeight : 120);
+    // at the bottom of the page it rides up, just above the footer, rather
+    // than sitting on the copyright line
+    var lift = foot ? Math.max(0, window.innerHeight - foot.getBoundingClientRect().top) : 0;
+    btn.style.marginBottom = lift ? lift + 'px' : '';
+    btn.classList.toggle('show', past);
+    if (past) btn.removeAttribute('tabindex'); else btn.setAttribute('tabindex', '-1');
+  }
+  function stop() { if (raf) { cancelAnimationFrame(raf); raf = null; } }
+  btn.addEventListener('click', function () {
+    stop();
+    var from = scroller.scrollTop;
+    if (!from) return;
+    var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var dur = calm ? 0 : Math.min(1300, 550 + from * 0.18), t0 = performance.now();
+    function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+    (function step(now) {
+      var t = dur ? Math.min(1, (now - t0) / dur) : 1;
+      scroller.scrollTop = from * (1 - ease(t));
+      raf = t < 1 ? requestAnimationFrame(step) : null;
+    })(t0);
+  });
+  ['wheel', 'touchstart', 'keydown'].forEach(function (ev) { window.addEventListener(ev, stop, { passive: true }); });
+  scroller.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  document.addEventListener('pageswap:done', function () { stop(); update(); });
+  update();
 })();
 
 // Soft-focus loading: each photo with a tiny blurred preview behind it

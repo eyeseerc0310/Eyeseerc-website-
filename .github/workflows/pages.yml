@@ -27,6 +27,12 @@ jobs:
           bundler-cache: true
       - id: pages
         uses: actions/configure-pages@v5
+      # the light versions of the photos (soft previews and the smaller
+      # copies the grids show), made fresh from whatever photos are uploaded
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pillow && python tools/make_blur.py
       # the site lives at the root of its own domain (eyeseerc.com), so links
       # are built from "/" (not from the github.io/Eyeseerc-website-/ path)
       - run: bundle exec jekyll build --baseurl ""
