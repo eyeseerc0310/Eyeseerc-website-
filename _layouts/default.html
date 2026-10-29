@@ -44,7 +44,7 @@
 </head>
 <body>
   {% comment %} the logo screen shown for a moment when the site is first opened {% endcomment %}
-  <div class="splash-screen" aria-hidden="true"><img src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392"></div>
+  <div class="splash-screen" aria-hidden="true"><picture><source type="image/webp" srcset="{{ '/images/home-mark.webp' | relative_url }}"><img src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392" fetchpriority="high"></picture></div>
   <header class="site-header">
     <a class="brand" href="{{ '/' | relative_url }}">
       <span class="brand-text">
@@ -132,7 +132,7 @@
       </a>
       {% endif %}
     </div>
-    <p>&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.{% comment %} the spinning mark opens the (hidden) drawing page, on the 5th click in a row {% endcomment %}<a class="footer-mark-wrap" href="{{ '/draw/' | relative_url }}" aria-label="Draw" title="Draw"><img class="footer-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392" draggable="false"></a></p>
+    <p>&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.{% comment %} the spinning mark opens the (hidden) drawing page, on the 5th click in a row {% endcomment %}<a class="footer-mark-wrap" href="{{ '/draw/' | relative_url }}" aria-label="Draw" title="Draw"><picture><source type="image/webp" srcset="{{ '/images/home-mark.webp' | relative_url }}"><img class="footer-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392" draggable="false" loading="lazy" decoding="async"></picture></a></p>
   </footer>
 
   {% comment %} back to the top: fades in at the bottom once the header has scrolled away {% endcomment %}
@@ -141,5 +141,7 @@
   </button>
   <script>window.SHOP = { store: {{ site.shopify_store | jsonify }}, currency: {{ site.currency | jsonify }}, sizes: {{ site.print_sizes | jsonify }}, papers: {{ site.print_papers | jsonify }} };</script>
   <script src="{{ '/assets/js/site.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
+  {% comment %} the drawing pages' workings (Paint, Darkroom): only on those pages {% endcomment %}
+  {% if page.studio %}<script src="{{ '/assets/js/studio.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>{% endif %}
 </body>
 </html>
