@@ -801,6 +801,7 @@
   window.addEventListener('resize', function () { if (shopOpen()) { sizePanel(); shopGeo(); applyProg(); } });
 
   function open(i) {
+    goingDir = 1; index = i; // (opened afresh: forwards, from this photo)
     show(i);
     var from = thumbRect();
     // the photo stays out of sight until its opening animation starts
@@ -1396,17 +1397,23 @@
   // give the first photos a moment to arrive so the new page fades in whole
   function ready(main) {
     var imgs = Array.prototype.slice.call(main.querySelectorAll('img'), 0, 6);
+    // (copies with the photos' own choices, their WebP and sizes, so what's
+    // fetched now is the very copy the page will show, not a second one.
+    // They wait in a hidden holder on the page, taken away once they're in:
+    // a photo with sizes is let go of only once it leaves a page, so copies
+    // never put on one were kept for good)
+    var holder = document.createElement('div');
+    holder.hidden = true; holder.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(holder);
     var loads = imgs.map(function (el) {
-      // (a copy with the photo's own choices, its WebP and sizes, so what's
-      // fetched now is the very copy the page will show, not a second one)
       var pic = el.parentNode && el.parentNode.tagName === 'PICTURE' ? el.parentNode.cloneNode(true) : null;
       var im = pic ? pic.querySelector('img') : el.cloneNode(false);
       im.removeAttribute('onload'); im.removeAttribute('onerror');
       im.loading = 'eager';
-      if (im.getAttribute('src')) im.setAttribute('src', im.getAttribute('src'));
+      holder.appendChild(pic || im);
       return im.decode ? im.decode().catch(function () {}) : Promise.resolve();
     });
-    return Promise.race([Promise.all(loads), new Promise(function (r) { setTimeout(r, 600); })]);
+    return Promise.race([Promise.all(loads), new Promise(function (r) { setTimeout(r, 600); })]).then(function () { holder.remove(); });
   }
 
   // If the menu is open, let it roll up first (its usual 0.4s close) so the
