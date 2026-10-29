@@ -12,8 +12,12 @@
       {% assign ext = f.extname | downcase %}
       {% if ext == ".jpg" or ext == ".jpeg" or ext == ".png" or ext == ".webp" %}{% assign me_photo = f.path %}{% endif %}
     {% endfor %}
-    <img class="hero-main" src="{{ me_photo | relative_url }}" alt="Portrait of {{ site.title }}" onload="this.parentNode.classList.add('ready')"
-         onerror="this.onerror=null;this.src='{{ '/images/profile-placeholder.svg' | relative_url }}';">
+    {% comment %} below the photos, so it loads as it's scrolled near; a copy the size it shows
+       (thumbs/, from tools/make_blur.py), the photo itself on a big, sharp screen; shaped
+       as the photo itself, so a copy's rounding never moves the page {% endcomment %}
+    {% assign me_soft = site.data.blur[me_photo] %}
+    <img class="hero-main" src="{{ me_photo | relative_url }}"{% if me_soft.srcset %} srcset="{{ me_soft.srcset }}, {{ me_photo | relative_url }} {{ me_soft.w }}w" sizes="(max-width: 700px) 100vw, (max-width: 1320px) 46vw, 620px"{% endif %}{% if me_soft %} width="{{ me_soft.w }}" height="{{ me_soft.h }}" style="aspect-ratio: {{ me_soft.w }} / {{ me_soft.h }}"{% endif %} alt="Portrait of {{ site.title }}" loading="lazy" onload="this.parentNode.classList.add('ready')"
+         onerror="this.onerror=null;this.removeAttribute('srcset');this.src='{{ '/images/profile-placeholder.svg' | relative_url }}';">
   </div>
   <div class="hero-text">
     {% capture bio %}{% include about-bio.md %}{% endcapture %}

@@ -8,14 +8,18 @@ For every photo in photos/photography, photos/projects and photos/shop it makes
   - a very small, soft copy (a few hundred bytes), shown straight away while
     the photo loads, plus the photo's size so the page keeps the right shape;
   - two smaller copies for the photo grids and the shop (640 and 1280 pixels
-    wide), about a tenth of the original's weight. The original, full-quality
-    photo is still what opens when a photo is clicked.
+    wide), about a tenth of the original's weight, as JPEG and as WebP (which
+    browsers that can show it take: about 30% lighter). Each WebP gets the
+    lowest quality that keeps it at least as close to the photo as its JPEG
+    twin, so it never looks worse. The original, full-quality photo is still
+    what opens when a photo is clicked.
+The photo of you (images/me) gets the same smaller copies, for the home page.
 """
-import base64, io, os
-from PIL import Image, ImageOps
+import base64, io, math, os
+from PIL import Image, ImageChops, ImageOps, ImageStat
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FOLDERS = ['photos/photography', 'photos/projects', 'photos/shop']
+FOLDERS = ['photos/photography', 'photos/projects', 'photos/shop', 'images/me']
 EXTS = ('.jpg', '.jpeg', '.png', '.webp')
 WIDTHS = (640, 1280)
 
@@ -38,19 +42,41 @@ def preview(im):
     return 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode()
 
 
+def psnr(a, b):
+    """How close two pictures are (higher is closer), over all three colours."""
+    rms = ImageStat.Stat(ImageChops.difference(a, b)).rms
+    mse = sum(r * r for r in rms) / len(rms)
+    return 99.0 if mse == 0 else 10 * math.log10(255 * 255 / mse)
+
+
 def thumb(im, rel, width):
-    """A copy at most `width` wide, saved under thumbs/<width>/ (as .jpg)."""
-    # (thumbs/640/photography/... - no 'photos/' in the path, so the photo
-    # grids, which list everything under /photos/..., never count them)
+    """A copy at most `width` wide, saved under thumbs/<width>/ as .jpg and .webp."""
+    # (thumbs/640/photography/... - no 'photos/' (or 'images/') in the path,
+    # so the photo grids, which list everything under /photos/..., never count them)
     out_rel = '/thumbs/%d%s.jpg' % (width, os.path.splitext(rel)[0][len('/photos'):])
     out = os.path.join(ROOT, out_rel.lstrip('/'))
+    web_rel = out_rel[:-4] + '.webp'
+    web = out[:-4] + '.webp'
     w, h = im.size
     if w > width:
         im = im.resize((width, round(h * width / w)), Image.LANCZOS)
-    if not os.path.exists(out) or os.path.getmtime(out) < os.path.getmtime(os.path.join(ROOT, rel.lstrip('/'))):
+    src_time = os.path.getmtime(os.path.join(ROOT, rel.lstrip('/')))
+    if not os.path.exists(out) or os.path.getmtime(out) < src_time or not os.path.exists(web) or os.path.getmtime(web) < src_time:
         os.makedirs(os.path.dirname(out), exist_ok=True)
-        im.save(out, 'JPEG', quality=82, optimize=True, progressive=True)
-    return out_rel, im.size[0]
+        buf = io.BytesIO()
+        im.save(buf, 'JPEG', quality=82, optimize=True, progressive=True)
+        open(out, 'wb').write(buf.getvalue())
+        # the WebP twin: the lowest quality at least as faithful as the JPEG
+        want = psnr(im, Image.open(io.BytesIO(buf.getvalue())).convert('RGB'))
+        best = None
+        for q in (70, 74, 78, 82, 86, 90, 94):
+            wb = io.BytesIO()
+            im.save(wb, 'WEBP', quality=q, method=5)
+            best = wb.getvalue()
+            if psnr(im, Image.open(io.BytesIO(best)).convert('RGB')) >= want:
+                break
+        open(web, 'wb').write(best)
+    return out_rel, im.size[0], web_rel
 
 
 lines = ['# Light versions of each photo (made by tools/make_blur.py, which runs',
@@ -71,7 +97,8 @@ for folder in FOLDERS:
             lines.append('  h: %d' % h)
             lines.append('  src: "%s"' % preview(im))
             sizes = [thumb(im, rel, width) for width in WIDTHS]
-            lines.append('  srcset: "%s"' % ', '.join('%s %dw' % s for s in sizes))
+            lines.append('  srcset: "%s"' % ', '.join('%s %dw' % s[:2] for s in sizes))
+            lines.append('  webp: "%s"' % ', '.join('%s %dw' % (s[2], s[1]) for s in sizes))
             lines.append('  thumb: "%s"' % sizes[-1][0])
             count += 1
 open(os.path.join(ROOT, '_data', 'blur.yml'), 'w').write('\n'.join(lines) + '\n')
