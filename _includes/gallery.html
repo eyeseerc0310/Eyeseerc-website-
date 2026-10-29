@@ -42,7 +42,7 @@
         <a href="{{ photo.path | relative_url }}" data-lightbox data-caption="{{ caption | escape }}"{% if soft %} class="soft" style="--soft: url({{ soft.src }})"{% endif %}>
           {% comment %} the grid shows a smaller copy (thumbs/, made by tools/make_blur.py); the link still opens the full photo {% endcomment %}
           {% comment %} WebP where the browser takes it (a little lighter, just as sharp), the JPEG otherwise {% endcomment %}
-          <picture>{% if soft.webp %}<source type="image/webp" srcset="{{ soft.webp }}" sizes="{{ tile_sizes }}">{% endif %}<img src="{% if soft.thumb %}{{ soft.thumb | relative_url }}{% else %}{{ photo.path | relative_url }}{% endif %}"{% if soft.srcset %} srcset="{{ soft.srcset }}" sizes="{{ tile_sizes }}"{% endif %} alt="{{ caption | escape }}" loading="lazy" decoding="async"{% if soft %} width="{{ soft.w }}" height="{{ soft.h }}"{% endif %}></picture>
+          <picture>{% if soft.webp %}<source type="image/webp" srcset="{{ soft.webp }}" sizes="{{ tile_sizes }}">{% endif %}<img src="{% if soft.thumb %}{{ soft.thumb | relative_url }}{% else %}{{ photo.path | relative_url }}{% endif %}"{% if soft.srcset %} srcset="{{ soft.srcset }}" sizes="{{ tile_sizes }}"{% endif %} alt="{{ caption | escape }}" loading="lazy"{% if soft %} width="{{ soft.w }}" height="{{ soft.h }}"{% endif %}></picture>
         </a>
         {% if include.titles %}<figcaption class="gallery-title"><span>{{ cap_name | escape }}</span><span class="gallery-num">{{ cap_num }}</span></figcaption>{% endif %}
       </figure>

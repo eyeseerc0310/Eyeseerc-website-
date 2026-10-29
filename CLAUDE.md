@@ -26,9 +26,16 @@ Links use `relative_url` (base path is "": the workflow builds for the domain ro
 - `photography.html`, `projects.html`, `shop.html` (+ `_data/shop.yml`), `cart.html`.
 - `_includes/gallery.html` — every photo grid; photos come from `photos/<folder>/`.
 - `tools/make_blur.py` — soft previews + grid-size copies (`thumbs/640|1280/…`,
-  gitignored) listed in `_data/blur.yml`; the Pages workflow runs it on every
-  publish. Run it locally before building. Thumbs live outside `/photos/` on
-  purpose (the grids list everything under `/photos/<folder>/`).
+  gitignored; a JPEG and a WebP each, the WebP at the lowest quality that's
+  as faithful as the JPEG) listed in `_data/blur.yml` (`srcset`, `webp`); the
+  Pages workflow runs it on every publish. Run it locally before building.
+  Thumbs live outside `/photos/` on purpose (the grids list everything under
+  `/photos/<folder>/`). Originals are never re-encoded: the viewer and the
+  home slideshow show them as they are.
+- Photos in grids are `<picture>` (WebP first); `picture { display: contents }`
+  so it adds no box. Their `sizes` follow the columns (`tile_sizes` in
+  `gallery.html`, and the photos-per-row switch sets it). Logo:
+  `home-mark.webp` (lossless, pixel-identical) with the PNG behind it.
 - Shop body is `_includes/shop-page.html`; `_plugins/shop_pages.rb` makes
   `/shop/<title-slug>/` for each item, which opens that item.
 - `assets/css/style.css` — sections marked `/* ---------- Name ---------- */`;
@@ -37,7 +44,11 @@ Links use `relative_url` (base path is "": the workflow builds for the domain ro
 - `assets/js/site.js` — one IIFE per feature, each with a header comment.
   Page swaps fire `pageswap:start` / `pageswap:done`.
   Paint (`/draw/`, 5 clicks on the footer mark) and Darkroom (`/darkroom/`,
-  from Projects) are the big modules at the end.
+  from Projects) are in `assets/js/studio.js`, loaded only by those pages
+  (`studio: true` in their front matter) or fetched by a page swap into one
+  (`pageswap:incoming`, which the swap waits for).
+- Keep scroll handlers cheap: read layout once a frame at most (rAF) and
+  write only what changed.
 
 ## Taste
 - Motion is slow-fast-slow (bell curve). Quiet, editorial, photos first.

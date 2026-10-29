@@ -132,7 +132,7 @@
       </a>
       {% endif %}
     </div>
-    <p>&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.{% comment %} the spinning mark opens the (hidden) drawing page, on the 5th click in a row {% endcomment %}<a class="footer-mark-wrap" href="{{ '/draw/' | relative_url }}" aria-label="Draw" title="Draw"><picture><source type="image/webp" srcset="{{ '/images/home-mark.webp' | relative_url }}"><img class="footer-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392" draggable="false" loading="lazy" decoding="async"></picture></a></p>
+    <p>&copy; {{ site.time | date: "%Y" }} {{ site.copyright_name | default: site.title }}. All photographs are the property of the artist.{% comment %} the spinning mark opens the (hidden) drawing page, on the 5th click in a row {% endcomment %}<a class="footer-mark-wrap" href="{{ '/draw/' | relative_url }}" aria-label="Draw" title="Draw"><picture><source type="image/webp" srcset="{{ '/images/home-mark.webp' | relative_url }}"><img class="footer-mark" src="{{ '/images/home-mark.png' | relative_url }}" alt="" width="600" height="392" draggable="false" loading="lazy"></picture></a></p>
   </footer>
 
   {% comment %} back to the top: fades in at the bottom once the header has scrolled away {% endcomment %}
